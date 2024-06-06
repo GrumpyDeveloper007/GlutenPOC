@@ -13,7 +13,7 @@ public static class MauiProgramExtensions
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                 fonts.AddFont("OpenSans-Semibold.ttf", "OpenSansSemibold");
             })
-            .UseMauiMaps();
+        //.UseMauiMaps();
         ;
 
 #if DEBUG
