@@ -2,10 +2,8 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:maps="clr-namespace:Maui.GoogleMaps;assembly=Maui.GoogleMaps"
-             x:Class="GlutenApp.MainPage" Loaded="ContentPage_Loaded"
+             x:Class="GlutenApp.Pages.MainPage" Loaded="ContentPage_Loaded"
              xmlns:sensors="clr-namespace:Microsoft.Maui.Devices.Sensors;assembly=Microsoft.Maui.Essentials">
-
-    <!--xmlns:maps="http://schemas.microsoft.com/dotnet/2021/maui/maps"-->
     <Grid >
         <Grid.RowDefinitions >
             <RowDefinition Height="200" />
@@ -20,7 +18,7 @@
             Spacing="10">
 
             <Label x:Name="Location"
-                Text="location"
+                Text="Loading..."
                 Style="{StaticResource Headline}"
                 SemanticProperties.HeadingLevel="Level1" />
 
@@ -34,12 +32,10 @@
                 Text="Add Pin" 
                 Clicked="AddPinBtn_Clicked"
                 HorizontalOptions="Fill" />
-
         </VerticalStackLayout>
-        <maps:Map Grid.Row="1" Grid.Column="0" x:Name="map" 
-                       MapClicked="map_MapClicked" >
-            <!--IsShowingUser="true"-->
 
+        <maps:Map Grid.Row="1" Grid.Column="0" x:Name="map"  
+                       MapClicked="map_MapClicked" IsIndoorEnabled="True" IsTrafficEnabled="True" MyLocationEnabled="True" >
         </maps:Map>
     </Grid>
 

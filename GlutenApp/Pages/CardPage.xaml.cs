@@ -1,13 +1,13 @@
 using GlutenApp.Services;
 
-namespace GlutenApp;
+namespace GlutenApp.Pages;
 
-public partial class CardView : ContentPage
+public partial class CardPage : ContentPage
 {
     private CardLookupService cardLookupService = new CardLookupService();
     private string _countryCode;
 
-    public CardView(string countryCode)
+    public CardPage(string countryCode)
     {
         _countryCode = countryCode;
         InitializeComponent();

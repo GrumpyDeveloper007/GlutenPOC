@@ -33,7 +33,20 @@
   </ItemGroup>
 
   <ItemGroup>
-    <MauiXaml Update="CardView.xaml">
+    <ProjectReference Include="..\Gluten.Data\Gluten.Data.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Pages\CardPage.xaml.cs">
+      <DependentUpon>CardPage.xaml</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <MauiXaml Update="Pages\CardPage.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </MauiXaml>
+    <MauiXaml Update="Pages\PinPage.xaml">
       <Generator>MSBuild:Compile</Generator>
     </MauiXaml>
   </ItemGroup>
