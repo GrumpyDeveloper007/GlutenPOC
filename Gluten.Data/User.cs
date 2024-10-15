@@ -10,9 +10,9 @@ namespace Gluten.Data
     {
         public Guid Id { get; set; } = Guid.NewGuid();
 
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
-        public string DeviceId { get; set; }
+        public string? DeviceId { get; set; }
 
     }
 }

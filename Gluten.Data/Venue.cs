@@ -11,7 +11,7 @@
         /// <summary>
         /// Name of the venue
         /// </summary>
-        public string Name { get; set; }
+        public string? Name { get; set; }
         /// <summary>
         /// Location of the venue
         /// </summary>
@@ -35,7 +35,7 @@
         /// <summary>
         /// Generic notes field
         /// </summary>
-        public string Notes { get; set; }
+        public string? Notes { get; set; }
 
         /// <summary>
         /// Indicates if the venue will modify dishes to make gluten free
@@ -46,7 +46,7 @@
 
         public int DownVotes { get; set; }
 
-        public string FoodType { get; set; }
+        public string? FoodType { get; set; }
 
     }
 }

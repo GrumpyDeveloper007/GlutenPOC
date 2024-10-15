@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Frodo.Model
 {
-    internal class TopicPin
+    public class TopicPin
     {
         public string? Label { get; set; }
         public string? Address { get; set; }

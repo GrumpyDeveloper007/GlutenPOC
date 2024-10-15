@@ -10,10 +10,9 @@ namespace Frodo.Service
 {
     internal class MapsUrlProcessor
     {
-        public bool ProcessMapsUrl(Topic topic, int index)
+        public bool ProcessMapsUrl(Topic topic, int index, string url)
         {
-            if (topic.Urls == null) return true;
-            var url = topic.Urls[index];
+            if (topic.UrlsV2 == null) return true;
             HttpService httpService = new HttpService();
 
             var httpData = httpService.GetAsync(url).Result;
@@ -30,7 +29,7 @@ namespace Frodo.Service
 
                 url = httpData.Substring(left, right - left);
                 var temp = HttpUtility.UrlDecode(url);
-                topic.Urls[index] = temp;
+                url = temp;
             }
             else if (httpData.Contains("center=")
                 && httpData.Contains("https://maps.google.com/maps"))
@@ -50,11 +49,11 @@ namespace Frodo.Service
                 var lat = temp.Substring(left, latEnd - left);
                 var lon = temp.Substring(latEnd + 1, longEnd - latEnd - 1);
 
-                topic.TopicPin = new TopicPin();
-                topic.TopicPin.Label = topic.Title;
-                topic.TopicPin.Address = topic.Title;
-                topic.TopicPin.GeoLatatude = lat;
-                topic.TopicPin.GeoLongitude = lon;
+                //topic.TopicPin = new TopicPin();
+                //topic.TopicPin.Label = topic.Title;
+                //topic.TopicPin.Address = topic.Title;
+                //topic.TopicPin.GeoLatatude = lat;
+                //topic.TopicPin.GeoLongitude = lon;
             }
             return true;
         }

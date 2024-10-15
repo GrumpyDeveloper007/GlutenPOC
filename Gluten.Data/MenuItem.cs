@@ -11,7 +11,7 @@ namespace Gluten.Data
         public Guid Id { get; set; } = Guid.NewGuid();
         public Guid VenueId { get; set; }
 
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         public bool IsGlutenFree { get; set; }
 

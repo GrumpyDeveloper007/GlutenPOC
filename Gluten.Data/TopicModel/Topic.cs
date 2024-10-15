@@ -6,16 +6,24 @@ using System.Threading.Tasks;
 
 namespace Frodo.Model
 {
-    class Topic
+    public class Topic
     {
         public required string Title { get; set; }
         public List<Response> ResponsesV2 { get; set; } = new List<Response>();
 
         public List<string>? HashTags { get; set; } = null;
 
-        public List<string>? Urls { get; set; }
+        public List<TopicLink>? UrlsV2 { get; set; }
 
-        public TopicPin? TopicPin { get; set; }
+        public bool HasMapPin()
+        {
+            if (UrlsV2 == null) return false;
+            foreach (var url in UrlsV2)
+            {
+                if (url.Pin != null) return true;
+            }
+            return false;
+        }
 
         public string? NodeID { get; set; }
 
@@ -30,22 +38,16 @@ namespace Frodo.Model
             return tags;
         }
 
-        public bool HasLink
+        public bool HasLink()
         {
-            get
-            {
-                if (Title == null) return false;
-                return Title.ToLower().Contains("https://");
-            }
+            if (Title == null) return false;
+            return Title.ToLower().Contains("https://");
         }
 
-        public bool HasMapLink
+        public bool HasMapLink()
         {
-            get
-            {
-                if (Title == null) return false;
-                return Title.ToLower().Contains("https://maps");
-            }
+            if (Title == null) return false;
+            return Title.ToLower().Contains("https://maps");
         }
 
         public bool ResponseHasLink

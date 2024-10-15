@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace Frodo.Model
 {
-    internal class Response
+    public class TopicLink
     {
-        public string? Message { get; set; }
-        public string? NodeId { get; set; }
+        public required string Url { get; set; }
+        public TopicPin? Pin { get; set; }
     }
 }

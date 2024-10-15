@@ -36,6 +36,7 @@ public partial class MainPage : ContentPage
     {
         _placemark = await _geoLocationService.GetLocationCountryCode();
         Location.Text = _placemark.CountryCode;
+        await _testDataLoaderService.LoadTopicMauiAsset(map);
         await _testDataLoaderService.LoadMauiAsset(map);
         map.PinClicked += Pin_MarkerClicked;
 
