@@ -8,14 +8,16 @@ namespace Frodo.Model
 {
     class Topic
     {
-        public string? Title { get; set; }
-        public List<string> Responses { get; set; } = new List<string>();
+        public required string Title { get; set; }
+        public List<Response> ResponsesV2 { get; set; } = new List<Response>();
 
         public List<string>? HashTags { get; set; } = null;
 
         public List<string>? Urls { get; set; }
 
         public TopicPin? TopicPin { get; set; }
+
+        public string? NodeID { get; set; }
 
         public string GetHashTags()
         {
@@ -50,9 +52,12 @@ namespace Frodo.Model
         {
             get
             {
-                foreach (var response in Responses)
-                    if (response.ToLower().Contains("https://"))
+                foreach (var response in ResponsesV2)
+                {
+                    if (response.Message == null) return false;
+                    if (response.Message.ToLower().Contains("https://"))
                         return true;
+                }
                 return false;
             }
         }
@@ -61,9 +66,12 @@ namespace Frodo.Model
         {
             get
             {
-                foreach (var response in Responses)
-                    if (response.ToLower().Contains("https://maps"))
+                foreach (var response in ResponsesV2)
+                {
+                    if (response.Message == null) return false;
+                    if (response.Message.ToLower().Contains("https://maps"))
                         return true;
+                }
                 return false;
             }
         }

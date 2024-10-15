@@ -16,10 +16,20 @@ namespace Frodo.Service
     /// </summary>
     internal class DataSyncService
     {
+        private TopicHelper _topicHelper = new TopicHelper();
+
         public List<Topic> Topics = new List<Topic>();
+        private string DBFileName = "D:\\Coding\\Gluten\\Topics.json";
 
         public void ProcessFile()
         {
+            string json;
+            if (File.Exists(DBFileName))
+            {
+                json = File.ReadAllText(DBFileName);
+                var tempTopics = JsonConvert.DeserializeObject<List<Topic>>(json);
+                if (tempTopics != null) { Topics = tempTopics; }
+            }
 
             ReadFileLineByLine("D:\\Coding\\Gluten\\Smeagol\\bin\\Debug\\net8.0\\Responses.txt");
 
@@ -28,19 +38,22 @@ namespace Frodo.Service
             int mapsLinkCount = 0;
             int responseLinkCount = 0;
             int responseMapsLinkCount = 0;
+            int mapsCallCount = 0;
             string unProcessedUrls = "";
+            int unProcessedUrlsCount = 0;
+            bool tryProcessLinks = true;
             foreach (var topic in Topics)
             {
                 i++;
                 string responseText = "";
-                foreach (var response in topic.Responses)
+                foreach (var response in topic.ResponsesV2)
                 {
                     responseText += response + " , ";
                 }
                 topic.HashTags = StringHelper.ExtractHashtags(topic.Title);
                 topic.Urls = StringHelper.ExtractUrls(topic.Title);
                 if (topic.HasLink) linkCount++;
-                if (topic.HasMapLink)
+                if (topic.HasMapLink && topic.TopicPin == null)
                 {
                     for (int t = 0; t < topic.Urls.Count; t++)
                     {
@@ -56,46 +69,30 @@ namespace Frodo.Service
                             || url.Contains("maps.app.goo.gl")
                             || url.Contains("maps.google.com"))
                         {
-                            if (!url.Contains("/@"))
+                            if (!url.Contains("/@") && tryProcessLinks)
                             {
+                                mapsCallCount++;
+                                if (mapsCallCount > 10) tryProcessLinks = false;
                                 var mapsHelper = new MapsUrlProcessor();
-                                //mapsHelper.ProcessMapsUrl(topic, url);
+                                if (!mapsHelper.ProcessMapsUrl(topic, t))
+                                    tryProcessLinks = false;
                             }
-
-                            if (url.Contains("/@"))
-                            {
-                                var left = url.IndexOf("/@") + 2;
-                                var latEnd = url.IndexOf(",", left);
-                                var longEnd = url.IndexOf(",", latEnd + 1);
-
-                                var lat = url.Substring(left, latEnd - left);
-                                var lon = url.Substring(latEnd + 1, longEnd - latEnd - 1);
-
-                                var placeStart = url.IndexOf("/place/") + "/place/".Length;
-                                var placeEnd = url.IndexOf("/", placeStart);
-
-                                //"https://www.google.com/maps/preview/place/Japan,+%E3%80%92630-8123+Nara,+Sanjoomiyacho,+3%E2%88%9223+onwa/@34.6785478,135.8161308,3281a,13.1y/data\\\\u003d!4m2!3m1!1s0x60013a30562e78d3:0xd712400d34ea1a7b\\"
-                                //                                          "Japan,+%E3%80%92630-8123+Nara,+Sanjoomiyac"
-                                var placeName = url.Substring(placeStart, placeEnd - placeStart);
-                                placeName = HttpUtility.UrlDecode(placeName);
-
-                                topic.TopicPin = new TopicPin();
-                                topic.TopicPin.Label = placeName;
-                                topic.TopicPin.Address = placeName;
-                                topic.TopicPin.GeoLatatude = lat;
-                                topic.TopicPin.GeoLongitude = lon;
-                            }
-                            mapsLinkCount++;
                         }
-                        if (topic.TopicPin == null)
-                        {
-                            unProcessedUrls += url + "/r/n";
-                        }
+                        url = topic.Urls[t];
+
+                        TryToGenerateMapPin(topic, t);
+
+                        mapsLinkCount++;
                     }
+                    if (topic.TopicPin == null)
+                    {
+                        unProcessedUrlsCount++;
+                        unProcessedUrls += topic.Urls[0] + "/r/n";
+                    }
+
                 }
                 if (topic.ResponseHasLink) responseLinkCount++;
                 if (topic.ResponseHasMapLink) responseMapsLinkCount++;
-
 
                 if (i < 10)
                 {
@@ -106,11 +103,14 @@ namespace Frodo.Service
 
             }
 
+            Console.WriteLine($"Unprocessed Links : {unProcessedUrlsCount}");
             Console.WriteLine($"Has Links : {linkCount}");
             Console.WriteLine($"Has Maps Links : {mapsLinkCount}");
             Console.WriteLine($"Has Response Links : {responseLinkCount}");
             Console.WriteLine($"Has Response Maps Links : {responseMapsLinkCount}");
 
+            json = JsonConvert.SerializeObject(Topics);
+            File.WriteAllText(DBFileName, json);
 
         }
 
@@ -119,7 +119,7 @@ namespace Frodo.Service
             // Open the file and read each line
             using (StreamReader sr = new StreamReader(filePath))
             {
-                string line;
+                string? line;
                 int i = 0;
                 while ((line = sr.ReadLine()) != null)
                 {
@@ -133,7 +133,7 @@ namespace Frodo.Service
                         {
                             try
                             {
-                                GroupRoot m;
+                                GroupRoot? m;
                                 if (messages.Length > 1 && message != messages[messages.Length - 1])
                                 {
                                     m = JsonConvert.DeserializeObject<GroupRoot>(message + "}");
@@ -158,14 +158,13 @@ namespace Frodo.Service
         private void ProcessModel(GroupRoot? groupRoot)
         {
             if (groupRoot == null) return;
-            string messageText;
-            List<string> messageReplies = new List<string>();
+            string? messageText;
             if (groupRoot == null || groupRoot.data.node == null) return;
 
             var a = groupRoot.data.node.comet_sections;
+            var nodeId = groupRoot.data.node.id;
             if (a != null)
             {
-
                 var story = a.content.story;
                 messageText = story?.message?.text;
 
@@ -174,6 +173,7 @@ namespace Frodo.Service
                     // TODO: Log?
                     return;
                 }
+                Topic? currentTopic = _topicHelper.GetOrCreateTopic(Topics, nodeId, messageText);
 
                 var story2 = a.feedback.story.story_ufi_container.story.feedback_context.interesting_top_level_comments;
                 foreach (var feedback in story2)
@@ -181,13 +181,44 @@ namespace Frodo.Service
                     var d = feedback.comment;
                     if (d.body != null)
                     {
-                        var reply = d.body.text;
-                        messageReplies.Add(reply);
+                        Response currentResponse = _topicHelper.GetOrCreateResponse(currentTopic, feedback.comment.id);
+                        currentResponse.Message = d.body.text;
                     }
                 }
-                Topics.Add(new Topic { Title = messageText, Responses = messageReplies });
+                currentTopic.Title = messageText;
             }
 
         }
+
+        private void TryToGenerateMapPin(Topic topic, int t)
+        {
+            if (topic.Urls == null) return;
+            var url = topic.Urls[t];
+
+            if (url.Contains("/@"))
+            {
+                var left = url.IndexOf("/@") + 2;
+                var latEnd = url.IndexOf(",", left);
+                var longEnd = url.IndexOf(",", latEnd + 1);
+
+                var lat = url.Substring(left, latEnd - left);
+                var lon = url.Substring(latEnd + 1, longEnd - latEnd - 1);
+
+                var placeStart = url.IndexOf("/place/") + "/place/".Length;
+                var placeEnd = url.IndexOf("/", placeStart);
+
+                //"https://www.google.com/maps/preview/place/Japan,+%E3%80%92630-8123+Nara,+Sanjoomiyacho,+3%E2%88%9223+onwa/@34.6785478,135.8161308,3281a,13.1y/data\\\\u003d!4m2!3m1!1s0x60013a30562e78d3:0xd712400d34ea1a7b\\"
+                //                                          "Japan,+%E3%80%92630-8123+Nara,+Sanjoomiyac"
+                var placeName = url.Substring(placeStart, placeEnd - placeStart);
+                placeName = HttpUtility.UrlDecode(placeName);
+
+                topic.TopicPin = new TopicPin();
+                topic.TopicPin.Label = placeName;
+                topic.TopicPin.Address = placeName;
+                topic.TopicPin.GeoLatatude = lat;
+                topic.TopicPin.GeoLongitude = lon;
+            }
+        }
+
     }
 }
