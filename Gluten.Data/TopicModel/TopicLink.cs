@@ -4,11 +4,13 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Frodo.Model
+namespace Gluten.Data.TopicModel
 {
     public class TopicLink
     {
         public required string Url { get; set; }
         public TopicPin? Pin { get; set; }
+
+        public bool? AiGenerated { get; set; }
     }
 }

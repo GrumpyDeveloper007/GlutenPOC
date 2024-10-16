@@ -1,13 +1,8 @@
-﻿using Frodo.FacebookModel;
-using Frodo.Model;
+﻿using Azure.AI.TextAnalytics;
+using Frodo.FacebookModel;
+using Gluten.Data.TopicModel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Web;
 
 namespace Frodo.Service
@@ -17,11 +12,105 @@ namespace Frodo.Service
     /// </summary>
     internal class DataSyncService
     {
+        private NaturalLanguageProcessor _naturalLanguageProcessor;
         private TopicHelper _topicHelper = new TopicHelper();
         private SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor = new SeleniumMapsUrlProcessor();
 
         public List<Topic> Topics = new List<Topic>();
         private string DBFileName = "D:\\Coding\\Gluten\\Topics.json";
+
+        public DataSyncService(NaturalLanguageProcessor naturalLanguageProcessor)
+        {
+            _naturalLanguageProcessor = naturalLanguageProcessor;
+        }
+
+        public void AIProcessing()
+        {
+            int aiQueries = 0;
+            int urlsCreated = 0;
+            if (Topics == null) return;
+
+            for (int i = 0; i < Topics.Count; i++)
+            {
+                var topic = Topics[i];
+                if (!topic.HasMapPin() && topic.AiParsed == false)
+                {
+                    aiQueries++;
+                    var aiResponse = _naturalLanguageProcessor.Process(Topics[i].Title);
+                    var restaurantName = "";
+                    var city = "";
+                    topic.AiParsed = true;
+                    foreach (var item in aiResponse)
+                    {
+                        if (item.Category == EntityCategory.Location && item.SubCategory == null)
+                        {
+                            restaurantName = item.Text;
+                        }
+                        if (item.Category == EntityCategory.Location && item.SubCategory == "City")
+                        {
+                            city = item.Text;
+                        }
+
+                        if (topic.AiTitleInfoV2 == null) topic.AiTitleInfoV2 = new List<AiInformation>();
+                        topic.AiTitleInfoV2.Add(new AiInformation()
+                        {
+                            Text = item.Text,
+                            Category = item.Category.ToString(),
+                            SubCategory = item.SubCategory,
+                            ConfidenceScore = item.ConfidenceScore,
+                            Length = item.Length,
+                            Offset = item.Offset
+                        });
+                    }
+
+                    // Skip if all we have is the city name
+                    if (!string.IsNullOrEmpty(restaurantName)
+                        && restaurantName != "home"
+                        && restaurantName != "house"
+                        && restaurantName != "shops"
+                        && restaurantName != "eating places"
+                        && restaurantName != "food booth halls"
+                        && restaurantName != "supermarkets"
+                        && restaurantName != "airlines"
+                        && restaurantName != "hotels"
+                        && restaurantName != "Disneys"
+                        && restaurantName != "Tokyo Station"
+                        && restaurantName != "restaurants"
+                        && restaurantName != "Okayama Prefecture"
+                        && restaurantName != "tokyodomemarche"
+                        && restaurantName != "grocery stores"
+                        && restaurantName != "My Life supermarket"
+                        && restaurantName != "7-Eleven"
+                        && restaurantName != "countries"
+                        && restaurantName != "ryokan"
+                        && restaurantName != "place"
+                        && restaurantName != "restaurante"
+                        && !restaurantName.StartsWith("#"))
+                    {
+                        var mapsLink = $"http://maps.google.com/?q={restaurantName},{city}";
+                        // TODO: Hacks
+                        var newUrl = CheckUrlForMapLinks(mapsLink);
+                        newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
+                        newUrl = HttpUtility.UrlDecode(mapsLink);
+                        var pin = TryToGenerateMapPin(newUrl);
+                        if (pin != null)
+                        {
+                            urlsCreated++;
+                            if (topic.UrlsV2 == null) topic.UrlsV2 = new List<TopicLink>();
+                            topic.UrlsV2.Add(new TopicLink()
+                            {
+                                AiGenerated = true,
+                                Pin = pin,
+                                Url = newUrl
+
+                            });
+                        }
+                    }
+                }
+            }
+            Console.WriteLine($"AI Queries : {aiQueries}");
+            Console.WriteLine($"AI Urls created : {urlsCreated}");
+        }
 
         public void ProcessFile()
         {
@@ -157,12 +246,20 @@ namespace Frodo.Service
 
             }
 
+
+
             Console.WriteLine($"Pin Count : {pinCount}");
             Console.WriteLine($"Unprocessed Links : {unProcessedUrlsCount}");
             Console.WriteLine($"Has Links : {linkCount}");
             Console.WriteLine($"Has Maps Links : {mapsLinkCount}");
             Console.WriteLine($"Has Response Links : {responseLinkCount}");
             Console.WriteLine($"Has Response Maps Links : {responseMapsLinkCount}");
+
+            Console.WriteLine("--------------------------------------");
+            Console.WriteLine($"\r\nStarting AI processing");
+            AIProcessing();
+
+            Console.WriteLine("--------------------------------------");
 
             json = JsonConvert.SerializeObject(Topics, Formatting.Indented,
            new JsonConverter[] { new StringEnumConverter() });
@@ -242,6 +339,7 @@ namespace Frodo.Service
                     }
                 }
                 currentTopic.Title = messageText;
+                currentTopic.FacebookUrl = story.wwwURL;
             }
 
         }

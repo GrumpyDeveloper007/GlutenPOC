@@ -10,7 +10,9 @@ IConfigurationRoot config = new ConfigurationBuilder()
     .AddEnvironmentVariables()
     .Build();
 
-//var settings = config.GetRequiredSection("Values").Get<SettingValues>();
+var settings = config.GetRequiredSection("Values").Get<SettingValues>();
 
-var service = new DataSyncService();
+var nlp = new NaturalLanguageProcessor(settings.AIEndPoint, settings.AIApiKey);
+
+var service = new DataSyncService(nlp);
 service.ProcessFile();

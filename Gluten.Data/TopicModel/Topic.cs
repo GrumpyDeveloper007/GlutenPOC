@@ -1,10 +1,11 @@
-﻿using System;
+﻿using Gluten.Data.TopicModel;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Frodo.Model
+namespace Gluten.Data.TopicModel
 {
     public class Topic
     {
@@ -14,6 +15,12 @@ namespace Frodo.Model
         public List<string>? HashTags { get; set; } = null;
 
         public List<TopicLink>? UrlsV2 { get; set; }
+
+        public List<AiInformation>? AiTitleInfoV2 { get; set; }
+
+        public bool AiParsed { get; set; } = false;
+
+        public string? FacebookUrl { get; set; }
 
         public bool HasMapPin()
         {

@@ -1,4 +1,4 @@
-﻿using Frodo.Model;
+﻿using Gluten.Data.TopicModel;
 using System;
 using System.Collections.Generic;
 using System.Linq;
