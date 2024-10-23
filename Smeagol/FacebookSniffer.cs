@@ -10,7 +10,7 @@ namespace Smeagol;
 /// </summary>
 internal class FacebookSniffer
 {
-    private string _responsefileName = Environment.CurrentDirectory + "/Responses.txt";
+    private string _responsefileName = Environment.CurrentDirectory + "/Responses2.txt";
     private ChromeDriver _driver;
 
     public void Start()

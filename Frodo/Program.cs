@@ -1,6 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using Frodo;
 using Frodo.Service;
+using Gluten.Core.DataProcessing.Service;
 using Microsoft.Extensions.Configuration;
 
 Console.WriteLine("Hello, World!");
@@ -13,6 +14,11 @@ IConfigurationRoot config = new ConfigurationBuilder()
 var settings = config.GetRequiredSection("Values").Get<SettingValues>();
 
 var nlp = new NaturalLanguageProcessor(settings.AIEndPoint, settings.AIApiKey);
+var selenium = new SeleniumMapsUrlProcessor();
+selenium.Start();
 
-var service = new DataSyncService(nlp);
+var ai = new AIProcessingService(nlp, selenium);
+var service = new DataSyncService(ai, selenium);
 service.ProcessFile();
+
+selenium.Stop();

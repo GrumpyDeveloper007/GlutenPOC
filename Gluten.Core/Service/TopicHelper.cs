@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Frodo.Service
+namespace Gluten.Core.Service
 {
-    internal class TopicHelper
+    public class TopicHelper
     {
         public Response GetOrCreateResponse(Topic currentTopic, string nodeId)
         {

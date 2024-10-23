@@ -5,10 +5,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Diagnostics;
 
-namespace Frodo.Service
+namespace Gluten.Core.DataProcessing.Service
 {
-    internal class NaturalLanguageProcessor
+    public class NaturalLanguageProcessor
     {
         TextAnalyticsClient _client;
 
@@ -25,9 +26,11 @@ namespace Frodo.Service
             string documentA = message;
             //e.g. documentA = "Tonight we went to OKO - Fun Okonomiyaki Bar and it was delicious. However I do not think 源氏蕎麦 Genjisoba gets enough love. We were there last night and undoubtedly the best GF meal I’ve had in a LONG time \n#osaka";
 
-            // Prepare the input of the text analysis operation. You can add multiple documents to this list and
-            // perform the same operation on all of them simultaneously.
-            List<TextDocumentInput> batchedDocuments = new()
+            try
+            {
+                // Prepare the input of the text analysis operation. You can add multiple documents to this list and
+                // perform the same operation on all of them simultaneously.
+                List<TextDocumentInput> batchedDocuments = new()
             {
                 new TextDocumentInput("1", documentA)
                 {
@@ -35,17 +38,23 @@ namespace Frodo.Service
                 },
             };
 
-            // Specify the project and deployment names of the desired custom model. To train your own custom model to
-            // recognize custom entities, see https://aka.ms/azsdk/textanalytics/customentityrecognition.
-            //string projectName = "Gluten";
-            //string deploymentName = "Frodo";
+                // Specify the project and deployment names of the desired custom model. To train your own custom model to
+                // recognize custom entities, see https://aka.ms/azsdk/textanalytics/customentityrecognition.
+                //string projectName = "Gluten";
+                //string deploymentName = "Frodo";
 
-            // Perform the text analysis operation.
-            //_client.RecognizeCustomEntitiesAsync
-            //var operation = _client.RecognizeCustomEntities(WaitUntil.Completed, batchedDocuments, projectName, deploymentName);
-            var operation = _client.RecognizeEntities(documentA);
-            List<CategorizedEntity> aiResponse = operation.Value.ToList();
-            return aiResponse;
+                // Perform the text analysis operation.
+                //_client.RecognizeCustomEntitiesAsync
+                //var operation = _client.RecognizeCustomEntities(WaitUntil.Completed, batchedDocuments, projectName, deploymentName);
+                var operation = _client.RecognizeEntities(documentA);
+                List<CategorizedEntity> aiResponse = operation.Value.ToList();
+                return aiResponse;
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine(ex.Message);
+                return new List<CategorizedEntity>();
+            }
 
             /*foreach (RecognizeCustomEntitiesResultCollection documentsInPage in operation.GetValues())
             {

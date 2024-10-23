@@ -1,9 +1,9 @@
 ﻿using Azure.AI.TextAnalytics;
 using Frodo.FacebookModel;
+using Gluten.Core.DataProcessing.Service;
+using Gluten.Core.Service;
 using Gluten.Data.TopicModel;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
-using System.Web;
 
 namespace Frodo.Service
 {
@@ -12,117 +12,30 @@ namespace Frodo.Service
     /// </summary>
     internal class DataSyncService
     {
-        private NaturalLanguageProcessor _naturalLanguageProcessor;
         private TopicHelper _topicHelper = new TopicHelper();
-        private SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor = new SeleniumMapsUrlProcessor();
+        private TopicsHelper _topicsHelper = new TopicsHelper();
+        private SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor;
+        private PinHelper _pinHelper = new PinHelper();
+        private AIProcessingService _aIProcessingService;
 
         public List<Topic> Topics = new List<Topic>();
         private string DBFileName = "D:\\Coding\\Gluten\\Topics.json";
 
-        public DataSyncService(NaturalLanguageProcessor naturalLanguageProcessor)
+        public DataSyncService(AIProcessingService aIProcessingService,
+            SeleniumMapsUrlProcessor seleniumMapsUrlProcessor)
         {
-            _naturalLanguageProcessor = naturalLanguageProcessor;
+            _aIProcessingService = aIProcessingService;
+            _seleniumMapsUrlProcessor = seleniumMapsUrlProcessor;
         }
 
-        public void AIProcessing()
-        {
-            int aiQueries = 0;
-            int urlsCreated = 0;
-            if (Topics == null) return;
-
-            for (int i = 0; i < Topics.Count; i++)
-            {
-                var topic = Topics[i];
-                if (!topic.HasMapPin() && topic.AiParsed == false)
-                {
-                    aiQueries++;
-                    var aiResponse = _naturalLanguageProcessor.Process(Topics[i].Title);
-                    var restaurantName = "";
-                    var city = "";
-                    topic.AiParsed = true;
-                    foreach (var item in aiResponse)
-                    {
-                        if (item.Category == EntityCategory.Location && item.SubCategory == null)
-                        {
-                            restaurantName = item.Text;
-                        }
-                        if (item.Category == EntityCategory.Location && item.SubCategory == "City")
-                        {
-                            city = item.Text;
-                        }
-
-                        if (topic.AiTitleInfoV2 == null) topic.AiTitleInfoV2 = new List<AiInformation>();
-                        topic.AiTitleInfoV2.Add(new AiInformation()
-                        {
-                            Text = item.Text,
-                            Category = item.Category.ToString(),
-                            SubCategory = item.SubCategory,
-                            ConfidenceScore = item.ConfidenceScore,
-                            Length = item.Length,
-                            Offset = item.Offset
-                        });
-                    }
-
-                    // Skip if all we have is the city name
-                    if (!string.IsNullOrEmpty(restaurantName)
-                        && restaurantName != "home"
-                        && restaurantName != "house"
-                        && restaurantName != "shops"
-                        && restaurantName != "eating places"
-                        && restaurantName != "food booth halls"
-                        && restaurantName != "supermarkets"
-                        && restaurantName != "airlines"
-                        && restaurantName != "hotels"
-                        && restaurantName != "Disneys"
-                        && restaurantName != "Tokyo Station"
-                        && restaurantName != "restaurants"
-                        && restaurantName != "Okayama Prefecture"
-                        && restaurantName != "tokyodomemarche"
-                        && restaurantName != "grocery stores"
-                        && restaurantName != "My Life supermarket"
-                        && restaurantName != "7-Eleven"
-                        && restaurantName != "countries"
-                        && restaurantName != "ryokan"
-                        && restaurantName != "place"
-                        && restaurantName != "restaurante"
-                        && !restaurantName.StartsWith("#"))
-                    {
-                        var mapsLink = $"http://maps.google.com/?q={restaurantName},{city}";
-                        // TODO: Hacks
-                        var newUrl = CheckUrlForMapLinks(mapsLink);
-                        newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
-                        newUrl = HttpUtility.UrlDecode(mapsLink);
-                        var pin = TryToGenerateMapPin(newUrl);
-                        if (pin != null)
-                        {
-                            urlsCreated++;
-                            if (topic.UrlsV2 == null) topic.UrlsV2 = new List<TopicLink>();
-                            topic.UrlsV2.Add(new TopicLink()
-                            {
-                                AiGenerated = true,
-                                Pin = pin,
-                                Url = newUrl
-
-                            });
-                        }
-                    }
-                }
-            }
-            Console.WriteLine($"AI Queries : {aiQueries}");
-            Console.WriteLine($"AI Urls created : {urlsCreated}");
-        }
 
         public void ProcessFile()
         {
-            string json;
-            if (File.Exists(DBFileName))
+            var topics = _topicsHelper.TryLoadTopics(DBFileName);
+            if (topics != null)
             {
-                json = File.ReadAllText(DBFileName);
-                var tempTopics = JsonConvert.DeserializeObject<List<Topic>>(json);
-                if (tempTopics != null) { Topics = tempTopics; }
+                Topics = topics;
             }
-
-            _seleniumMapsUrlProcessor.Start();
 
             ReadFileLineByLine("D:\\Coding\\Gluten\\Smeagol\\bin\\Debug\\net8.0\\Responses.txt");
 
@@ -166,9 +79,9 @@ namespace Frodo.Service
                     {
                         if (topic.UrlsV2[t].Pin == null)
                         {
-                            var newUrl = CheckUrlForMapLinks(url);
+                            var newUrl = _seleniumMapsUrlProcessor.CheckUrlForMapLinks(url);
                             topic.UrlsV2[t].Url = newUrl;
-                            topic.UrlsV2[t].Pin = TryToGenerateMapPin(newUrl);
+                            topic.UrlsV2[t].Pin = _pinHelper.TryToGenerateMapPin(newUrl);
                             mapsCallCount++;
                         }
 
@@ -199,9 +112,9 @@ namespace Frodo.Service
                             {
                                 if (links[t].Pin == null)
                                 {
-                                    var newUrl = CheckUrlForMapLinks(url);
+                                    var newUrl = _seleniumMapsUrlProcessor.CheckUrlForMapLinks(url);
                                     links[t].Url = newUrl;
-                                    links[t].Pin = TryToGenerateMapPin(newUrl);
+                                    links[t].Pin = _pinHelper.TryToGenerateMapPin(newUrl);
                                     mapsCallCount++;
                                 }
 
@@ -257,14 +170,12 @@ namespace Frodo.Service
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nStarting AI processing");
-            AIProcessing();
+            //_aIProcessingService.AIProcessing(Topics);
 
             Console.WriteLine("--------------------------------------");
+            Console.WriteLine($"\r\nComplete, exit...");
 
-            json = JsonConvert.SerializeObject(Topics, Formatting.Indented,
-           new JsonConverter[] { new StringEnumConverter() });
-            File.WriteAllText(DBFileName, json);
-
+            _topicsHelper.SaveTopics(DBFileName, Topics);
         }
 
         void ReadFileLineByLine(string filePath)
@@ -344,41 +255,6 @@ namespace Frodo.Service
 
         }
 
-        private TopicPin? TryToGenerateMapPin(string url)
-        {
-            if (url == null) return null;
-            if (url.Contains("/@"))
-            {
-                var left = url.IndexOf("/@") + 2;
-                var latEnd = url.IndexOf(",", left);
-                var longEnd = url.IndexOf(",", latEnd + 1);
-
-                if (latEnd > 0)
-                {
-
-                    var lat = url.Substring(left, latEnd - left);
-                    var lon = url.Substring(latEnd + 1, longEnd - latEnd - 1);
-
-                    var placeStart = url.IndexOf("/place/") + "/place/".Length;
-                    var placeEnd = url.IndexOf("/", placeStart);
-
-                    //"https://www.google.com/maps/preview/place/Japan,+%E3%80%92630-8123+Nara,+Sanjoomiyacho,+3%E2%88%9223+onwa/@34.6785478,135.8161308,3281a,13.1y/data\\\\u003d!4m2!3m1!1s0x60013a30562e78d3:0xd712400d34ea1a7b\\"
-                    //                                          "Japan,+%E3%80%92630-8123+Nara,+Sanjoomiyac"
-                    var placeName = url.Substring(placeStart, placeEnd - placeStart);
-                    placeName = HttpUtility.UrlDecode(placeName);
-
-                    return new TopicPin()
-                    {
-                        Label = placeName,
-                        Address = placeName,
-                        GeoLatatude = lat,
-                        GeoLongitude = lon
-                    };
-                }
-            }
-            return null;
-        }
-
         private void CheckForUpdatedUrls(Topic topic, List<TopicLink> newUrls)
         {
             if (topic.UrlsV2 == null) return;
@@ -401,57 +277,6 @@ namespace Frodo.Service
                     }
                 }
             }
-
-        }
-
-        private string CheckUrlForMapLinks(string url)
-        {
-            // https://www.google.com/maps/place/onwa/@34.6785478,135.8161308,17z/data=!3m1!4b1!4m6!3m5!1s0x60013a30562e78d3:0xd712400d34ea1a7b!8m2!3d34.6785478!4d135.8161308!16s%2Fg%2F11f3whn720!5m1!1e4?entry=ttu&g_ep=EgoyMDI0MTAwOS4wIKXMDSoASAFQAw%3D%3D
-            //"https://maps.app.goo.gl/jzpnWbttyQVicafZ9?g_st=il"
-            //"https://maps.google.com/?q=Giappone,%20%E3%80%92605-0826%20Kyoto,%20Higashiyama%20Ward,%20Masuyacho,%20349-21%20%E3%82%B8%E3%83%93%E3%82%A8%E3%83%BB%E6%B4%BB%E5%B7%9D%E9%AD%9A%E6%96%99%E7%90%86%E3%83%BB%E5%8D%81%E5%89%B2%E6%89%8B%E6%89%93%E3%81%A1%E8%95%8E%E9%BA%A6%E5%87%A6%20%E3%80%8C%E6%94%BF%E5%8F%B3%E8%A1%9B%E9%96%80%E3%80%8D(MASAEMON)&ftid=0x600109a72b6b2469:0xa0a247525adfb00f&entry=gps&lucs=,94224825,94227247,94227248,47071704,47069508,94218641,94203019,47084304,94208458,94208447&g_st=com.google.maps.preview.copy):"
-            //"https://www.google.com/maps/reviews/data=!4m8!14m7!1m6!2m5!1sChZDSUhNMG9nS0VJQ0FnSUNqbHRqY1JREAE!2m1!1s0x0:0x48f8753e21338831!3m1!1s2"
-            //https://goo.gl/maps/QPEHvcC3svjdtf5G9
-            // Link to street view
-            //https://maps.google.com/maps/api/staticmap?center=34.6845322%2C135.1840363&amp;zoom=-1&amp;size=900x900&amp;language=en&amp;sensor=false&amp;client=google-maps-frontend&amp;signature=yGPXtu3-Vjroz_DtJZLPyDkVVC8\
-            // Collection of pins 
-            //https://www.google.com/maps/d/viewer?mid=16xtxMz-iijlDOEl-dlQKEa2-A19nxzND&ll=35.67714795882308,139.72588715&z=12
-            //
-            if (!url.Contains("https://www.google.com/maps/d/viewer")
-                && (url.Contains("www.google.com/maps/")
-                || url.Contains("maps.app.goo.gl")
-                || url.Contains("maps.google.com")
-                || url.Contains("https://goo.gl/maps/"))
-                )
-            {
-                if (!url.Contains("/@"))
-                {
-                    var newUrl = _seleniumMapsUrlProcessor.GoAndWaitForUrlChange(url);
-                    newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
-                    newUrl = HttpUtility.UrlDecode(newUrl);
-                    int timeout = 10;
-                    while (!newUrl.Contains("/@") && timeout > 0)
-                    {
-                        timeout--;
-                        System.Threading.Thread.Sleep(500);
-                        newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
-                        newUrl = HttpUtility.UrlDecode(newUrl);
-                    }
-                    if (timeout == 0 && !newUrl.Contains("/@"))
-                    {
-                        Console.WriteLine("Timeout waiting for url");
-                        newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
-                        newUrl = HttpUtility.UrlDecode(newUrl);
-                    }
-
-                    return newUrl;
-
-                    //if (mapsCallCount > 10) tryProcessLinks = false;
-                    //var mapsHelper = new MapsUrlProcessor();
-                    //if (!mapsHelper.ProcessMapsUrl(topic, t))
-                    //  tryProcessLinks = false;
-                }
-            }
-            return url;
 
         }
 
