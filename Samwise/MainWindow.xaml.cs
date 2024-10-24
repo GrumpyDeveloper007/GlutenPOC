@@ -2,14 +2,9 @@
 using Gluten.Core.Service;
 using Gluten.Data.TopicModel;
 using Microsoft.Extensions.Configuration;
+using Samwise.Service;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Security.Policy;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
 
@@ -17,7 +12,8 @@ using System.Windows.Input;
 namespace Samwise
 {
     /// <summary>
-    /// Interaction logic for MainWindow.xaml
+    /// Interactive topic processor, ideally this would be handled with AI, but for now we do some basic searching and present
+    /// it to the user and allow them time to check and select their own map location, then update the DB
     /// </summary>
     public partial class MainWindow : Window
     {
@@ -165,39 +161,10 @@ namespace Samwise
             // TODO
         }
 
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
         private void butFacebook_Click(object sender, RoutedEventArgs e)
         {
             var url = _topics[_index].FacebookUrl;
-            try
-            {
-                Process.Start(url);
-            }
-            catch
-            {
-                // hack because of this: https://github.com/dotnet/corefx/issues/10361
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                {
-                    url = url.Replace("&", "^&");
-                    Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-                }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-                {
-                    Process.Start("xdg-open", url);
-                }
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
-                {
-                    Process.Start("open", url);
-                }
-                else
-                {
-                    throw;
-                }
-            }
+            BrowserHelper.OpenUrl(url);
         }
     }
 }

@@ -7,8 +7,14 @@ using System.Threading.Tasks;
 
 namespace Gluten.Core.Service
 {
+    /// <summary>
+    /// Some helper function for working with topic classes
+    /// </summary>
     public class TopicHelper
     {
+        /// <summary>
+        /// Checks to see if a response exists for the given nodeId, selects it or creates a new one
+        /// </summary>
         public Response GetOrCreateResponse(Topic currentTopic, string nodeId)
         {
             Response? currentResponse = null;
@@ -32,6 +38,9 @@ namespace Gluten.Core.Service
 
         }
 
+        /// <summary>
+        /// Checks to see if a topic exists for the given nodeId, selects it or creates a new one
+        /// </summary>
         public Topic GetOrCreateTopic(List<Topic> topics, string nodeId, string messageText)
         {
             Topic? currentTopic = null;

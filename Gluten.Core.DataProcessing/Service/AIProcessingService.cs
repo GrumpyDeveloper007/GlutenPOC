@@ -1,17 +1,22 @@
 ﻿using Azure.AI.TextAnalytics;
 using Gluten.Core.Service;
-using Gluten.Data;
 using Gluten.Data.TopicModel;
 using System.Web;
 
 namespace Gluten.Core.DataProcessing.Service
 {
+    /// <summary>
+    /// Trys to extracted formatted information from human written posts
+    /// </summary>
     public class AIProcessingService
     {
         private NaturalLanguageProcessor _naturalLanguageProcessor;
         private PinHelper _pinHelper = new PinHelper();
         private SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor;
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
         public AIProcessingService(NaturalLanguageProcessor naturalLanguageProcessor,
             SeleniumMapsUrlProcessor seleniumMapsUrlProcessor)
         {
@@ -19,6 +24,9 @@ namespace Gluten.Core.DataProcessing.Service
             _seleniumMapsUrlProcessor = seleniumMapsUrlProcessor;
         }
 
+        /// <summary>
+        /// Processes all the topics in a list
+        /// </summary>
         public void AIProcessing(List<Topic> topics)
         {
             int aiQueries = 0;
@@ -43,6 +51,9 @@ namespace Gluten.Core.DataProcessing.Service
             Console.WriteLine($"AI Urls created : {urlsCreated}");
         }
 
+        /// <summary>
+        /// Tries to extract location information from a single topic title
+        /// </summary>
         public string? ProcessTopic(Topic topic, ref string restaurantName)
         {
             if (!topic.HasMapPin() && topic.AiParsed == false)
@@ -75,40 +86,7 @@ namespace Gluten.Core.DataProcessing.Service
                 }
 
                 // Skip if all we have is the city name
-                if (!string.IsNullOrEmpty(restaurantName)
-                    && restaurantName != "home"
-                    && restaurantName != "house"
-                    && restaurantName != "shops"
-                    && restaurantName != "eating places"
-                    && restaurantName != "food booth halls"
-                    && restaurantName != "supermarkets"
-                    && restaurantName != "airlines"
-                    && restaurantName != "hotels"
-                    && restaurantName != "Disneys"
-                    && restaurantName != "Tokyo Station"
-                    && restaurantName != "restaurants"
-                    && restaurantName != "Okayama Prefecture"
-                    && restaurantName != "tokyodomemarche"
-                    && restaurantName != "grocery stores"
-                    && restaurantName != "My Life supermarket"
-                    && restaurantName != "7-Eleven"
-                    && restaurantName != "countries"
-                    && restaurantName != "ryokan"
-                    && restaurantName != "place"
-                    && restaurantName != "restaurante"
-                    && restaurantName != "river"
-                    && restaurantName != "shop"
-                    && restaurantName != "bakeries"
-                    && restaurantName != "hotel"
-                    && restaurantName != "supermercado"
-                    && restaurantName != "supermarket"
-                    && restaurantName != "cafes"
-                    && restaurantName != "hotel room"
-                    && restaurantName != "entrance"
-                    && restaurantName != "parks"
-                    && restaurantName != "store"
-                    && restaurantName != "building"
-                    && !restaurantName.StartsWith("#"))
+                if (!string.IsNullOrEmpty(restaurantName))
                 {
                     var mapsLink = $"http://maps.google.com/?q={restaurantName},{city}";
                     // TODO: Hacks
@@ -121,6 +99,9 @@ namespace Gluten.Core.DataProcessing.Service
 
         }
 
+        /// <summary>
+        /// Gets the current url shown in the browser and tries to extract a geo coordinate
+        /// </summary>
         public void UpdatePinList(string newUrl, Topic topic, ref int urlsCreated)
         {
             newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();

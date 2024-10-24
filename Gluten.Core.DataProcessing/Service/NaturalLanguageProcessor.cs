@@ -9,10 +9,16 @@ using System.Diagnostics;
 
 namespace Gluten.Core.DataProcessing.Service
 {
+    /// <summary>
+    /// Uses Azure AI to help process human written messages/topics
+    /// </summary>
     public class NaturalLanguageProcessor
     {
         TextAnalyticsClient _client;
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
         public NaturalLanguageProcessor(string endpointName, string apiKey)
         {
             Uri endpoint = new(endpointName);
@@ -20,6 +26,9 @@ namespace Gluten.Core.DataProcessing.Service
             _client = new(endpoint, credential);
         }
 
+        /// <summary>
+        /// Processes a message hopefully returns something useful in formatted fields
+        /// </summary>
         public List<CategorizedEntity> Process(string message)
         {
 

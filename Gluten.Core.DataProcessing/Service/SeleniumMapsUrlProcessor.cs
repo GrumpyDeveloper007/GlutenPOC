@@ -9,28 +9,36 @@ using System.Web;
 
 namespace Gluten.Core.DataProcessing.Service
 {
+    /// <summary>
+    /// Uses Selenium to extract information from web pages
+    /// </summary>
     public class SeleniumMapsUrlProcessor
     {
         private string _responsefileName = Environment.CurrentDirectory + "/Responses.txt";
         private ChromeDriver _driver = new ChromeDriver();
 
+        /// <summary>
+        /// Start Selenium
+        /// </summary>
         public void Start()
         {
             var devTools = (IDevTools)_driver;
 
             DevToolsSession session = devTools.GetDevToolsSession();
             var domains = session.GetVersionSpecificDomains<DevToolsSessionDomains>();
-
-            //var network = _driver.Manage().Network;
-            //network.StartMonitoring();
-
         }
 
+        /// <summary>
+        /// Gos to the specified Url
+        /// </summary>
         public void GoToUrl(string url)
         {
             _driver.Navigate().GoToUrl(url);
         }
 
+        /// <summary>
+        /// Gos to the specified url and waits for it to respond
+        /// </summary>
         public string GoAndWaitForUrlChange(string url)
         {
             try
@@ -53,6 +61,9 @@ namespace Gluten.Core.DataProcessing.Service
             return url;
         }
 
+        /// <summary>
+        /// Gets the current Url in the Selenium attached browser
+        /// </summary>
         public string GetCurrentUrl()
         {
             try { return _driver.Url; }
@@ -63,6 +74,9 @@ namespace Gluten.Core.DataProcessing.Service
             }
         }
 
+        /// <summary>
+        /// Stop Selenium
+        /// </summary>
         public void Stop()
         {
             _driver.ClearNetworkConditions();
@@ -70,7 +84,9 @@ namespace Gluten.Core.DataProcessing.Service
             _driver.Close();
         }
 
-
+        /// <summary>
+        /// Checks if a url is a valid google maps link, waits for the url to be updated to include the location
+        /// </summary>
         public string CheckUrlForMapLinks(string url)
         {
             // https://www.google.com/maps/place/onwa/@34.6785478,135.8161308,17z/data=!3m1!4b1!4m6!3m5!1s0x60013a30562e78d3:0xd712400d34ea1a7b!8m2!3d34.6785478!4d135.8161308!16s%2Fg%2F11f3whn720!5m1!1e4?entry=ttu&g_ep=EgoyMDI0MTAwOS4wIKXMDSoASAFQAw%3D%3D

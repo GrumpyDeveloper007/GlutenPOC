@@ -9,8 +9,14 @@ using System.Threading.Tasks;
 
 namespace Gluten.Core.Service
 {
+    /// <summary>
+    /// Some text (json) based database functions
+    /// </summary>
     public class TopicsHelper
     {
+        /// <summary>
+        /// Loads the specified file
+        /// </summary>
         public List<Topic>? TryLoadTopics(string fileName)
         {
             List<Topic>? topics = null;
@@ -24,6 +30,9 @@ namespace Gluten.Core.Service
             return topics;
         }
 
+        /// <summary>
+        /// Saves the specified data to a file
+        /// </summary>
         public void SaveTopics(string fileName, List<Topic> topics)
         {
             var json = JsonConvert.SerializeObject(topics, Formatting.Indented,

@@ -8,8 +8,15 @@ using System.Web;
 
 namespace Gluten.Core.Service
 {
+    /// <summary>
+    /// Some helper function for pin generation
+    /// </summary>
     public class PinHelper
     {
+        /// <summary>
+        /// Tries to extract a map location from the geo fields in the url for the centre of the map then tries to location 
+        /// the actual location from the data= section
+        /// </summary>
         public TopicPin? TryToGenerateMapPin(string url)
         {
             if (url == null) return null;
@@ -47,6 +54,9 @@ namespace Gluten.Core.Service
             return null;
         }
 
+        /// <summary>
+        /// Extracts the data= part of a google maps url and looks for the longitude and latitude
+        /// </summary>
         public void TryGetLocationFromDataParameter(string url, ref string geoLat, ref string geoLong)
         {
             var data = url.Substring(url.IndexOf("data=") + 5);
