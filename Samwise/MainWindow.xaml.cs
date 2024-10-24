@@ -24,6 +24,7 @@ namespace Samwise
         private SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor;
         private AIProcessingService _aIProcessingService;
         private TopicsHelper _topicsHelper = new TopicsHelper();
+        private PinHelper _pinHelper = new PinHelper();
 
         private int _index;
         private List<Topic> _topics;
@@ -47,13 +48,16 @@ namespace Samwise
 
                 var settings = config.GetRequiredSection("Values").Get<SettingValues>();
 
+                _topics = _topicsHelper.TryLoadTopics(DBFileName);
+
+                //FixIncorrectPins();
+
                 var nlp = new NaturalLanguageProcessor(settings.AIEndPoint, settings.AIApiKey);
                 _seleniumMapsUrlProcessor = new SeleniumMapsUrlProcessor();
                 _seleniumMapsUrlProcessor.Start();
 
                 _aIProcessingService = new AIProcessingService(nlp, _seleniumMapsUrlProcessor);
 
-                _topics = _topicsHelper.TryLoadTopics(DBFileName);
 
                 if (_topics == null)
                 {
@@ -65,12 +69,40 @@ namespace Samwise
             }
         }
 
+        private void FixIncorrectPins()
+        {
+            //https://www.google.com/maps/place/Otsuna+Sushi/@35.7281855,139.7452636,17z/data=!4m6!3m5!1s0x60188dbbed184005:0x88ffa854362ddcfd!8m2!3d35.7278459!4d139.7459932!16s%2Fg%2F1tsbm3f7!5m1!1e4?entry=ttu&g_ep=EgoyMDI0MTAyMS4xIKXMDSoASAFQAw%3D%3D
+            var incorrectPins = "";
+            for (int i = 0; i < _topics.Count; i++)
+            {
+                for (int t = 0; t < _topics[i].UrlsV2.Count; t++)
+                {
+                    if (_topics[i].UrlsV2[t].Pin != null)
+                    {
+                        var geolat = "";
+                        var geolong = "";
+                        _pinHelper.TryGetLocationFromDataParameter(_topics[i].UrlsV2[t].Url, ref geolat, ref geolong);
+
+                        if (geolong == "" || geolong == "") continue;
+                        if (_topics[i].UrlsV2[t].Pin.GeoLatatude != geolat
+                        || _topics[i].UrlsV2[t].Pin.GeoLongitude != geolong)
+                        {
+                            incorrectPins += $"{_topics[i].UrlsV2[t].Pin.Label}\r\n";
+                            _topics[i].UrlsV2[t].Pin.GeoLatatude = geolat;
+                            _topics[i].UrlsV2[t].Pin.GeoLongitude = geolong;
+                        }
+                    }
+                }
+            }
+            _topicsHelper.SaveTopics(DBFileName, _topics);
+        }
+
         private void ProcessNext()
         {
             Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
             _currentNewUrl = null;
             var restaurantName = "";
-            while (_currentNewUrl == null)
+            while (_currentNewUrl == null && _index < _topics.Count)
             {
                 _currentNewUrl = _aIProcessingService.ProcessTopic(_topics[_index], ref restaurantName);
                 if (_currentNewUrl == null)
@@ -83,6 +115,7 @@ namespace Samwise
             if (_currentNewUrl == null)
             {
                 txtUrl.Text = "";
+                txtMessage.Text = "";
             }
             else
             {

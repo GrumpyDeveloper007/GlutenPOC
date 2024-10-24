@@ -25,6 +25,8 @@ namespace Gluten.Core.Service
                     var lat = url.Substring(left, latEnd - left);
                     var lon = url.Substring(latEnd + 1, longEnd - latEnd - 1);
 
+                    TryGetLocationFromDataParameter(url, ref lat, ref lon);
+
                     var placeStart = url.IndexOf("/place/") + "/place/".Length;
                     var placeEnd = url.IndexOf("/", placeStart);
 
@@ -43,6 +45,60 @@ namespace Gluten.Core.Service
                 }
             }
             return null;
+        }
+
+        public void TryGetLocationFromDataParameter(string url, ref string geoLat, ref string geoLong)
+        {
+            var data = url.Substring(url.IndexOf("data=") + 5);
+            data = data.Substring(0, data.IndexOf("?"));
+            //!4m6
+            //!3m5
+            //!1s0x60188dbbed184005:0x88ffa854362ddcfd
+            //!8m2
+            //!3d35.7278459
+            //!4d139.7459932
+            //!16s%2Fg%2F1tsbm3f7
+            //!5m1
+            //!1e4?entry=ttu&g_ep=EgoyMDI0MTAyMS4xIKXMDSoASAFQAw%3D%3D
+            //
+            //"!4m6!3m5!1s0x6000e7edaea16e25:0xf84a6a950a120ac1!8m2!3d34.6725478!4d135.5034389!16s/g/11h7fg9snj?entry=ttu&g_ep=EgoyMDI0MTAxMy4wIKXMDSoASAFQAw=="
+            //!3m2
+            //!4b1
+            //!5s0x60188be649ab2755:0x641a401c0d2530d6
+            //!4m6
+            //!3m5
+            //!1s0x60188bfa2b1cd833:0x9f8c006e0631372d
+            //!8m2
+            //!3d35.6699646
+            //!4d139.7640287
+            //!16s/g/11r7kbm2_b?entry=ttu&g_ep=EgoyMDI0MTAyMS4xIKXMDSoASAFQAw==",
+
+            //!4m9
+            //!3m8
+            //!1s0x601cb702985745cb:0x215071c6749a7da3
+            //!5m2
+            //!4m1
+            //!1i2
+            //!8m2
+            //!3d35.5262059
+            //!4d137.5673175
+            //!16s/g/1tvtbf0y?entry=ttu&g_ep=EgoyMDI0MTAxMy4wIKXMDSoASAFQAw==
+            var tokens = data.Split('!');
+            if (tokens.Length > 4)
+            {
+                foreach (var item in tokens)
+                {
+                    if (item.StartsWith("3d"))
+                    {
+                        geoLat = item.Substring(2);
+                    }
+                    if (item.StartsWith("4d"))
+                    {
+                        geoLong = item.Substring(2);
+                    }
+                }
+
+            }
         }
     }
 }
