@@ -17,7 +17,7 @@ namespace Gluten.Core.Service
         /// Tries to extract a map location from the geo fields in the url for the centre of the map then tries to location 
         /// the actual location from the data= section
         /// </summary>
-        public TopicPin? TryToGenerateMapPin(string url)
+        public TopicPin? TryToGenerateMapPin(string url, bool onlyFromData)
         {
             if (url == null) return null;
             if (url.Contains("/@"))
@@ -32,7 +32,8 @@ namespace Gluten.Core.Service
                     var lat = url.Substring(left, latEnd - left);
                     var lon = url.Substring(latEnd + 1, longEnd - latEnd - 1);
 
-                    TryGetLocationFromDataParameter(url, ref lat, ref lon);
+                    var foundInData = TryGetLocationFromDataParameter(url, ref lat, ref lon);
+                    if (onlyFromData && !foundInData) return null;
 
                     var placeStart = url.IndexOf("/place/") + "/place/".Length;
                     var placeEnd = url.IndexOf("/", placeStart);
@@ -57,7 +58,7 @@ namespace Gluten.Core.Service
         /// <summary>
         /// Extracts the data= part of a google maps url and looks for the longitude and latitude
         /// </summary>
-        public void TryGetLocationFromDataParameter(string url, ref string geoLat, ref string geoLong)
+        public bool TryGetLocationFromDataParameter(string url, ref string geoLat, ref string geoLong)
         {
             var data = url.Substring(url.IndexOf("data=") + 5);
             data = data.Substring(0, data.IndexOf("?"));
@@ -94,6 +95,7 @@ namespace Gluten.Core.Service
             //!4d137.5673175
             //!16s/g/1tvtbf0y?entry=ttu&g_ep=EgoyMDI0MTAxMy4wIKXMDSoASAFQAw==
             var tokens = data.Split('!');
+            var found = false;
             if (tokens.Length > 4)
             {
                 foreach (var item in tokens)
@@ -105,10 +107,11 @@ namespace Gluten.Core.Service
                     if (item.StartsWith("4d"))
                     {
                         geoLong = item.Substring(2);
+                        found = true;
                     }
                 }
-
             }
+            return found;
         }
     }
 }

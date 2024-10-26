@@ -88,15 +88,21 @@ namespace Gluten.Core.DataProcessing.Service
                 // Skip if all we have is the city name
                 if (!string.IsNullOrEmpty(restaurantName))
                 {
-                    var mapsLink = $"http://maps.google.com/?q={restaurantName},{city}";
-                    // TODO: Hacks
-                    var newUrl = _seleniumMapsUrlProcessor.CheckUrlForMapLinks(mapsLink);
-                    return newUrl;
+                    return GetMapUrl($"{restaurantName},{city}");
                 }
             }
 
             return null;
 
+        }
+
+        public string GetMapUrl(string searchString)
+        {
+            var searchParameter = HttpUtility.UrlEncode(searchString);
+            var mapsLink = $"http://maps.google.com/?q={searchParameter}";
+            // TODO: Hacks
+            var newUrl = _seleniumMapsUrlProcessor.CheckUrlForMapLinks(mapsLink);
+            return newUrl;
         }
 
         /// <summary>
@@ -106,7 +112,7 @@ namespace Gluten.Core.DataProcessing.Service
         {
             newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
             newUrl = HttpUtility.UrlDecode(newUrl);
-            var pin = _pinHelper.TryToGenerateMapPin(newUrl);
+            var pin = _pinHelper.TryToGenerateMapPin(newUrl, false);
             if (pin != null)
             {
                 urlsCreated++;
@@ -119,9 +125,15 @@ namespace Gluten.Core.DataProcessing.Service
 
                 });
             }
-
         }
 
+        public TopicPin? GetPinFromCurrentUrl(bool onlyFromData)
+        {
+            var newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
+            newUrl = HttpUtility.UrlDecode(newUrl);
+            var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData);
+            return pin;
+        }
 
     }
 }

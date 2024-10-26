@@ -22,6 +22,12 @@ namespace Gluten.Data.TopicModel
 
         public string? FacebookUrl { get; set; }
 
+        public List<AiVenue>? AiVenues { get; set; }
+
+        public bool AiIsQuestion { get; set; }
+
+        public bool AiHasRestaurants { get; set; }
+
         public bool HasMapPin()
         {
             if (UrlsV2 == null) return false;

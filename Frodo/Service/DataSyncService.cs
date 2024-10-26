@@ -15,6 +15,7 @@ namespace Frodo.Service
         private TopicHelper _topicHelper = new TopicHelper();
         private TopicsHelper _topicsHelper = new TopicsHelper();
         private SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor;
+        private AnalyzeDocumentService _analyzeDocumentService = new AnalyzeDocumentService();
         private PinHelper _pinHelper = new PinHelper();
         private AIProcessingService _aIProcessingService;
 
@@ -170,7 +171,18 @@ namespace Frodo.Service
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nStarting AI processing");
-            //_aIProcessingService.AIProcessing(Topics);
+            for (int i = 0; i < Topics.Count; i++)
+            {
+                if (i < 0)
+                {
+                    Console.WriteLine(i);
+                    Topic? topic = Topics[i];
+                    var venue = _analyzeDocumentService.test(topic.Title, ref topic);
+                    topic.AiVenues = venue;
+                    _topicsHelper.SaveTopics(DBFileName, Topics);
+                }
+
+            }
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nComplete, exit...");
@@ -250,7 +262,7 @@ namespace Frodo.Service
                     }
                 }
                 currentTopic.Title = messageText;
-                currentTopic.FacebookUrl = story.wwwURL;
+                currentTopic.FacebookUrl = story?.wwwURL;
             }
 
         }

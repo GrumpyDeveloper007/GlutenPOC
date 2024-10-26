@@ -13,6 +13,11 @@ IConfigurationRoot config = new ConfigurationBuilder()
 
 var settings = config.GetRequiredSection("Values").Get<SettingValues>();
 
+if (settings == null)
+{
+    Console.WriteLine("Unable to load local.settings.json!");
+    return;
+}
 var nlp = new NaturalLanguageProcessor(settings.AIEndPoint, settings.AIApiKey);
 var selenium = new SeleniumMapsUrlProcessor();
 selenium.Start();

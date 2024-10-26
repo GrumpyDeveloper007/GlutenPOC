@@ -23,9 +23,53 @@ namespace Samwise
         private PinHelper _pinHelper = new PinHelper();
 
         private int _index;
+        private int _mapIndex;
         private List<Topic> _topics;
         private string _currentNewUrl;
         private string DBFileName = "D:\\Coding\\Gluten\\Topics.json";
+        private List<string> _addressFilters = new List<string>() {
+            "( exact location not specified)",
+            "(No specific address mentioned)",
+            "no specific address provided",
+            "Google Maps link",
+        };
+
+        private List<string> _nameFilters = new List<string>() {
+            "FamilyMart",
+            "Family Mart",
+            "7/11",
+            "7-11",
+            "7-Eleven",
+            "Groceries",
+            "Train Station",
+            "Supermarket",
+            "Unknown Restaurant",
+            "Tokyo shops",
+            "Google Drive"
+             };
+
+        private List<string> _okToSkip = new List<string>() {
+            "Starbucks",
+            "Lawson natural",
+            "Lawsons",
+            "Yakiniku",
+            "Bikkuri Donki",
+            "Mos Burger",
+            "Pierre Herme",
+            "Teddy's Better Burgers",
+            "Seijo Isshi",
+            "Seijo Ishii",
+            "Eggs 'n Things",
+            "Bio-Ral",
+            "Supermarket",
+            "Aeon",
+            "Domino’s",
+            "Choice",
+            "GFT's",
+            "Tesco",
+            "Subway",
+            "Kaldi"
+             };
 
 
         public MainWindow()
@@ -60,8 +104,10 @@ namespace Samwise
                     txtMessage.Text = "!! No topics available";
                     return;
                 }
+                _index = 315;
+                ShowData(_index);
 
-                ProcessNext();
+                //ProcessNext();
             }
         }
 
@@ -98,16 +144,92 @@ namespace Samwise
             Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
             _currentNewUrl = null;
             var restaurantName = "";
+
             while (_currentNewUrl == null && _index < _topics.Count)
             {
-                _currentNewUrl = _aIProcessingService.ProcessTopic(_topics[_index], ref restaurantName);
+                while (_currentNewUrl == null && _topics[_index].AiVenues != null && _mapIndex < _topics[_index].AiVenues.Count)
+                {
+                    ShowData(_index);
+                    // Dont process if we have already created a pin or name is in the skip list
+                    if (!IsInPlaceNameSkipList(_topics[_index].AiVenues[_mapIndex].PlaceName)
+                        && _topics[_index].AiVenues[_mapIndex].Pin == null
+                        && !string.IsNullOrWhiteSpace(_topics[_index].AiVenues[_mapIndex].PlaceName))
+                    {
+                        // TODO: work out or generate country
+                        restaurantName = _topics[_index].AiVenues[_mapIndex].PlaceName + ", Japan";
+                        _currentNewUrl = _aIProcessingService.GetMapUrl(restaurantName);
+
+                        if (_currentNewUrl != null)
+                        {
+                            var pin = _aIProcessingService.GetPinFromCurrentUrl(true);
+                            if (pin != null)
+                            {
+                                // Add pin to AiGenerated
+                                _topics[_index].AiVenues[_mapIndex].Pin = pin;
+                                _currentNewUrl = null;
+                                _topicsHelper.SaveTopics(DBFileName, _topics);
+                            }
+                            else
+                            {
+                                // pin now found - try with address string
+                                var address = FilterAddress(_topics[_index].AiVenues[_mapIndex].Address);
+                                if (!string.IsNullOrWhiteSpace(address))
+                                {
+                                    restaurantName = _topics[_index].AiVenues[_mapIndex].PlaceName + " " + address;
+                                    _currentNewUrl = _aIProcessingService.GetMapUrl(restaurantName);
+
+                                    pin = _aIProcessingService.GetPinFromCurrentUrl(true);
+                                    if (pin != null)
+                                    {
+                                        // Add pin to AiGenerated
+                                        _topics[_index].AiVenues[_mapIndex].Pin = pin;
+                                        _currentNewUrl = null;
+                                        _topicsHelper.SaveTopics(DBFileName, _topics);
+                                    }
+                                    else
+                                    {
+
+                                    }
+                                }
+
+                            }
+                        }
+                    }
+
+                    if (_currentNewUrl != null
+                        && IsInOkToSkip(restaurantName))
+                    {
+                        // If we cannot find a map location and the name is in the 'ok to skip' list we continue
+                        // e.g. restaurant chains without specific address info
+                        _currentNewUrl = null;
+                    }
+                    // offline process
+                    _currentNewUrl = null;
+
+                    if (_currentNewUrl == null) _mapIndex++;
+                }
+
                 if (_currentNewUrl == null)
                 {
                     _index++;
+                    _mapIndex = 0;
                 }
             }
-            ShowData(_index);
 
+
+
+
+            // TODO: Refactor
+            //while (_currentNewUrl == null && _index < _topics.Count)
+            //{
+            //    _currentNewUrl = _aIProcessingService.ProcessTopic(_topics[_index], ref restaurantName);
+            //    if (_currentNewUrl == null)
+            //    {
+            //        _index++;
+            //    }
+            //}
+
+            ShowData(_index);
             if (_currentNewUrl == null)
             {
                 txtUrl.Text = "";
@@ -117,10 +239,47 @@ namespace Samwise
             {
                 txtUrl.Text = _currentNewUrl;
             }
-            txtSearchToken.Text = restaurantName;
+            //txtSearchToken.Text = restaurantName;
             Mouse.OverrideCursor = null;
-
         }
+
+        private string FilterAddress(string address)
+        {
+            if (address == null) return null;
+            foreach (var filter in _addressFilters)
+            {
+                address = address.ToLower().Replace(filter.ToLower(), "");
+            }
+            return address.Trim();
+        }
+
+        private bool IsInPlaceNameSkipList(string placeName)
+        {
+            if (placeName == null) return false;
+            var found = false;
+            foreach (var nameFilter in _nameFilters)
+            {
+                if (placeName.ToLower().Contains(nameFilter.ToLower()))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private bool IsInOkToSkip(string placeName)
+        {
+            var found = false;
+            foreach (var nameFilter in _okToSkip)
+            {
+                if (placeName.ToLower().Contains(nameFilter.ToLower()))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
 
         private void ShowData(int i)
         {
@@ -129,11 +288,23 @@ namespace Samwise
 
             txtMessage.Text = _topics[i].Title;
             var tokens = "";
-            if (_topics[i].AiTitleInfoV2 != null)
+            /*if (_topics[i].AiTitleInfoV2 != null)
             {
                 foreach (var item in _topics[i].AiTitleInfoV2)
                 {
                     tokens += $"{item.Category} : {item.Text}\n";
+                }
+            }*/
+            if (_topics[i].AiVenues != null)
+            {
+                foreach (var item in _topics[i].AiVenues)
+                {
+                    item.Address = FilterAddress(item.Address?.Trim());
+
+                    if (!IsInPlaceNameSkipList(item.PlaceName))
+                    {
+                        tokens += $"{item.PlaceName} : {item.Address}\n";
+                    }
                 }
             }
             txtTokenList.Text = tokens;
@@ -143,16 +314,25 @@ namespace Samwise
         private void butAccept_Click(object sender, RoutedEventArgs e)
         {
             int counter = 0;
-            _aIProcessingService.UpdatePinList(_currentNewUrl, _topics[_index], ref counter);
+            //_aIProcessingService.UpdatePinList(_currentNewUrl, _topics[_index], ref counter);
+
+            var pin = _aIProcessingService.GetPinFromCurrentUrl(true);
+            if (pin != null)
+            {
+                // Add pin to AiGenerated
+                _topics[_index].AiVenues[_mapIndex].Pin = pin;
+            }
             _topicsHelper.SaveTopics(DBFileName, _topics);
-            _index++;
+            _mapIndex++;
+            //_index++;
             ProcessNext();
         }
 
         private void butReject_Click(object sender, RoutedEventArgs e)
         {
             _topicsHelper.SaveTopics(DBFileName, _topics);
-            _index++;
+            _mapIndex++;
+            //_index++;
             ProcessNext();
         }
 
@@ -165,6 +345,26 @@ namespace Samwise
         {
             var url = _topics[_index].FacebookUrl;
             BrowserHelper.OpenUrl(url);
+        }
+
+        private void butLeft_Click(object sender, RoutedEventArgs e)
+        {
+            if (_index > 0)
+            {
+                _index--;
+                ShowData(_index);
+            }
+
+
+        }
+
+        private void butRight_Click(object sender, RoutedEventArgs e)
+        {
+            if (_index < _topics.Count)
+            {
+                _index++;
+                ShowData(_index);
+            }
         }
     }
 }
