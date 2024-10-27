@@ -61,7 +61,10 @@ namespace Gluten.Core.Service
         public bool TryGetLocationFromDataParameter(string url, ref string geoLat, ref string geoLong)
         {
             var data = url.Substring(url.IndexOf("data=") + 5);
-            data = data.Substring(0, data.IndexOf("?"));
+            if (data.IndexOf("?") > 0)
+            {
+                data = data.Substring(0, data.IndexOf("?"));
+            }
             //!4m6
             //!3m5
             //!1s0x60188dbbed184005:0x88ffa854362ddcfd
