@@ -1,12 +1,15 @@
-﻿// See https://aka.ms/new-console-template for more information
-using Smeagol;
+﻿using Smeagol;
+using Smeagol.Services;
+
+
+var data = new DataService();
+Console.WriteLine("Loading...");
+
+var sniffer = new FacebookSniffer(data);
+sniffer.Start();
+Console.WriteLine("Listening for DB group API responses.");
 
 Console.WriteLine("Press the anykey to exit.");
-
-var sniffer = new FacebookSniffer();
-sniffer.Start();
-
-
 Console.ReadKey();
 
 sniffer.Close();

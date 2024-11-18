@@ -2,6 +2,7 @@
 using OpenQA.Selenium.DevTools;
 using OpenQA.Selenium;
 using System.Diagnostics;
+using Smeagol.Services;
 
 namespace Smeagol;
 
@@ -10,12 +11,19 @@ namespace Smeagol;
 /// </summary>
 internal class FacebookSniffer
 {
-    private string _responsefileName = Environment.CurrentDirectory + "/Responses2.txt";
+    private string _responsefileName = Environment.CurrentDirectory + "/Responses.txt";
     private ChromeDriver _driver;
+    private DataService _dataService;
+
+    public FacebookSniffer(DataService dataService)
+    {
+        _driver = new ChromeDriver();
+        _dataService = dataService;
+    }
 
     public void Start()
     {
-        _driver = new ChromeDriver();
+        _dataService.ReadFileLineByLine(_responsefileName);
 
         var devTools = (OpenQA.Selenium.DevTools.IDevTools)_driver;
 
@@ -42,17 +50,15 @@ internal class FacebookSniffer
 
     private void Session_DevToolsEventReceived(object? sender, DevToolsEventReceivedEventArgs e)
     {
-        //foreach (var i in e.EventData.AsArray() )
-        //{
-        //    if (i.AsObject().)
-        //}
         if (e.EventName != "webSocketFrameReceived" && e.EventName != "webSocketFrameSent" && e.EventName != "dataReceived")
+        {
             //Debug.WriteLine($"Event: {e.EventName} - {e.EventData["request"]?["url"]}");
+        }
 
-            if (e.EventName == "responseReceived")
-            {
-                //Debug.WriteLine($"responseReceived: requestId : {e.EventData["requestId"]} - {e.EventData["response"]?["url"]}");
-            }
+        if (e.EventName == "responseReceived")
+        {
+            //Debug.WriteLine($"responseReceived: requestId : {e.EventData["requestId"]} - {e.EventData["response"]?["url"]}");
+        }
         if (e.EventName == "loadingFinished")
         {
             //Debug.WriteLine($"requestId : {e.EventData["requestId"]} - {e.EventData["encodedDataLength"]}");
@@ -68,16 +74,11 @@ internal class FacebookSniffer
         {
             //Debug.WriteLine($"dataReceived : {e.EventData["requestId"]} - {e.EventData["encodedDataLength"]}");
         }
-
-
-
     }
 
     private void Network_NetworkRequestSent(object? sender, NetworkRequestSentEventArgs e)
     {
         Debug.WriteLine("New Work Response received");
-        //Debug.WriteLine($"RequestId: {e.RequestId}");
-        //Debug.WriteLine($"RequestUrl: {e.RequestUrl}");
     }
 
     private void Network_NetworkResponseReceived(object? sender, NetworkResponseReceivedEventArgs e)
@@ -92,12 +93,17 @@ internal class FacebookSniffer
             // TODO: Create a better locking solution or post to a DB
             try
             {
-                System.IO.File.AppendAllText(_responsefileName, e.ResponseBody + "/r/n");
+                if (!_dataService.LoadLine(e.ResponseBody))
+                {
+                    System.IO.File.AppendAllText(_responsefileName, e.ResponseBody + "/r/n");
+                    Console.WriteLine("Response saved");
+                }
             }
             catch (Exception ex)
             {
-
+                Console.WriteLine(ex.Message);
             }
         }
     }
+
 }
