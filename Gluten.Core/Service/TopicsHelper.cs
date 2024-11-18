@@ -17,14 +17,14 @@ namespace Gluten.Core.Service
         /// <summary>
         /// Loads the specified file
         /// </summary>
-        public List<Topic>? TryLoadTopics(string fileName)
+        public List<DetailedTopic>? TryLoadTopics(string fileName)
         {
-            List<Topic>? topics = null;
+            List<DetailedTopic>? topics = null;
             if (File.Exists(fileName))
             {
                 string json;
                 json = File.ReadAllText(fileName);
-                var tempTopics = JsonConvert.DeserializeObject<List<Topic>>(json);
+                var tempTopics = JsonConvert.DeserializeObject<List<DetailedTopic>>(json);
                 if (tempTopics != null) { topics = tempTopics; }
             }
             return topics;
@@ -33,7 +33,24 @@ namespace Gluten.Core.Service
         /// <summary>
         /// Saves the specified data to a file
         /// </summary>
-        public void SaveTopics(string fileName, List<Topic> topics)
+        public void SaveTopics(string fileName, List<DetailedTopic> topics)
+        {
+            var json = JsonConvert.SerializeObject(topics, Formatting.Indented,
+                new JsonConverter[] { new StringEnumConverter() });
+            File.WriteAllText(fileName, json);
+        }
+
+        public void SaveTopics<typeToSave>(string fileName, typeToSave topics)
+        {
+            var json = JsonConvert.SerializeObject(topics, Formatting.Indented,
+                new JsonConverter[] { new StringEnumConverter() });
+            File.WriteAllText(fileName, json);
+        }
+
+        /// <summary>
+        /// Exports the information required by the client app to a file
+        /// </summary>
+        public void ExportTopics(string fileName, List<Topic> topics)
         {
             var json = JsonConvert.SerializeObject(topics, Formatting.Indented,
                 new JsonConverter[] { new StringEnumConverter() });

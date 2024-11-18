@@ -27,7 +27,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// <summary>
         /// Processes all the topics in a list
         /// </summary>
-        public void AIProcessing(List<Topic> topics)
+        public void AIProcessing(List<DetailedTopic> topics)
         {
             int aiQueries = 0;
             int urlsCreated = 0;
@@ -54,7 +54,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// <summary>
         /// Tries to extract location information from a single topic title
         /// </summary>
-        public string? ProcessTopic(Topic topic, ref string restaurantName)
+        public string? ProcessTopic(DetailedTopic topic, ref string restaurantName)
         {
             if (!topic.HasMapPin() && topic.AiParsed == false)
             {
@@ -108,7 +108,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// <summary>
         /// Gets the current url shown in the browser and tries to extract a geo coordinate
         /// </summary>
-        public void UpdatePinList(string newUrl, Topic topic, ref int urlsCreated)
+        public void UpdatePinList(string newUrl, DetailedTopic topic, ref int urlsCreated)
         {
             newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
             newUrl = HttpUtility.UrlDecode(newUrl);

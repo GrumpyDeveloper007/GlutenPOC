@@ -7,22 +7,31 @@ using System.Threading.Tasks;
 
 namespace Gluten.Data.TopicModel
 {
+    /// <summary>
+    /// Represents the fileds needed by the client app
+    /// </summary>
     public class Topic
     {
         public required string Title { get; set; }
+
+        public string? FacebookUrl { get; set; }
+        public string? NodeID { get; set; }
+
+        public List<AiVenue>? AiVenues { get; set; }
+
+        public List<TopicLink>? UrlsV2 { get; set; }
+    }
+
+
+    public class DetailedTopic : Topic
+    {
         public List<Response> ResponsesV2 { get; set; } = new List<Response>();
 
         public List<string>? HashTags { get; set; } = null;
 
-        public List<TopicLink>? UrlsV2 { get; set; }
-
         public List<AiInformation>? AiTitleInfoV2 { get; set; }
 
         public bool AiParsed { get; set; } = false;
-
-        public string? FacebookUrl { get; set; }
-
-        public List<AiVenue>? AiVenues { get; set; }
 
         public bool AiIsQuestion { get; set; }
 
@@ -37,8 +46,6 @@ namespace Gluten.Data.TopicModel
             }
             return false;
         }
-
-        public string? NodeID { get; set; }
 
         public string GetHashTags()
         {

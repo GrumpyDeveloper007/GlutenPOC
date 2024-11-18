@@ -1,9 +1,12 @@
-﻿using Azure.AI.TextAnalytics;
+﻿using AutoMapper;
+using Azure.AI.TextAnalytics;
 using Frodo.FacebookModel;
 using Gluten.Core.DataProcessing.Service;
 using Gluten.Core.Service;
+using Gluten.Data;
 using Gluten.Data.TopicModel;
 using Newtonsoft.Json;
+using System;
 
 namespace Frodo.Service
 {
@@ -19,8 +22,9 @@ namespace Frodo.Service
         private PinHelper _pinHelper = new PinHelper();
         private AIProcessingService _aIProcessingService;
 
-        public List<Topic> Topics = new List<Topic>();
+        public List<DetailedTopic> Topics = new List<DetailedTopic>();
         private string DBFileName = "D:\\Coding\\Gluten\\Topics.json";
+        private string ExportDBFileName = "D:\\Coding\\Gluten\\TopicsExport.json";
 
         public DataSyncService(AIProcessingService aIProcessingService,
             SeleniumMapsUrlProcessor seleniumMapsUrlProcessor)
@@ -39,6 +43,8 @@ namespace Frodo.Service
             }
 
             ReadFileLineByLine("D:\\Coding\\Gluten\\Smeagol\\bin\\Debug\\net8.0\\Responses.txt");
+
+            _analyzeDocumentService.OpenAgent();
 
             int linkCount = 0;
             int mapsLinkCount = 0;
@@ -82,7 +88,7 @@ namespace Frodo.Service
                         {
                             var newUrl = _seleniumMapsUrlProcessor.CheckUrlForMapLinks(url);
                             topic.UrlsV2[t].Url = newUrl;
-                            topic.UrlsV2[t].Pin = _pinHelper.TryToGenerateMapPin(newUrl);
+                            topic.UrlsV2[t].Pin = _pinHelper.TryToGenerateMapPin(newUrl, false);
                             mapsCallCount++;
                         }
 
@@ -93,9 +99,10 @@ namespace Frodo.Service
                 // Look for links in the responses
                 for (int z = 0; z < topic.ResponsesV2.Count; z++)
                 {
-                    if (topic.ResponsesV2[z].Message == null) continue;
+                    var message = topic.ResponsesV2[z].Message;
+                    if (message == null) continue;
 
-                    var newLinks = StringHelper.ExtractUrls(topic.ResponsesV2[z].Message);
+                    var newLinks = StringHelper.ExtractUrls(message);
                     if (topic.ResponsesV2[z].Links == null)
                     {
                         topic.ResponsesV2[z].Links = newLinks;
@@ -115,7 +122,7 @@ namespace Frodo.Service
                                 {
                                     var newUrl = _seleniumMapsUrlProcessor.CheckUrlForMapLinks(url);
                                     links[t].Url = newUrl;
-                                    links[t].Pin = _pinHelper.TryToGenerateMapPin(newUrl);
+                                    links[t].Pin = _pinHelper.TryToGenerateMapPin(newUrl, false);
                                     mapsCallCount++;
                                 }
 
@@ -176,18 +183,126 @@ namespace Frodo.Service
                 if (i < 0)
                 {
                     Console.WriteLine(i);
-                    Topic? topic = Topics[i];
-                    var venue = _analyzeDocumentService.test(topic.Title, ref topic);
+                    DetailedTopic? topic = Topics[i];
+                    var venue = _analyzeDocumentService.ExtractRestaurantNamesFromTitle(topic.Title, ref topic);
                     topic.AiVenues = venue;
                     _topicsHelper.SaveTopics(DBFileName, Topics);
                 }
 
             }
 
-            Console.WriteLine("--------------------------------------");
-            Console.WriteLine($"\r\nComplete, exit...");
 
             _topicsHelper.SaveTopics(DBFileName, Topics);
+
+            var config = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<DetailedTopic, Topic>();
+                cfg.CreateMap<DetailedTopic, PinLinkInfo>();
+                cfg.CreateMap<Topic, PinLinkInfo>();
+            });
+
+            var mapper = config.CreateMapper();
+            List<Topic> tempTopics = new List<Topic>();
+            foreach (var t in Topics)
+            {
+                var newT = mapper.Map<Topic>(t);
+                tempTopics.Add(newT);
+            }
+            var pins = ExtractPinExport(tempTopics, mapper);
+
+            var ii = 0;
+            foreach (var pin in pins)
+            {
+                var message = "";
+                foreach (var item in pin.Topics)
+                {
+                    message += " " + item.Title;
+                }
+                pin.Description = _analyzeDocumentService.ExtractDescriptionTitle(message, pin.Label);
+                _topicsHelper.SaveTopics<List<PinTopic>>(ExportDBFileName, pins);
+                Console.WriteLine($" {ii}");
+                ii++;
+            }
+
+            _topicsHelper.SaveTopics<List<PinTopic>>(ExportDBFileName, pins);
+
+            //_topicsHelper.ExportTopics(ExportDBFileName, tempTopics);
+
+            Console.WriteLine("--------------------------------------");
+            Console.WriteLine($"\r\nComplete, exit...");
+        }
+
+        private List<PinTopic> ExtractPinExport(List<Topic> topics, IMapper mapper)
+        {
+            var pins = new List<PinTopic>();
+            foreach (var topic in topics)
+            {
+                var newT = mapper.Map<PinLinkInfo>(topic);
+                if (topic.AiVenues != null)
+                {
+                    foreach (var aiVenue in topic.AiVenues)
+                    {
+                        var existingPin = IsPinInList(aiVenue.Pin, pins);
+                        AddIfNotExists(pins, existingPin, newT, aiVenue.Pin);
+                    }
+                }
+
+                if (topic.UrlsV2 != null)
+                {
+                    foreach (var url in topic.UrlsV2)
+                    {
+                        var existingPin = IsPinInList(url.Pin, pins);
+                        AddIfNotExists(pins, existingPin, newT, url.Pin);
+                    }
+                }
+            }
+            return pins;
+        }
+
+        private void AddIfNotExists(List<PinTopic> pins, PinTopic? matchingPinTopic, PinLinkInfo topicToAdd, TopicPin? pinToAdd)
+        {
+            if (pinToAdd == null) return;
+            if (pinToAdd == null) return;
+            if (string.IsNullOrEmpty(pinToAdd.GeoLatatude)) return;
+            if (string.IsNullOrEmpty(pinToAdd.GeoLongitude)) return;
+
+            // if pin not found, add it to the list
+            if (matchingPinTopic == null)
+            {
+                pins.Add(new PinTopic
+                {
+                    GeoLatatude = double.Parse(pinToAdd.GeoLatatude),
+                    GeoLongitude = double.Parse(pinToAdd.GeoLongitude),
+                    Label = pinToAdd.Label,
+                    Topics = new List<PinLinkInfo> { topicToAdd }
+                });
+                return;
+            }
+            // dont add duplicates
+            if (matchingPinTopic.Topics == null) matchingPinTopic.Topics = new List<PinLinkInfo>();
+            foreach (var existingTopic in matchingPinTopic.Topics)
+            {
+                if (existingTopic.NodeID == topicToAdd.NodeID)
+                {
+                    return;
+                }
+            }
+            matchingPinTopic.Topics.Add(topicToAdd);
+        }
+
+        private PinTopic? IsPinInList(TopicPin? topicPin, List<PinTopic> pins)
+        {
+            foreach (var pin in pins)
+            {
+                if (topicPin != null &&
+                    topicPin.GeoLatatude != null &&
+                    topicPin.GeoLongitude != null &&
+                    pin.GeoLatatude == double.Parse(topicPin.GeoLatatude) && pin.GeoLongitude == double.Parse(topicPin.GeoLongitude))
+                {
+                    return pin;
+                }
+            }
+            return null;
         }
 
         void ReadFileLineByLine(string filePath)
@@ -249,7 +364,7 @@ namespace Frodo.Service
                     // TODO: Log?
                     return;
                 }
-                Topic? currentTopic = _topicHelper.GetOrCreateTopic(Topics, nodeId, messageText);
+                DetailedTopic? currentTopic = _topicHelper.GetOrCreateTopic(Topics, nodeId, messageText);
 
                 var story2 = a.feedback.story.story_ufi_container.story.feedback_context.interesting_top_level_comments;
                 foreach (var feedback in story2)
@@ -267,7 +382,7 @@ namespace Frodo.Service
 
         }
 
-        private void CheckForUpdatedUrls(Topic topic, List<TopicLink> newUrls)
+        private void CheckForUpdatedUrls(DetailedTopic topic, List<TopicLink> newUrls)
         {
             if (topic.UrlsV2 == null) return;
             if (topic.UrlsV2.Count != newUrls.Count)

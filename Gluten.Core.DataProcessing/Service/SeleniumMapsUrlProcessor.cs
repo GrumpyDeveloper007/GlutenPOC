@@ -16,11 +16,12 @@ namespace Gluten.Core.DataProcessing.Service
     {
         private string _responsefileName = Environment.CurrentDirectory + "/Responses.txt";
         private ChromeDriver _driver = new ChromeDriver();
+        private bool _started = false;
 
         /// <summary>
         /// Start Selenium
         /// </summary>
-        public void Start()
+        private void Start()
         {
             var devTools = (IDevTools)_driver;
 
@@ -33,6 +34,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public void GoToUrl(string url)
         {
+            if (!_started) Start();
             _driver.Navigate().GoToUrl(url);
         }
 
@@ -41,6 +43,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public string GoAndWaitForUrlChange(string url)
         {
+            if (!_started) Start();
             try
             {
                 var existingUrl = url;
@@ -66,6 +69,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public string GetCurrentUrl()
         {
+            if (!_started) Start();
             try { return _driver.Url; }
             catch (Exception ex)
             {
@@ -79,6 +83,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public void Stop()
         {
+            if (!_started) return;
             _driver.ClearNetworkConditions();
             _driver.CloseDevToolsSession();
             _driver.Close();

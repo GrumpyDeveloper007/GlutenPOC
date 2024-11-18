@@ -10,7 +10,7 @@ namespace Frodo.Service
 {
     internal class MapsUrlProcessor
     {
-        public bool ProcessMapsUrl(Topic topic, int index, string url)
+        public bool ProcessMapsUrl(DetailedTopic topic, int index, string url)
         {
             if (topic.UrlsV2 == null) return true;
             HttpService httpService = new HttpService();

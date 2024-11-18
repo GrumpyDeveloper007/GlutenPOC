@@ -15,7 +15,7 @@ namespace Gluten.Core.Service
         /// <summary>
         /// Checks to see if a response exists for the given nodeId, selects it or creates a new one
         /// </summary>
-        public Response GetOrCreateResponse(Topic currentTopic, string nodeId)
+        public Response GetOrCreateResponse(DetailedTopic currentTopic, string nodeId)
         {
             Response? currentResponse = null;
             foreach (var response in currentTopic.ResponsesV2)
@@ -41,9 +41,9 @@ namespace Gluten.Core.Service
         /// <summary>
         /// Checks to see if a topic exists for the given nodeId, selects it or creates a new one
         /// </summary>
-        public Topic GetOrCreateTopic(List<Topic> topics, string nodeId, string messageText)
+        public DetailedTopic GetOrCreateTopic(List<DetailedTopic> topics, string nodeId, string messageText)
         {
-            Topic? currentTopic = null;
+            DetailedTopic? currentTopic = null;
             foreach (var topic in topics)
             {
                 if (topic.NodeID == nodeId)
@@ -54,7 +54,7 @@ namespace Gluten.Core.Service
             }
             if (currentTopic == null)
             {
-                currentTopic = new Topic()
+                currentTopic = new DetailedTopic()
                 {
                     NodeID = nodeId,
                     Title = messageText,

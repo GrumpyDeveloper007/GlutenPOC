@@ -20,7 +20,6 @@ if (settings == null)
 }
 var nlp = new NaturalLanguageProcessor(settings.AIEndPoint, settings.AIApiKey);
 var selenium = new SeleniumMapsUrlProcessor();
-selenium.Start();
 
 var ai = new AIProcessingService(nlp, selenium);
 var service = new DataSyncService(ai, selenium);
