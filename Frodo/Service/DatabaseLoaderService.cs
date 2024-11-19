@@ -26,13 +26,16 @@ namespace Frodo.Service
         {
             string json;
             json = File.ReadAllText(PinCacheDBFileName);
-            var pins = JsonConvert.DeserializeObject<Dictionary<string, TopicPin>>(json);
+            var pins = JsonConvert.DeserializeObject<Dictionary<string, TopicPinCache>>(json);
             if (pins != null)
             {
                 _pinHelper = new PinHelper(pins);
             }
             return _pinHelper;
         }
+
+
+
         public void SavePinDB()
         {
             var pinCache = _pinHelper.GetCache();

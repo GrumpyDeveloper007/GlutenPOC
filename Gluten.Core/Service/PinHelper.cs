@@ -13,23 +13,36 @@ namespace Gluten.Core.Service
     /// </summary>
     public class PinHelper
     {
-        private Dictionary<string, TopicPin> _pinCache;
+        private Dictionary<string, TopicPinCache> _pinCache;
 
-        public PinHelper(Dictionary<string, TopicPin> pinCache)
+        public PinHelper(Dictionary<string, TopicPinCache> pinCache)
         {
             _pinCache = pinCache;
         }
 
-        public TopicPin? TryGetPin(string? placeName)
+        public TopicPinCache? TryGetPin(string? placeName)
         {
             if (placeName == null) return null;
             if (_pinCache == null) return null;
             if (_pinCache.TryGetValue(placeName, out var value))
                 return value;
+
+            foreach (var item in _pinCache.Values)
+            {
+                var i = item.PlaceName?.ToLower().StartsWith(placeName.ToLower());
+                if (
+                    (item.PlaceName != null && item.PlaceName.ToLower().StartsWith(placeName.ToLower()))
+                    ||
+                    (item.Label != null && item.Label.ToLower().StartsWith(placeName.ToLower()))
+                    )
+                {
+                    return item;
+                }
+            }
             return null;
         }
 
-        public Dictionary<string, TopicPin> GetCache()
+        public Dictionary<string, TopicPinCache> GetCache()
         {
             return _pinCache;
         }
@@ -38,10 +51,8 @@ namespace Gluten.Core.Service
         /// Tries to extract a map location from the geo fields in the url for the centre of the map then tries to location 
         /// the actual location from the data= section
         /// </summary>
-        public TopicPin? TryToGenerateMapPin(string url, bool onlyFromData)
+        public TopicPinCache? TryToGenerateMapPin(string url, bool onlyFromData, string searchString)
         {
-            if (_pinCache == null) _pinCache = new Dictionary<string, TopicPin>();
-
             if (url == null) return null;
             var mapsUrl = url;
             url = HttpUtility.UrlDecode(url);
@@ -79,20 +90,21 @@ namespace Gluten.Core.Service
 
             //"https://www.google.com/maps/preview/place/Japan,+%E3%80%92630-8123+Nara,+Sanjoomiyacho,+3%E2%88%9223+onwa/@34.6785478,135.8161308,3281a,13.1y/data\\\\u003d!4m2!3m1!1s0x60013a30562e78d3:0xd712400d34ea1a7b\\"
             //                                          "Japan,+%E3%80%92630-8123+Nara,+Sanjoomiyac"
-            var placeName = url.Substring(placeStart, placeEnd - placeStart);
-            placeName = HttpUtility.UrlDecode(placeName);
+            var label = url.Substring(placeStart, placeEnd - placeStart);
+            label = HttpUtility.UrlDecode(label);
 
-            var newPin = new TopicPin()
+            var newPin = new TopicPinCache()
             {
-                Label = placeName,
-                Address = placeName,
+                Label = label,
+                Address = label,
                 GeoLatatude = lat,
                 GeoLongitude = lon,
                 MapsUrl = mapsUrl,
+                PlaceName = searchString
             };
-            if (!_pinCache.TryGetValue(placeName, out var _))
+            if (!_pinCache.TryGetValue(label, out var _))
             {
-                _pinCache.Add(placeName, newPin);
+                _pinCache.Add(label, newPin);
             }
             return newPin;
         }

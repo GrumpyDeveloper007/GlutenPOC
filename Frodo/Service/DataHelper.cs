@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Gluten.Core.DataProcessing.Service;
 using Gluten.Data.TopicModel;
 using System;
 using System.Collections.Generic;
@@ -10,11 +11,11 @@ namespace Frodo.Service
 {
     internal static class DataHelper
     {
-        public static List<PinTopic> ExtractPinExport(List<PinTopic> pins, List<Topic> topics, IMapper mapper)
+        public static List<PinTopic> ExtractPinExport(List<PinTopic> pins, List<Topic> topics, MappingService mapper)
         {
             foreach (var topic in topics)
             {
-                var newT = mapper.Map<PinLinkInfo>(topic);
+                var newT = mapper.Map<PinLinkInfo, Topic>(topic);
                 if (topic.AiVenues != null)
                 {
                     foreach (var aiVenue in topic.AiVenues)

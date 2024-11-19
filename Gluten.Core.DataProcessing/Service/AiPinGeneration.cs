@@ -1,32 +1,43 @@
 ﻿using Gluten.Data.TopicModel;
+using OpenQA.Selenium.BiDi.Modules.BrowsingContext;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Gluten.Core.DataProcessing.Service
 {
     public class AiPinGeneration
     {
         private AIProcessingService _aIProcessingService;
+        private MappingService _mappingService;
 
-        public AiPinGeneration(AIProcessingService aIProcessingService)
+        public AiPinGeneration(AIProcessingService aIProcessingService, MappingService mappingService)
         {
             _aIProcessingService = aIProcessingService;
+            _mappingService = mappingService;
         }
 
         private List<string> _addressFilters = new List<string>() {
             "( exact location not specified)",
             "(No specific address mentioned)",
-            "no specific address provided",
             "(no address provided)",
-            "Google Maps link",
             "(no specific address given)",
             "(no street address provided in the text)",
+            "<No specific address provided in the given text>",
             "<no address provided in the original text>",
-            "Not specified"
+            "<address not provided in original text>",
+            "<Not provided in original text>",
+            "<insert address here>",
+            "<insert address>",
+            "<unknown>",
+            "<not provided>",
+            "no specific address provided",
+            "Not specified",
+            "Google Maps link",
         };
 
         private List<string> _nameFilters = new List<string>() {
@@ -45,7 +56,8 @@ namespace Gluten.Core.DataProcessing.Service
             "Their website",
             "Sheraton",
             "Disney hotels",
-            "Universal Studios"
+            "Universal Studios",
+            "Gate Building"
              };
 
         private List<string> _okToSkip = new List<string>() {
@@ -167,14 +179,18 @@ namespace Gluten.Core.DataProcessing.Service
 
                 if (currentNewUrl != null)
                 {
-                    var pin = _aIProcessingService.GetPinFromCurrentUrl(true);
+                    var pin = _aIProcessingService.GetPinFromCurrentUrl(true, venue.PlaceName);
                     if (pin != null)
                     {
                         if (!_aIProcessingService.IsPermanentlyClosed(pin.Label, out string meta))
                         {
                             // Add pin to AiGenerated
                             pin.MetaHtml = meta;
-                            venue.Pin = pin;
+                            venue.Pin = _mappingService.Map<TopicPin, TopicPinCache>(pin);
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Permanently Closed");
                         }
                         currentNewUrl = null;
 
@@ -189,7 +205,7 @@ namespace Gluten.Core.DataProcessing.Service
                             restaurantName = venue.PlaceName + " " + address;
                             currentNewUrl = _aIProcessingService.GetMapUrl(restaurantName);
 
-                            pin = _aIProcessingService.GetPinFromCurrentUrl(true);
+                            pin = _aIProcessingService.GetPinFromCurrentUrl(true, venue.PlaceName);
                             if (pin != null)
                             {
                                 // Add pin to AiGenerated
@@ -197,7 +213,11 @@ namespace Gluten.Core.DataProcessing.Service
                                 {
                                     pin.MetaHtml = meta;
                                     // Add pin to AiGenerated
-                                    venue.Pin = pin;
+                                    venue.Pin = _mappingService.Map<TopicPin, TopicPinCache>(pin);
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"Permanently Closed");
                                 }
                                 currentNewUrl = null;
                             }

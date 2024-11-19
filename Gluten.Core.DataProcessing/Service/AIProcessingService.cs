@@ -14,16 +14,18 @@ namespace Gluten.Core.DataProcessing.Service
         private NaturalLanguageProcessor _naturalLanguageProcessor;
         private PinHelper _pinHelper;
         private SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor;
+        private MappingService _mappingService;
 
         /// <summary>
         /// Constructor
         /// </summary>
         public AIProcessingService(NaturalLanguageProcessor naturalLanguageProcessor,
-            SeleniumMapsUrlProcessor seleniumMapsUrlProcessor, PinHelper pinHelper)
+            SeleniumMapsUrlProcessor seleniumMapsUrlProcessor, PinHelper pinHelper, MappingService mappingService)
         {
             _naturalLanguageProcessor = naturalLanguageProcessor;
             _seleniumMapsUrlProcessor = seleniumMapsUrlProcessor;
             _pinHelper = pinHelper;
+            _mappingService = mappingService;
         }
 
         /// <summary>
@@ -185,7 +187,7 @@ namespace Gluten.Core.DataProcessing.Service
         public void UpdatePinList(string newUrl, DetailedTopic topic, ref int urlsCreated)
         {
             newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
-            var pin = _pinHelper.TryToGenerateMapPin(newUrl, false);
+            var pin = _pinHelper.TryToGenerateMapPin(newUrl, false, "");
             if (pin != null)
             {
                 urlsCreated++;
@@ -193,23 +195,23 @@ namespace Gluten.Core.DataProcessing.Service
                 topic.UrlsV2.Add(new TopicLink()
                 {
                     AiGenerated = true,
-                    Pin = pin,
+                    Pin = _mappingService.Map<TopicPin, TopicPinCache>(pin),
                     Url = newUrl
 
                 });
             }
         }
 
-        public TopicPin? GetPinFromCurrentUrl(bool onlyFromData)
+        public TopicPinCache? GetPinFromCurrentUrl(bool onlyFromData, string restaurantName)
         {
             var newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
-            var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData);
+            var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData, restaurantName);
             return pin;
         }
 
-        public TopicPin? GetPinFromCurrentUrl(string newUrl, bool onlyFromData)
+        public TopicPinCache? GetPinFromCurrentUrl(string newUrl, bool onlyFromData, string restaurantName)
         {
-            var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData);
+            var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData, restaurantName);
             return pin;
         }
 

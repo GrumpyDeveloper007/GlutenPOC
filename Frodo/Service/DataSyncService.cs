@@ -24,6 +24,7 @@ namespace Frodo.Service
         private PinHelper _pinHelper;
         private AIProcessingService _aIProcessingService;
         private DatabaseLoaderService _databaseLoaderService;
+        private MappingService _mappingService = new MappingService();
 
         public List<DetailedTopic> Topics = new List<DetailedTopic>();
         private string DBFileName = "D:\\Coding\\Gluten\\Topics.json";
@@ -96,23 +97,15 @@ namespace Frodo.Service
         /// </summary>
         private void GenerateTopicExport()
         {
-            var config = new MapperConfiguration(cfg =>
-            {
-                cfg.CreateMap<DetailedTopic, Topic>();
-                cfg.CreateMap<DetailedTopic, PinLinkInfo>();
-                cfg.CreateMap<Topic, PinLinkInfo>();
-            });
-
-            var mapper = config.CreateMapper();
             List<Topic> tempTopics = new List<Topic>();
             foreach (var t in Topics)
             {
-                var newT = mapper.Map<Topic>(t);
+                var newT = _mappingService.Map<Topic, DetailedTopic>(t);
                 tempTopics.Add(newT);
             }
             List<PinTopic>? pins = _databaseLoaderService.LoadPinTopics();
             if (pins == null) pins = new List<PinTopic>();
-            pins = DataHelper.ExtractPinExport(pins, tempTopics, mapper);
+            pins = DataHelper.ExtractPinExport(pins, tempTopics, _mappingService);
 
             var ii = 0;
             foreach (var pin in pins)
@@ -213,7 +206,12 @@ namespace Frodo.Service
                         {
                             var newUrl = _seleniumMapsUrlProcessor.CheckUrlForMapLinks(url);
                             topic.UrlsV2[t].Url = newUrl;
-                            topic.UrlsV2[t].Pin = _pinHelper.TryToGenerateMapPin(newUrl, false);
+                            var cachePin = _pinHelper.TryToGenerateMapPin(newUrl, false, "");
+                            if (cachePin != null)
+                            {
+                                var newPin = _mappingService.Map<TopicPin, TopicPinCache>(cachePin);
+                                topic.UrlsV2[t].Pin = newPin;
+                            }
                             mapsCallCount++;
                         }
 
@@ -252,7 +250,12 @@ namespace Frodo.Service
                                 {
                                     var newUrl = _seleniumMapsUrlProcessor.CheckUrlForMapLinks(url);
                                     links[t].Url = newUrl;
-                                    links[t].Pin = _pinHelper.TryToGenerateMapPin(newUrl, false);
+                                    var cachePin = _pinHelper.TryToGenerateMapPin(newUrl, false, "");
+                                    if (cachePin != null)
+                                    {
+                                        var newPin = _mappingService.Map<TopicPin, TopicPinCache>(cachePin);
+                                        links[t].Pin = newPin;
+                                    }
                                     mapsCallCount++;
                                 }
 
@@ -295,12 +298,12 @@ namespace Frodo.Service
         /// </summary>
         private void UpdatePinsForAiVenues()
         {
-            var aiPin = new AiPinGeneration(_aIProcessingService);
+            var aiPin = new AiPinGeneration(_aIProcessingService, _mappingService);
             for (int i = 0; i < Topics.Count; i++)
             {
                 DetailedTopic? topic = Topics[i];
                 Console.WriteLine($"Processing AI pins {i} of {Topics.Count}");
-                if (i % 10 == 0)
+                if (i % 5 == 0)
                 {
                     _topicsHelper.SaveTopics(DBFileName, Topics);
                 }
@@ -327,7 +330,7 @@ namespace Frodo.Service
                     var cachedPin = _pinHelper.TryGetPin(ai.PlaceName);
                     if (cachedPin != null)
                     {
-                        ai.Pin = cachedPin;
+                        ai.Pin = _mappingService.Map<TopicPin, TopicPinCache>(cachedPin);
                         continue;
                     }
 
@@ -336,7 +339,7 @@ namespace Frodo.Service
                         cachedPin = _pinHelper.TryGetPin(ai.Pin.Label);
                         if (cachedPin != null)
                         {
-                            ai.Pin = cachedPin;
+                            ai.Pin = _mappingService.Map<TopicPin, TopicPinCache>(cachedPin);
                             continue;
                         }
                         _databaseLoaderService.SavePinDB();
@@ -355,7 +358,10 @@ namespace Frodo.Service
                             groupId = topic.GroupId;
                         }
 
-                        aiPin.GetMapPinForPlaceName(ai, groupId);
+                        if (ai.Pin == null)
+                        {
+                            aiPin.GetMapPinForPlaceName(ai, groupId);
+                        }
 
                         // If we are unable to get a specific pin, generate chain urls, to add later
                         if (ai.Pin == null)
@@ -383,12 +389,12 @@ namespace Frodo.Service
                 // Add any chain urls detected earlier (searches that have multiple results)
                 foreach (var item in chainUrls)
                 {
-                    var pin = _aIProcessingService.GetPinFromCurrentUrl(item, true);
+                    var pin = _aIProcessingService.GetPinFromCurrentUrl(item, true, "");
                     if (pin != null)
                     {
                         // Add pin to AiGenerated
                         var newVenue = new AiVenue();
-                        newVenue.Pin = pin;
+                        newVenue.Pin = _mappingService.Map<TopicPin, TopicPinCache>(pin);
                         newVenue.PlaceName = pin.Label;
                         if (!DataHelper.IsInList(topic.AiVenues, newVenue, -1))
                         {
