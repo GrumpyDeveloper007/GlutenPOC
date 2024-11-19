@@ -39,22 +39,5 @@ namespace Gluten.Core.Service
                 new JsonConverter[] { new StringEnumConverter() });
             File.WriteAllText(fileName, json);
         }
-
-        public void SaveTopics<typeToSave>(string fileName, typeToSave topics)
-        {
-            var json = JsonConvert.SerializeObject(topics, Formatting.Indented,
-                new JsonConverter[] { new StringEnumConverter() });
-            File.WriteAllText(fileName, json);
-        }
-
-        /// <summary>
-        /// Exports the information required by the client app to a file
-        /// </summary>
-        public void ExportTopics(string fileName, List<Topic> topics)
-        {
-            var json = JsonConvert.SerializeObject(topics, Formatting.Indented,
-                new JsonConverter[] { new StringEnumConverter() });
-            File.WriteAllText(fileName, json);
-        }
     }
 }

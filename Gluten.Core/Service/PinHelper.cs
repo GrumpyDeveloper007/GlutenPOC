@@ -13,13 +13,47 @@ namespace Gluten.Core.Service
     /// </summary>
     public class PinHelper
     {
+        private Dictionary<string, TopicPin> _pinCache;
+
+        public PinHelper(Dictionary<string, TopicPin> pinCache)
+        {
+            _pinCache = pinCache;
+        }
+
+        public TopicPin? TryGetPin(string? placeName)
+        {
+            if (placeName == null) return null;
+            if (_pinCache == null) return null;
+            if (_pinCache.TryGetValue(placeName, out var value))
+                return value;
+            return null;
+        }
+
+        public Dictionary<string, TopicPin> GetCache()
+        {
+            return _pinCache;
+        }
+
         /// <summary>
         /// Tries to extract a map location from the geo fields in the url for the centre of the map then tries to location 
         /// the actual location from the data= section
         /// </summary>
         public TopicPin? TryToGenerateMapPin(string url, bool onlyFromData)
         {
+            if (_pinCache == null) _pinCache = new Dictionary<string, TopicPin>();
+
             if (url == null) return null;
+            var mapsUrl = url;
+            url = HttpUtility.UrlDecode(url);
+            //"https://www.google.com/maps/place/7-Eleven Asakusa Kokusaidori Store/data=!4m7!3m6!1s0x60188ebf9036d3b3:0x98f8048bde38bac0!8m2!3d35.713365!4d139.7925459!16s/g/1tgpsmb6!19sChIJs9M2kL-OGGARwLo43osE-Jg?authuser=0&hl=en&rclk=1"
+            //https://www.google.com/maps/place/Mister+Donut+Shinjuku+Yasukuni+Street/@37.8507876,125.2890788,5z/data=!3m1!5s0x60188cd981749325:0x7e473d8fd918f3b5!4m10!1m2!2m1!1sMister+Donut,+Japan!3m6!1s0x60188cd981770317:0xd16725fecf632eb7!8m2!3d35.69331!4d139.703677!15sChNNaXN0ZXIgRG9udXQsIEphcGFuIgOIAQFaFCISbWlzdGVyIGRvbnV0IGphcGFukgEKZG9udXRfc2hvcOABAA!16s%2Fg%2F1td5x4gl!5m1!1e4?entry=ttu&g_ep=EgoyMDI0MTExMy4xIKXMDSoASAFQAw%3D%3D
+
+            string lat = "";
+            string lon = "";
+
+            var foundInData = TryGetLocationFromDataParameter(url, ref lat, ref lon);
+            if (onlyFromData && !foundInData) return null;
+
             if (url.Contains("/@"))
             {
                 var left = url.IndexOf("/@") + 2;
@@ -28,31 +62,39 @@ namespace Gluten.Core.Service
 
                 if (latEnd > 0)
                 {
-
-                    var lat = url.Substring(left, latEnd - left);
-                    var lon = url.Substring(latEnd + 1, longEnd - latEnd - 1);
-
-                    var foundInData = TryGetLocationFromDataParameter(url, ref lat, ref lon);
-                    if (onlyFromData && !foundInData) return null;
-
-                    var placeStart = url.IndexOf("/place/") + "/place/".Length;
-                    var placeEnd = url.IndexOf("/", placeStart);
-
-                    //"https://www.google.com/maps/preview/place/Japan,+%E3%80%92630-8123+Nara,+Sanjoomiyacho,+3%E2%88%9223+onwa/@34.6785478,135.8161308,3281a,13.1y/data\\\\u003d!4m2!3m1!1s0x60013a30562e78d3:0xd712400d34ea1a7b\\"
-                    //                                          "Japan,+%E3%80%92630-8123+Nara,+Sanjoomiyac"
-                    var placeName = url.Substring(placeStart, placeEnd - placeStart);
-                    placeName = HttpUtility.UrlDecode(placeName);
-
-                    return new TopicPin()
+                    if (!foundInData)
                     {
-                        Label = placeName,
-                        Address = placeName,
-                        GeoLatatude = lat,
-                        GeoLongitude = lon
-                    };
+                        lat = url.Substring(left, latEnd - left);
+                        lon = url.Substring(latEnd + 1, longEnd - latEnd - 1);
+                    }
                 }
             }
-            return null;
+            else if (!foundInData)
+            {
+                return null;
+            }
+
+            var placeStart = url.IndexOf("/place/") + "/place/".Length;
+            var placeEnd = url.IndexOf("/", placeStart);
+
+            //"https://www.google.com/maps/preview/place/Japan,+%E3%80%92630-8123+Nara,+Sanjoomiyacho,+3%E2%88%9223+onwa/@34.6785478,135.8161308,3281a,13.1y/data\\\\u003d!4m2!3m1!1s0x60013a30562e78d3:0xd712400d34ea1a7b\\"
+            //                                          "Japan,+%E3%80%92630-8123+Nara,+Sanjoomiyac"
+            var placeName = url.Substring(placeStart, placeEnd - placeStart);
+            placeName = HttpUtility.UrlDecode(placeName);
+
+            var newPin = new TopicPin()
+            {
+                Label = placeName,
+                Address = placeName,
+                GeoLatatude = lat,
+                GeoLongitude = lon,
+                MapsUrl = mapsUrl,
+            };
+            if (!_pinCache.TryGetValue(placeName, out var _))
+            {
+                _pinCache.Add(placeName, newPin);
+            }
+            return newPin;
         }
 
         /// <summary>

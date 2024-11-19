@@ -7,6 +7,7 @@ using Gluten.Data;
 using Gluten.Data.TopicModel;
 using Newtonsoft.Json;
 using System;
+using System.Text.RegularExpressions;
 
 namespace Frodo.Service
 {
@@ -19,18 +20,23 @@ namespace Frodo.Service
         private TopicsHelper _topicsHelper = new TopicsHelper();
         private SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor;
         private AnalyzeDocumentService _analyzeDocumentService = new AnalyzeDocumentService();
-        private PinHelper _pinHelper = new PinHelper();
+        private TopicLoaderService _topicLoaderService = new TopicLoaderService();
+        private PinHelper _pinHelper;
         private AIProcessingService _aIProcessingService;
+        private DatabaseLoaderService _databaseLoaderService;
 
         public List<DetailedTopic> Topics = new List<DetailedTopic>();
         private string DBFileName = "D:\\Coding\\Gluten\\Topics.json";
-        private string ExportDBFileName = "D:\\Coding\\Gluten\\TopicsExport.json";
 
         public DataSyncService(AIProcessingService aIProcessingService,
-            SeleniumMapsUrlProcessor seleniumMapsUrlProcessor)
+            SeleniumMapsUrlProcessor seleniumMapsUrlProcessor,
+            PinHelper pinHelper,
+            DatabaseLoaderService databaseLoaderService)
         {
             _aIProcessingService = aIProcessingService;
             _seleniumMapsUrlProcessor = seleniumMapsUrlProcessor;
+            _pinHelper = pinHelper;
+            _databaseLoaderService = databaseLoaderService;
         }
 
 
@@ -42,10 +48,128 @@ namespace Frodo.Service
                 Topics = topics;
             }
 
-            ReadFileLineByLine("D:\\Coding\\Gluten\\Smeagol\\bin\\Debug\\net8.0\\Responses.txt");
+            _topicLoaderService.ReadFileLineByLine("D:\\Coding\\Gluten\\Smeagol\\bin\\Debug\\net8.0\\Responses.txt", Topics);
 
             _analyzeDocumentService.OpenAgent();
 
+            Console.WriteLine("--------------------------------------");
+            Console.WriteLine($"\r\nProcessing information from source");
+            UpdateMessageAndResponseUrls();
+
+            Console.WriteLine("--------------------------------------");
+            Console.WriteLine($"\r\nStarting AI processing - detecting venue name/address");
+            //TODO: Skip for now - ScanTopicsUseAiToDetectVenueInfo();
+
+            Console.WriteLine("--------------------------------------");
+            Console.WriteLine($"\r\nUpdating pin information for Ai Venues");
+            UpdatePinsForAiVenues();
+            _topicsHelper.SaveTopics(DBFileName, Topics);
+
+            Console.WriteLine("--------------------------------------");
+            Console.WriteLine($"\r\nGenerating data for client application");
+            GenerateTopicExport();
+
+            Console.WriteLine("--------------------------------------");
+            Console.WriteLine($"\r\nComplete, exit...");
+        }
+
+        /// <summary>
+        /// Use AI to extract information from unformatted human generated data
+        /// </summary>
+        private void ScanTopicsUseAiToDetectVenueInfo()
+        {
+            for (int i = 0; i < Topics.Count; i++)
+            {
+                if (Topics[i].AiVenues == null && !Topics[i].AiIsQuestion)
+                {
+                    Console.WriteLine($"Processing topic message {i} of {Topics.Count}");
+                    DetailedTopic? topic = Topics[i];
+                    var venue = _analyzeDocumentService.ExtractRestaurantNamesFromTitle(topic.Title, ref topic);
+                    topic.AiVenues = venue;
+                    _topicsHelper.SaveTopics(DBFileName, Topics);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Group data by pin (venue), export to json
+        /// </summary>
+        private void GenerateTopicExport()
+        {
+            var config = new MapperConfiguration(cfg =>
+            {
+                cfg.CreateMap<DetailedTopic, Topic>();
+                cfg.CreateMap<DetailedTopic, PinLinkInfo>();
+                cfg.CreateMap<Topic, PinLinkInfo>();
+            });
+
+            var mapper = config.CreateMapper();
+            List<Topic> tempTopics = new List<Topic>();
+            foreach (var t in Topics)
+            {
+                var newT = mapper.Map<Topic>(t);
+                tempTopics.Add(newT);
+            }
+            List<PinTopic>? pins = _databaseLoaderService.LoadPinTopics();
+            if (pins == null) pins = new List<PinTopic>();
+            pins = DataHelper.ExtractPinExport(pins, tempTopics, mapper);
+
+            var ii = 0;
+            foreach (var pin in pins)
+            {
+                if (string.IsNullOrEmpty(pin.Description))
+                {
+                    var message = "";
+                    if (pin.Topics != null)
+                    {
+                        foreach (var item in pin.Topics)
+                        {
+                            message += " " + item.Title;
+                        }
+                        pin.Description = _analyzeDocumentService.ExtractDescriptionTitle(message, pin.Label);
+                        _databaseLoaderService.SavePinTopics(pins);
+                    }
+                }
+                Console.WriteLine($"Updating descriptions - {ii}");
+                ii++;
+            }
+
+            _databaseLoaderService.SavePinTopics(pins);
+        }
+
+
+        /// <summary>
+        /// Try to sync Topic data with data extracted from the web
+        /// </summary>
+        private void CheckForUpdatedUrls(DetailedTopic topic, List<TopicLink> newUrls)
+        {
+            if (topic.UrlsV2 == null) return;
+            if (topic.UrlsV2.Count != newUrls.Count)
+            {
+                Console.WriteLine("Mismatch in url detection");
+            }
+            else
+            {
+                for (int t = 0; t < topic.UrlsV2.Count; t++)
+                {
+                    if (topic.UrlsV2[t].Pin == null)
+                    {
+                        if (topic.UrlsV2[t].Url != newUrls[t].Url
+                            && !topic.UrlsV2[t].Url.Contains("/@")
+                            && !topic.UrlsV2[t].Url.Contains("https://www.google.com/maps/d/viewer"))
+                        {
+                            topic.UrlsV2[t].Url = newUrls[t].Url;
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Scan detected urls, try to generate pin information
+        /// </summary>
+        private void UpdateMessageAndResponseUrls()
+        {
             int linkCount = 0;
             int mapsLinkCount = 0;
             int responseLinkCount = 0;
@@ -57,6 +181,7 @@ namespace Frodo.Service
             bool tryProcessLinks = true;
             for (int i = 0; i < Topics.Count; i++)
             {
+                Console.WriteLine($"Processing {i} of {Topics.Count}");
                 var topic = Topics[i];
                 string responseText = "";
                 foreach (var response in topic.ResponsesV2)
@@ -92,6 +217,11 @@ namespace Frodo.Service
                             mapsCallCount++;
                         }
 
+                    }
+                    else
+                    {
+                        //TODO: Not sure about data structure?
+                        //topic.UrlsV2[t].Pin.MapsUrl = topic.UrlsV2[t].Url;
                     }
                     mapsLinkCount++;
                 }
@@ -130,9 +260,6 @@ namespace Frodo.Service
                             mapsLinkCount++;
                         }
                     }
-
-
-
                 }
 
                 if (topic.HasMapPin() && topic.HasMapLink())
@@ -144,16 +271,6 @@ namespace Frodo.Service
                 if (topic.ResponseHasLink) responseLinkCount++;
                 if (topic.ResponseHasMapLink) responseMapsLinkCount++;
 
-                Console.WriteLine($"{topic.GetHashTags()}");
-                Console.WriteLine($"{topic.Title} : {responseText}");
-                Console.WriteLine("--------------------------------------");
-
-                if (mapsCallCount > 100)
-                {
-                    Console.WriteLine("--------------------------------------");
-                    //break;
-                }
-
                 pinCount += topic.UrlsV2.Where(o => o.Pin != null).Count();
 
                 foreach (var response in topic.ResponsesV2)
@@ -163,11 +280,7 @@ namespace Frodo.Service
                         pinCount += response.Links.Where(o => o.Pin != null).Count();
                     }
                 }
-
-
             }
-
-
 
             Console.WriteLine($"Pin Count : {pinCount}");
             Console.WriteLine($"Unprocessed Links : {unProcessedUrlsCount}");
@@ -175,234 +288,116 @@ namespace Frodo.Service
             Console.WriteLine($"Has Maps Links : {mapsLinkCount}");
             Console.WriteLine($"Has Response Links : {responseLinkCount}");
             Console.WriteLine($"Has Response Maps Links : {responseMapsLinkCount}");
+        }
 
-            Console.WriteLine("--------------------------------------");
-            Console.WriteLine($"\r\nStarting AI processing");
+        /// <summary>
+        /// Scan generated Ai Venues and try to generate any missing pins
+        /// </summary>
+        private void UpdatePinsForAiVenues()
+        {
+            var aiPin = new AiPinGeneration(_aIProcessingService);
             for (int i = 0; i < Topics.Count; i++)
             {
-                if (i < 0)
+                DetailedTopic? topic = Topics[i];
+                Console.WriteLine($"Processing AI pins {i} of {Topics.Count}");
+                if (i % 10 == 0)
                 {
-                    Console.WriteLine(i);
-                    DetailedTopic? topic = Topics[i];
-                    var venue = _analyzeDocumentService.ExtractRestaurantNamesFromTitle(topic.Title, ref topic);
-                    topic.AiVenues = venue;
                     _topicsHelper.SaveTopics(DBFileName, Topics);
                 }
 
-            }
-
-
-            _topicsHelper.SaveTopics(DBFileName, Topics);
-
-            var config = new MapperConfiguration(cfg =>
-            {
-                cfg.CreateMap<DetailedTopic, Topic>();
-                cfg.CreateMap<DetailedTopic, PinLinkInfo>();
-                cfg.CreateMap<Topic, PinLinkInfo>();
-            });
-
-            var mapper = config.CreateMapper();
-            List<Topic> tempTopics = new List<Topic>();
-            foreach (var t in Topics)
-            {
-                var newT = mapper.Map<Topic>(t);
-                tempTopics.Add(newT);
-            }
-            var pins = ExtractPinExport(tempTopics, mapper);
-
-            var ii = 0;
-            foreach (var pin in pins)
-            {
-                var message = "";
-                foreach (var item in pin.Topics)
-                {
-                    message += " " + item.Title;
-                }
-                pin.Description = _analyzeDocumentService.ExtractDescriptionTitle(message, pin.Label);
-                _topicsHelper.SaveTopics<List<PinTopic>>(ExportDBFileName, pins);
-                Console.WriteLine($" {ii}");
-                ii++;
-            }
-
-            _topicsHelper.SaveTopics<List<PinTopic>>(ExportDBFileName, pins);
-
-            //_topicsHelper.ExportTopics(ExportDBFileName, tempTopics);
-
-            Console.WriteLine("--------------------------------------");
-            Console.WriteLine($"\r\nComplete, exit...");
-        }
-
-        private List<PinTopic> ExtractPinExport(List<Topic> topics, IMapper mapper)
-        {
-            var pins = new List<PinTopic>();
-            foreach (var topic in topics)
-            {
-                var newT = mapper.Map<PinLinkInfo>(topic);
+                // Remove any duplicated pins
                 if (topic.AiVenues != null)
                 {
-                    foreach (var aiVenue in topic.AiVenues)
+                    for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
                     {
-                        var existingPin = IsPinInList(aiVenue.Pin, pins);
-                        AddIfNotExists(pins, existingPin, newT, aiVenue.Pin);
-                    }
-                }
-
-                if (topic.UrlsV2 != null)
-                {
-                    foreach (var url in topic.UrlsV2)
-                    {
-                        var existingPin = IsPinInList(url.Pin, pins);
-                        AddIfNotExists(pins, existingPin, newT, url.Pin);
-                    }
-                }
-            }
-            return pins;
-        }
-
-        private void AddIfNotExists(List<PinTopic> pins, PinTopic? matchingPinTopic, PinLinkInfo topicToAdd, TopicPin? pinToAdd)
-        {
-            if (pinToAdd == null) return;
-            if (pinToAdd == null) return;
-            if (string.IsNullOrEmpty(pinToAdd.GeoLatatude)) return;
-            if (string.IsNullOrEmpty(pinToAdd.GeoLongitude)) return;
-
-            // if pin not found, add it to the list
-            if (matchingPinTopic == null)
-            {
-                pins.Add(new PinTopic
-                {
-                    GeoLatatude = double.Parse(pinToAdd.GeoLatatude),
-                    GeoLongitude = double.Parse(pinToAdd.GeoLongitude),
-                    Label = pinToAdd.Label,
-                    Topics = new List<PinLinkInfo> { topicToAdd }
-                });
-                return;
-            }
-            // dont add duplicates
-            if (matchingPinTopic.Topics == null) matchingPinTopic.Topics = new List<PinLinkInfo>();
-            foreach (var existingTopic in matchingPinTopic.Topics)
-            {
-                if (existingTopic.NodeID == topicToAdd.NodeID)
-                {
-                    return;
-                }
-            }
-            matchingPinTopic.Topics.Add(topicToAdd);
-        }
-
-        private PinTopic? IsPinInList(TopicPin? topicPin, List<PinTopic> pins)
-        {
-            foreach (var pin in pins)
-            {
-                if (topicPin != null &&
-                    topicPin.GeoLatatude != null &&
-                    topicPin.GeoLongitude != null &&
-                    pin.GeoLatatude == double.Parse(topicPin.GeoLatatude) && pin.GeoLongitude == double.Parse(topicPin.GeoLongitude))
-                {
-                    return pin;
-                }
-            }
-            return null;
-        }
-
-        void ReadFileLineByLine(string filePath)
-        {
-            // Open the file and read each line
-            using (StreamReader sr = new StreamReader(filePath))
-            {
-                string? line;
-                int i = 0;
-                while ((line = sr.ReadLine()) != null)
-                {
-                    if (line != null)
-                    {
-                        var messages = line.Split(new string[] { "}/r/n" }, StringSplitOptions.None);
-                        // Process the line
-                        i++;
-                        Console.WriteLine(i);
-                        foreach (var message in messages)
+                        if (DataHelper.IsInList(topic.AiVenues, topic.AiVenues[t], t))
                         {
-                            try
-                            {
-                                GroupRoot? m;
-                                if (messages.Length > 1 && message != messages[messages.Length - 1])
-                                {
-                                    m = JsonConvert.DeserializeObject<GroupRoot>(message + "}");
-                                }
-                                else
-                                {
-                                    m = JsonConvert.DeserializeObject<GroupRoot>(message);
-                                }
-                                ProcessModel(m);
-                            }
-                            catch (Exception)
-                            {
-                                Console.WriteLine(message);
+                            topic.AiVenues.RemoveAt(t);
+                        }
+                    }
+                }
 
+                if (topic.AiVenues == null) continue;
+                var chainUrls = new List<string>();
+                for (int t = 0; t < topic.AiVenues.Count; t++)
+                {
+                    AiVenue? ai = topic.AiVenues[t];
+                    // Only process unprocessed pins
+
+                    var cachedPin = _pinHelper.TryGetPin(ai.PlaceName);
+                    if (cachedPin != null)
+                    {
+                        ai.Pin = cachedPin;
+                        continue;
+                    }
+
+                    if (ai.Pin != null)
+                    {
+                        cachedPin = _pinHelper.TryGetPin(ai.Pin.Label);
+                        if (cachedPin != null)
+                        {
+                            ai.Pin = cachedPin;
+                            continue;
+                        }
+                        _databaseLoaderService.SavePinDB();
+                    }
+
+                    if (ai.Pin == null)
+                    {
+                        var groupId = "379994195544478";
+                        if (string.IsNullOrWhiteSpace(topic.GroupId))
+                        {
+                            Console.WriteLine($"Unknown group Id {i}, using default");
+                            //continue;
+                        }
+                        else
+                        {
+                            groupId = topic.GroupId;
+                        }
+
+                        aiPin.GetMapPinForPlaceName(ai, groupId);
+
+                        // If we are unable to get a specific pin, generate chain urls, to add later
+                        if (ai.Pin == null)
+                        {
+                            Console.WriteLine($"Searching for a chain");
+                            if (aiPin.IsPlaceNameAChain(ai, chainUrls, groupId))
+                            {
+                                ai.PlaceName = null;
+                                ai.Address = null;
                             }
                         }
                     }
                 }
-            }
-        }
 
-        private void ProcessModel(GroupRoot? groupRoot)
-        {
-            if (groupRoot == null) return;
-            string? messageText;
-            if (groupRoot == null || groupRoot.data.node == null) return;
-
-            var a = groupRoot.data.node.comet_sections;
-            var nodeId = groupRoot.data.node.id;
-            if (a != null)
-            {
-                var story = a.content.story;
-                messageText = story?.message?.text;
-
-                if (string.IsNullOrWhiteSpace(messageText))
+                // Remove any pins that dont have names, and hotels
+                for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
                 {
-                    // TODO: Log?
-                    return;
-                }
-                DetailedTopic? currentTopic = _topicHelper.GetOrCreateTopic(Topics, nodeId, messageText);
-
-                var story2 = a.feedback.story.story_ufi_container.story.feedback_context.interesting_top_level_comments;
-                foreach (var feedback in story2)
-                {
-                    var d = feedback.comment;
-                    if (d.body != null)
+                    if (string.IsNullOrWhiteSpace(topic.AiVenues[t].PlaceName)
+                        || topic.AiVenues[t].PlaceName.ToLower().Contains("Hotel"))
                     {
-                        Response currentResponse = _topicHelper.GetOrCreateResponse(currentTopic, feedback.comment.id);
-                        currentResponse.Message = d.body.text;
+                        topic.AiVenues.RemoveAt(t);
                     }
                 }
-                currentTopic.Title = messageText;
-                currentTopic.FacebookUrl = story?.wwwURL;
-            }
 
-        }
-
-        private void CheckForUpdatedUrls(DetailedTopic topic, List<TopicLink> newUrls)
-        {
-            if (topic.UrlsV2 == null) return;
-            if (topic.UrlsV2.Count != newUrls.Count)
-            {
-                Console.WriteLine("Mismatch in url detection");
-            }
-            else
-            {
-                for (int t = 0; t < topic.UrlsV2.Count; t++)
+                // Add any chain urls detected earlier (searches that have multiple results)
+                foreach (var item in chainUrls)
                 {
-                    if (topic.UrlsV2[t].Pin == null)
+                    var pin = _aIProcessingService.GetPinFromCurrentUrl(item, true);
+                    if (pin != null)
                     {
-                        if (topic.UrlsV2[t].Url != newUrls[t].Url
-                            && !topic.UrlsV2[t].Url.Contains("/@")
-                            && !topic.UrlsV2[t].Url.Contains("https://www.google.com/maps/d/viewer"))
+                        // Add pin to AiGenerated
+                        var newVenue = new AiVenue();
+                        newVenue.Pin = pin;
+                        newVenue.PlaceName = pin.Label;
+                        if (!DataHelper.IsInList(topic.AiVenues, newVenue, -1))
                         {
-                            topic.UrlsV2[t].Url = newUrls[t].Url;
+                            topic.AiVenues.Add(newVenue);
+                            Console.WriteLine($"Adding chain url {pin.Label}");
                         }
                     }
                 }
+
             }
 
         }

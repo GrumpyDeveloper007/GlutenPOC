@@ -29,7 +29,9 @@ namespace Gluten.Data.TopicModel
 
         public List<string>? HashTags { get; set; } = null;
 
-        public List<AiInformation>? AiTitleInfoV2 { get; set; }
+        public string GroupId { get; set; } = "";
+
+        //public List<AiInformation>? AiTitleInfoV2 { get; set; }
 
         public bool AiParsed { get; set; } = false;
 

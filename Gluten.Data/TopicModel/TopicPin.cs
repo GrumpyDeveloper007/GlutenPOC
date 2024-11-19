@@ -13,5 +13,8 @@ namespace Gluten.Data.TopicModel
         public string? Type { get; set; }//= PinType.Place
         public string? GeoLatatude { get; set; }
         public string? GeoLongitude { get; set; }
+        public string? MapsUrl { get; set; }
+
+        public string? MetaHtml { get; set; }
     }
 }

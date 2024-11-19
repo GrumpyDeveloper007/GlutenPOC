@@ -2,6 +2,7 @@
 using Gluten.Core.Service;
 using Gluten.Data.TopicModel;
 using System.Web;
+using System.Xml.Linq;
 
 namespace Gluten.Core.DataProcessing.Service
 {
@@ -11,17 +12,18 @@ namespace Gluten.Core.DataProcessing.Service
     public class AIProcessingService
     {
         private NaturalLanguageProcessor _naturalLanguageProcessor;
-        private PinHelper _pinHelper = new PinHelper();
+        private PinHelper _pinHelper;
         private SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor;
 
         /// <summary>
         /// Constructor
         /// </summary>
         public AIProcessingService(NaturalLanguageProcessor naturalLanguageProcessor,
-            SeleniumMapsUrlProcessor seleniumMapsUrlProcessor)
+            SeleniumMapsUrlProcessor seleniumMapsUrlProcessor, PinHelper pinHelper)
         {
             _naturalLanguageProcessor = naturalLanguageProcessor;
             _seleniumMapsUrlProcessor = seleniumMapsUrlProcessor;
+            _pinHelper = pinHelper;
         }
 
         /// <summary>
@@ -73,6 +75,8 @@ namespace Gluten.Core.DataProcessing.Service
                         city = item.Text;
                     }
 
+                    /*
+                     * TODO: Not required at the moment, remove?
                     if (topic.AiTitleInfoV2 == null) topic.AiTitleInfoV2 = new List<AiInformation>();
                     topic.AiTitleInfoV2.Add(new AiInformation()
                     {
@@ -83,6 +87,7 @@ namespace Gluten.Core.DataProcessing.Service
                         Length = item.Length,
                         Offset = item.Offset
                     });
+                    */
                 }
 
                 // Skip if all we have is the city name
@@ -105,13 +110,81 @@ namespace Gluten.Core.DataProcessing.Service
             return newUrl;
         }
 
+        public bool IsPermanentlyClosed(string? placeName, out string meta)
+        {
+            meta = "";
+            if (placeName == null) return true;
+            var r = _seleniumMapsUrlProcessor.GetSearchResults();
+            foreach (var item in r)
+            {
+                var innerText = item.Text;
+                var a = item.GetAttribute("aria-label");
+                if (placeName == a)
+                {
+                    meta = item.GetAttribute("innerHTML");
+                }
+                if (innerText.ToLower().Contains("permanently closed"))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public List<string> GetMapUrls()
+        {
+            var results = new List<string>();
+            var r = _seleniumMapsUrlProcessor.GetSearchResults();
+            foreach (var item in r)
+            {
+                var innerText = item.Text;
+                var b = item.GetAttribute("href");
+
+                if (!string.IsNullOrWhiteSpace(b)
+                    && !innerText.ToLower().Contains("permanently closed"))
+                {
+                    //https://www.google.com/maps/contrib/117521353174744275953?hl=en-AU
+                    //https://www.google.com/maps/place/Rizlabo+Kitchen/@35.6685791,139.708229,17z/data=!4m6!3m5!1s0x60188ca21d3193d9:0x9127dcb2b56f681e!8m2!3d35.6685791!4d139.7108039!16s%2Fg%2F11c5xc_56p?entry=ttu&g_ep=EgoyMDI0MTExMy4xIKXMDSoASAFQAw%3D%3D
+                    //https://www.google.com/maps/place/Mister+Donut+Shinjuku+Yasukuni+Street/@35.69331,139.703677,17z/data=!3m1!4b1!4m6!3m5!1s0x60188cd981770317:0xd16725fecf632eb7!8m2!3d35.69331!4d139.703677!16s%2Fg%2F1td5x4gl!5m1!1e4?authuser=0&hl=en&entry=ttu&g_ep=EgoyMDI0MTExMy4xIKXMDSoASAFQAw%3D%3D
+                    if (b.StartsWith("https://www.google.com/maps/place"))
+                    {
+                        var a = item.GetAttribute("aria-label");
+                        results.Add(b);
+                    }
+                }
+            }
+
+            return results;
+        }
+
+        public List<string> GetMapPlaceNames()
+        {
+            var results = new List<string>();
+            var r = _seleniumMapsUrlProcessor.GetSearchResults();
+            foreach (var item in r)
+            {
+                var innerText = item.Text;
+                var b = item.GetAttribute("href");
+                if (!string.IsNullOrWhiteSpace(b)
+                    && !innerText.ToLower().Contains("permanently closed"))
+                {
+                    if (b.StartsWith("https://www.google.com/maps/place"))
+                    {
+                        var a = item.GetAttribute("aria-label");
+                        results.Add(a);
+                    }
+                }
+            }
+
+            return results;
+        }
+
         /// <summary>
         /// Gets the current url shown in the browser and tries to extract a geo coordinate
         /// </summary>
         public void UpdatePinList(string newUrl, DetailedTopic topic, ref int urlsCreated)
         {
             newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
-            newUrl = HttpUtility.UrlDecode(newUrl);
             var pin = _pinHelper.TryToGenerateMapPin(newUrl, false);
             if (pin != null)
             {
@@ -130,7 +203,12 @@ namespace Gluten.Core.DataProcessing.Service
         public TopicPin? GetPinFromCurrentUrl(bool onlyFromData)
         {
             var newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
-            newUrl = HttpUtility.UrlDecode(newUrl);
+            var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData);
+            return pin;
+        }
+
+        public TopicPin? GetPinFromCurrentUrl(string newUrl, bool onlyFromData)
+        {
             var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData);
             return pin;
         }
