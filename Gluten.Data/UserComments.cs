@@ -14,7 +14,7 @@ namespace Gluten.Data
 
         public bool IsPublic { get; set; }
 
-        public string Comment { get; set; }
+        public string? Comment { get; set; }
 
     }
 }

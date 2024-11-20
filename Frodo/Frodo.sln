@@ -1,0 +1,51 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35303.130
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Frodo", "Frodo.csproj", "{43DB5817-79C6-488F-B1A4-730B2F51896E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataAccess", "..\DataAccess\DataAccess.csproj", "{16AE363A-5F76-4E39-B2F7-B927A75D4325}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gluten.Data", "..\Gluten.Data\Gluten.Data.csproj", "{F69DEFB1-9BFE-4328-88F1-3AAD368C32A4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4EE943BB-8D20-4781-9533-8C072E32EE51}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gluten.Core", "..\Gluten.Core\Gluten.Core.csproj", "{B817FA6E-7E2B-41EE-817B-58719CA91C0B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gluten.Core.DataProcessing", "..\Gluten.Core.DataProcessing\Gluten.Core.DataProcessing.csproj", "{4AB2068B-8569-45D9-BE0A-C789368DE305}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{43DB5817-79C6-488F-B1A4-730B2F51896E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{43DB5817-79C6-488F-B1A4-730B2F51896E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{43DB5817-79C6-488F-B1A4-730B2F51896E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{43DB5817-79C6-488F-B1A4-730B2F51896E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{16AE363A-5F76-4E39-B2F7-B927A75D4325}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{16AE363A-5F76-4E39-B2F7-B927A75D4325}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{16AE363A-5F76-4E39-B2F7-B927A75D4325}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{16AE363A-5F76-4E39-B2F7-B927A75D4325}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F69DEFB1-9BFE-4328-88F1-3AAD368C32A4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F69DEFB1-9BFE-4328-88F1-3AAD368C32A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F69DEFB1-9BFE-4328-88F1-3AAD368C32A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F69DEFB1-9BFE-4328-88F1-3AAD368C32A4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B817FA6E-7E2B-41EE-817B-58719CA91C0B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B817FA6E-7E2B-41EE-817B-58719CA91C0B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B817FA6E-7E2B-41EE-817B-58719CA91C0B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B817FA6E-7E2B-41EE-817B-58719CA91C0B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4AB2068B-8569-45D9-BE0A-C789368DE305}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4AB2068B-8569-45D9-BE0A-C789368DE305}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4AB2068B-8569-45D9-BE0A-C789368DE305}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4AB2068B-8569-45D9-BE0A-C789368DE305}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {24D9E986-3B48-4FDB-B633-8FF279C38A92}
+	EndGlobalSection
+EndGlobal

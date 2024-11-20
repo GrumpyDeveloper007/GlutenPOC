@@ -12,7 +12,7 @@ namespace Gluten.Data
 
         public Guid VenueId { get; set; }
 
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
 
     }

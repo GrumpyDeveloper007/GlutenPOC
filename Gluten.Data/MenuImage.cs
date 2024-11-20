@@ -19,17 +19,17 @@ namespace Gluten.Data
         /// <summary>
         /// Name of the menu image
         /// </summary>
-        public string Name { get; set; }
+        public string? Name { get; set; }
 
         /// <summary>
         /// Description of the menu image
         /// </summary>
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         /// <summary>
         /// File name of the menu image
         /// </summary>
-        public string FileName { get; set; }
+        public string? FileName { get; set; }
 
         /// <summary>
         /// The last time this menu image was modified
