@@ -10,18 +10,11 @@ using static System.Net.Mime.MediaTypeNames;
 
 namespace Gluten.Core.DataProcessing.Service
 {
-    public class AiPinGeneration
+    public class AiPinGeneration(AIProcessingService aIProcessingService, MappingService mappingService)
     {
-        private AIProcessingService _aIProcessingService;
-        private MappingService _mappingService;
-
-        public AiPinGeneration(AIProcessingService aIProcessingService, MappingService mappingService)
-        {
-            _aIProcessingService = aIProcessingService;
-            _mappingService = mappingService;
-        }
-
-        private List<string> _addressFilters = new List<string>() {
+        private readonly AIProcessingService _aIProcessingService = aIProcessingService;
+        private readonly MappingService _mappingService = mappingService;
+        private readonly List<string> _addressFilters = new List<string>() {
             "( exact location not specified)",
             "(No specific address mentioned)",
             "(no address provided)",
@@ -40,7 +33,7 @@ namespace Gluten.Core.DataProcessing.Service
             "Google Maps link",
         };
 
-        private List<string> _nameFilters = new List<string>() {
+        private readonly List<string> _nameFilters = new List<string>() {
             "Groceries",
             "Train Station",
             "Supermarket",
@@ -69,7 +62,7 @@ namespace Gluten.Core.DataProcessing.Service
             "Yakiniku/Korean BBQ restaurant"
              };
 
-        private List<string> _okToSkip = new List<string>() {
+        private readonly List<string> _okToSkip = new List<string>() {
             "Starbucks",
             "Lawson natural",
             "Lawsons",
@@ -97,7 +90,7 @@ namespace Gluten.Core.DataProcessing.Service
             "Kingdom"
              };
 
-        private Dictionary<string, string> _knownGroupIds = new Dictionary<string, string>()
+        private readonly Dictionary<string, string> _knownGroupIds = new Dictionary<string, string>()
         {
             {"379994195544478","Japan" },//Gluten-Free in Japan!
             {"1025248344200757","Australia" },
@@ -138,12 +131,6 @@ namespace Gluten.Core.DataProcessing.Service
                 .Normalize(NormalizationForm.FormC);
         }
 
-        public bool IsPermanentlyClosed(AiVenue venue)
-        {
-            return false;
-        }
-
-
         public bool IsPlaceNameAChain(AiVenue venue, List<string> chainUrls, string groupId)
         {
             if (!IsInPlaceNameSkipList(venue.PlaceName)
@@ -177,13 +164,12 @@ namespace Gluten.Core.DataProcessing.Service
         public string? GetMapPinForPlaceName(AiVenue venue, string groupId)
         {
             string? currentNewUrl = null;
-            var restaurantName = "";
             if (venue == null) return null;
             // Dont process if it is in the skip list
             if (!IsInPlaceNameSkipList(venue.PlaceName)
                 && !string.IsNullOrWhiteSpace(venue.PlaceName))
             {
-                restaurantName = venue.PlaceName + $", {_knownGroupIds[groupId]}";
+                string? restaurantName = venue.PlaceName + $", {_knownGroupIds[groupId]}";
                 currentNewUrl = _aIProcessingService.GetMapUrl(restaurantName);
 
                 if (currentNewUrl != null)
@@ -245,12 +231,9 @@ namespace Gluten.Core.DataProcessing.Service
                     // e.g. restaurant chains without specific address info
                     currentNewUrl = null;
                 }
-                // offline process
-                //currentNewUrl = null;
             }
 
             return currentNewUrl;
-
         }
 
 
@@ -269,7 +252,7 @@ namespace Gluten.Core.DataProcessing.Service
             if (placeName == null) return false;
             foreach (var nameFilter in _nameFilters)
             {
-                if (placeName.ToLower().Contains(nameFilter.ToLower()))
+                if (placeName.Contains(nameFilter, StringComparison.CurrentCultureIgnoreCase))
                 {
                     return true;
                 }
@@ -281,7 +264,7 @@ namespace Gluten.Core.DataProcessing.Service
         {
             foreach (var nameFilter in _okToSkip)
             {
-                if (placeName.ToLower().Contains(nameFilter.ToLower()))
+                if (placeName.Contains(nameFilter, StringComparison.CurrentCultureIgnoreCase))
                 {
                     return true;
                 }

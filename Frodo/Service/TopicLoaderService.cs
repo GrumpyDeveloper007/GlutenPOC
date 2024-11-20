@@ -7,36 +7,33 @@ namespace Frodo.Service
 {
     internal class TopicLoaderService
     {
-        private TopicHelper _topicHelper = new TopicHelper();
-        private TopicsHelper _topicsHelper = new TopicsHelper();
+        private readonly TopicHelper _topicHelper = new();
 
         public void ReadFileLineByLine(string filePath, List<DetailedTopic> topics)
         {
             // Open the file and read each line
-            using (StreamReader sr = new StreamReader(filePath))
+            using StreamReader sr = new(filePath);
+            string? line;
+            int i = 0;
+            while ((line = sr.ReadLine()) != null)
             {
-                string? line;
-                int i = 0;
-                while ((line = sr.ReadLine()) != null)
+                if (line != null)
                 {
-                    if (line != null)
+                    var messages = line.Split(new string[] { "/r/n" }, StringSplitOptions.None);
+                    // Process the line
+                    i++;
+                    Console.WriteLine(i);
+                    foreach (var message in messages)
                     {
-                        var messages = line.Split(new string[] { "/r/n" }, StringSplitOptions.None);
-                        // Process the line
-                        i++;
-                        Console.WriteLine(i);
-                        foreach (var message in messages)
+                        try
                         {
-                            try
-                            {
-                                GroupRoot? m;
-                                m = JsonConvert.DeserializeObject<GroupRoot>(message);
-                                ProcessModel(m, topics);
-                            }
-                            catch (Exception ex)
-                            {
-                                Console.WriteLine(ex.Message);
-                            }
+                            GroupRoot? m;
+                            m = JsonConvert.DeserializeObject<GroupRoot>(message);
+                            ProcessModel(m, topics);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine(ex.Message);
                         }
                     }
                 }
@@ -87,9 +84,9 @@ namespace Frodo.Service
                 currentTopic.FacebookUrl = story?.wwwURL;
 
                 currentTopic.GroupId = a.feedback.story.story_ufi_container.story.target_group.id;
-                if (currentTopic.GroupId == null)
+                if (currentTopic.GroupId == null && story != null)
                 {
-                    currentTopic.GroupId = story?.target_group.id;
+                    currentTopic.GroupId = story.target_group.id;
                 }
             }
 

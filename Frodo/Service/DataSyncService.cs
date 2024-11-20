@@ -1,13 +1,6 @@
-﻿using AutoMapper;
-using Azure.AI.TextAnalytics;
-using Frodo.FacebookModel;
-using Gluten.Core.DataProcessing.Service;
+﻿using Gluten.Core.DataProcessing.Service;
 using Gluten.Core.Service;
-using Gluten.Data;
 using Gluten.Data.TopicModel;
-using Newtonsoft.Json;
-using System;
-using System.Text.RegularExpressions;
 
 namespace Frodo.Service
 {
@@ -16,18 +9,18 @@ namespace Frodo.Service
     /// </summary>
     internal class DataSyncService
     {
-        private TopicHelper _topicHelper = new TopicHelper();
-        private TopicsHelper _topicsHelper = new TopicsHelper();
-        private SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor;
-        private AnalyzeDocumentService _analyzeDocumentService = new AnalyzeDocumentService();
-        private TopicLoaderService _topicLoaderService = new TopicLoaderService();
-        private PinHelper _pinHelper;
-        private AIProcessingService _aIProcessingService;
-        private DatabaseLoaderService _databaseLoaderService;
-        private MappingService _mappingService = new MappingService();
+        private readonly TopicsHelper _topicsHelper = new();
+        private readonly SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor;
+        private readonly AnalyzeDocumentService _analyzeDocumentService = new();
+        private readonly TopicLoaderService _topicLoaderService = new();
+        private readonly PinHelper _pinHelper;
+        private readonly AIProcessingService _aIProcessingService;
+        private readonly DatabaseLoaderService _databaseLoaderService;
+        private readonly MappingService _mappingService = new();
 
-        public List<DetailedTopic> Topics = new List<DetailedTopic>();
-        private string DBFileName = "D:\\Coding\\Gluten\\Topics.json";
+        public List<DetailedTopic> Topics = [];
+        private readonly string DBFileName = "D:\\Coding\\Gluten\\Topics.json";
+        private readonly bool _regeneratePins = true;
 
         public DataSyncService(AIProcessingService aIProcessingService,
             SeleniumMapsUrlProcessor seleniumMapsUrlProcessor,
@@ -65,7 +58,7 @@ namespace Frodo.Service
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nUpdating pin information for Ai Venues");
-            //UpdatePinsForAiVenues();
+            UpdatePinsForAiVenues();
             _topicsHelper.SaveTopics(DBFileName, Topics);
 
             Console.WriteLine("--------------------------------------");
@@ -142,7 +135,7 @@ namespace Frodo.Service
         private void GenerateTopicExport()
         {
             List<PinTopic>? pins = _databaseLoaderService.LoadPinTopics();
-            if (pins == null) pins = new List<PinTopic>();
+            pins ??= [];
 
             DataHelper.CleanTopics(pins);
             pins = ExtractPinExport(pins, Topics, _mappingService);
@@ -236,11 +229,11 @@ namespace Frodo.Service
                 {
                     var url = topic.UrlsV2[t].Url;
 
-                    if (topic.UrlsV2[t].Pin == null)
+                    if (topic.UrlsV2[t].Pin == null || _regeneratePins)
                     {
                         var newUrl = _seleniumMapsUrlProcessor.CheckUrlForMapLinks(url);
                         topic.UrlsV2[t].Url = newUrl;
-                        var cachePin = _pinHelper.TryToGenerateMapPin(newUrl, false, "");
+                        var cachePin = _pinHelper.TryToGenerateMapPin(newUrl, false, url);
                         if (cachePin != null)
                         {
                             var newPin = _mappingService.Map<TopicPin, TopicPinCache>(cachePin);
@@ -271,11 +264,11 @@ namespace Frodo.Service
                         {
                             var url = links[t].Url;
 
-                            if (links[t].Pin == null)
+                            if (links[t].Pin == null || _regeneratePins)
                             {
                                 var newUrl = _seleniumMapsUrlProcessor.CheckUrlForMapLinks(url);
                                 links[t].Url = newUrl;
-                                var cachePin = _pinHelper.TryToGenerateMapPin(newUrl, false, "");
+                                var cachePin = _pinHelper.TryToGenerateMapPin(newUrl, false, url);
                                 if (cachePin != null)
                                 {
                                     var newPin = _mappingService.Map<TopicPin, TopicPinCache>(cachePin);
@@ -341,6 +334,7 @@ namespace Frodo.Service
                         continue;
                     }
 
+                    // alternate search
                     if (ai.Pin != null)
                     {
                         cachedPin = _pinHelper.TryGetPin(ai.Pin.Label);
@@ -351,7 +345,7 @@ namespace Frodo.Service
                         }
                     }
 
-                    if (ai.Pin == null)
+                    if (ai.Pin == null || _regeneratePins)
                     {
                         var groupId = "379994195544478";
                         if (string.IsNullOrWhiteSpace(topic.GroupId))
@@ -364,13 +358,14 @@ namespace Frodo.Service
                             groupId = topic.GroupId;
                         }
 
-                        if (ai.Pin == null)
+                        string? currentUrl = null;
+                        if (ai.Pin == null || _regeneratePins)
                         {
-                            aiPin.GetMapPinForPlaceName(ai, groupId);
+                            currentUrl = aiPin.GetMapPinForPlaceName(ai, groupId);
                         }
 
                         // If we are unable to get a specific pin, generate chain urls, to add later
-                        if (ai.Pin == null)
+                        if (ai.Pin == null || (_regeneratePins && currentUrl != null))
                         {
                             Console.WriteLine($"Searching for a chain");
                             if (aiPin.IsPlaceNameAChain(ai, chainUrls, groupId))
@@ -382,11 +377,10 @@ namespace Frodo.Service
                     }
                 }
 
-                // Remove any pins that dont have names, and hotels
+                // Remove any pins that dont have names
                 for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
                 {
-                    if (string.IsNullOrWhiteSpace(topic.AiVenues[t].PlaceName)
-                        || topic.AiVenues[t].PlaceName.ToLower().Contains("Hotel"))
+                    if (string.IsNullOrWhiteSpace(topic.AiVenues[t].PlaceName))
                     {
                         topic.AiVenues.RemoveAt(t);
                     }

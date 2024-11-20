@@ -12,8 +12,8 @@ namespace Frodo.Service
 {
     internal class DatabaseLoaderService
     {
-        private string PinCacheDBFileName = "D:\\Coding\\Gluten\\pinCache.json";
-        private string ExportDBFileName = "D:\\Coding\\Gluten\\TopicsExport.json";
+        private readonly string PinCacheDBFileName = "D:\\Coding\\Gluten\\pinCache.json";
+        private readonly string ExportDBFileName = "D:\\Coding\\Gluten\\TopicsExport.json";
 
         private PinHelper _pinHelper;
 
@@ -56,7 +56,7 @@ namespace Frodo.Service
         }
 
 
-        public List<classType>? TryLoadJson<classType>(string fileName)
+        public static List<classType>? TryLoadJson<classType>(string fileName)
         {
             List<classType>? topics = null;
             if (File.Exists(fileName))
@@ -69,10 +69,10 @@ namespace Frodo.Service
             return topics;
         }
 
-        public void SaveDb<typeToSave>(string fileName, typeToSave topics)
+        public static void SaveDb<typeToSave>(string fileName, typeToSave topics)
         {
             var json = JsonConvert.SerializeObject(topics, Formatting.Indented,
-                new JsonConverter[] { new StringEnumConverter() });
+                [new StringEnumConverter()]);
             File.WriteAllText(fileName, json);
         }
     }

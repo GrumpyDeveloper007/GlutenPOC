@@ -11,14 +11,9 @@ namespace Gluten.Core.Service
     /// <summary>
     /// Some helper function for pin generation
     /// </summary>
-    public class PinHelper
+    public class PinHelper(Dictionary<string, TopicPinCache> pinCache)
     {
-        private Dictionary<string, TopicPinCache> _pinCache;
-
-        public PinHelper(Dictionary<string, TopicPinCache> pinCache)
-        {
-            _pinCache = pinCache;
-        }
+        private readonly Dictionary<string, TopicPinCache> _pinCache = pinCache;
 
         public TopicPinCache? TryGetPin(string? placeName)
         {
@@ -29,12 +24,25 @@ namespace Gluten.Core.Service
 
             foreach (var item in _pinCache.Values)
             {
-                var i = item.PlaceName?.ToLower().StartsWith(placeName.ToLower());
                 if (
-                    (item.PlaceName != null && item.PlaceName.ToLower().StartsWith(placeName.ToLower()))
+                    (item.PlaceName != null && item.PlaceName.StartsWith(placeName, StringComparison.CurrentCultureIgnoreCase))
                     ||
-                    (item.Label != null && item.Label.ToLower().StartsWith(placeName.ToLower()))
+                    (item.Label != null && item.Label.StartsWith(placeName, StringComparison.CurrentCultureIgnoreCase))
                     )
+                {
+                    return item;
+                }
+            }
+            return null;
+        }
+
+        public TopicPinCache? TryGetPinByUrl(string url)
+        {
+            if (_pinCache == null) return null;
+
+            foreach (var item in _pinCache.Values)
+            {
+                if (item.MapsUrl != null && item.MapsUrl.StartsWith(url, StringComparison.CurrentCultureIgnoreCase))
                 {
                     return item;
                 }
@@ -54,6 +62,8 @@ namespace Gluten.Core.Service
         public TopicPinCache? TryToGenerateMapPin(string url, bool onlyFromData, string searchString)
         {
             if (url == null) return null;
+            TopicPinCache? oldPin = TryGetPinByUrl(url);
+            if (oldPin != null) return oldPin;
             var mapsUrl = url;
             url = HttpUtility.UrlDecode(url);
             //"https://www.google.com/maps/place/7-Eleven Asakusa Kokusaidori Store/data=!4m7!3m6!1s0x60188ebf9036d3b3:0x98f8048bde38bac0!8m2!3d35.713365!4d139.7925459!16s/g/1tgpsmb6!19sChIJs9M2kL-OGGARwLo43osE-Jg?authuser=0&hl=en&rclk=1"
@@ -68,8 +78,8 @@ namespace Gluten.Core.Service
             if (url.Contains("/@"))
             {
                 var left = url.IndexOf("/@") + 2;
-                var latEnd = url.IndexOf(",", left);
-                var longEnd = url.IndexOf(",", latEnd + 1);
+                var latEnd = url.IndexOf(',', left);
+                var longEnd = url.IndexOf(',', latEnd + 1);
 
                 if (latEnd > 0)
                 {
@@ -86,7 +96,7 @@ namespace Gluten.Core.Service
             }
 
             var placeStart = url.IndexOf("/place/") + "/place/".Length;
-            var placeEnd = url.IndexOf("/", placeStart);
+            var placeEnd = url.IndexOf('/', placeStart);
 
             //"https://www.google.com/maps/preview/place/Japan,+%E3%80%92630-8123+Nara,+Sanjoomiyacho,+3%E2%88%9223+onwa/@34.6785478,135.8161308,3281a,13.1y/data\\\\u003d!4m2!3m1!1s0x60013a30562e78d3:0xd712400d34ea1a7b\\"
             //                                          "Japan,+%E3%80%92630-8123+Nara,+Sanjoomiyac"
@@ -100,7 +110,7 @@ namespace Gluten.Core.Service
                 GeoLatatude = lat,
                 GeoLongitude = lon,
                 MapsUrl = mapsUrl,
-                PlaceName = searchString
+                PlaceName = searchString,
             };
             if (!_pinCache.TryGetValue(label, out var _))
             {
@@ -112,12 +122,12 @@ namespace Gluten.Core.Service
         /// <summary>
         /// Extracts the data= part of a google maps url and looks for the longitude and latitude
         /// </summary>
-        public bool TryGetLocationFromDataParameter(string url, ref string geoLat, ref string geoLong)
+        public static bool TryGetLocationFromDataParameter(string url, ref string geoLat, ref string geoLong)
         {
             var data = url.Substring(url.IndexOf("data=") + 5);
-            if (data.IndexOf("?") > 0)
+            if (data.IndexOf('?') > 0)
             {
-                data = data.Substring(0, data.IndexOf("?"));
+                data = data.Substring(0, data.IndexOf('?'));
             }
             //!4m6
             //!3m5

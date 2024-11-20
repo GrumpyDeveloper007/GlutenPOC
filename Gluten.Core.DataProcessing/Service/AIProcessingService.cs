@@ -9,24 +9,16 @@ namespace Gluten.Core.DataProcessing.Service
     /// <summary>
     /// Trys to extracted formatted information from human written posts
     /// </summary>
-    public class AIProcessingService
+    /// <remarks>
+    /// Constructor
+    /// </remarks>
+    public class AIProcessingService(NaturalLanguageProcessor naturalLanguageProcessor,
+        SeleniumMapsUrlProcessor seleniumMapsUrlProcessor, PinHelper pinHelper, MappingService mappingService)
     {
-        private NaturalLanguageProcessor _naturalLanguageProcessor;
-        private PinHelper _pinHelper;
-        private SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor;
-        private MappingService _mappingService;
-
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        public AIProcessingService(NaturalLanguageProcessor naturalLanguageProcessor,
-            SeleniumMapsUrlProcessor seleniumMapsUrlProcessor, PinHelper pinHelper, MappingService mappingService)
-        {
-            _naturalLanguageProcessor = naturalLanguageProcessor;
-            _seleniumMapsUrlProcessor = seleniumMapsUrlProcessor;
-            _pinHelper = pinHelper;
-            _mappingService = mappingService;
-        }
+        private readonly NaturalLanguageProcessor _naturalLanguageProcessor = naturalLanguageProcessor;
+        private readonly PinHelper _pinHelper = pinHelper;
+        private readonly SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor = seleniumMapsUrlProcessor;
+        private readonly MappingService _mappingService = mappingService;
 
         /// <summary>
         /// Processes all the topics in a list
@@ -125,7 +117,7 @@ namespace Gluten.Core.DataProcessing.Service
                 {
                     meta = item.GetAttribute("innerHTML");
                 }
-                if (innerText.ToLower().Contains("permanently closed"))
+                if (innerText.Contains("permanently closed", StringComparison.CurrentCultureIgnoreCase))
                 {
                     return true;
                 }
@@ -143,14 +135,14 @@ namespace Gluten.Core.DataProcessing.Service
                 var b = item.GetAttribute("href");
 
                 if (!string.IsNullOrWhiteSpace(b)
-                    && !innerText.ToLower().Contains("permanently closed"))
+                    && !innerText.Contains("permanently closed", StringComparison.CurrentCultureIgnoreCase))
                 {
                     //https://www.google.com/maps/contrib/117521353174744275953?hl=en-AU
                     //https://www.google.com/maps/place/Rizlabo+Kitchen/@35.6685791,139.708229,17z/data=!4m6!3m5!1s0x60188ca21d3193d9:0x9127dcb2b56f681e!8m2!3d35.6685791!4d139.7108039!16s%2Fg%2F11c5xc_56p?entry=ttu&g_ep=EgoyMDI0MTExMy4xIKXMDSoASAFQAw%3D%3D
                     //https://www.google.com/maps/place/Mister+Donut+Shinjuku+Yasukuni+Street/@35.69331,139.703677,17z/data=!3m1!4b1!4m6!3m5!1s0x60188cd981770317:0xd16725fecf632eb7!8m2!3d35.69331!4d139.703677!16s%2Fg%2F1td5x4gl!5m1!1e4?authuser=0&hl=en&entry=ttu&g_ep=EgoyMDI0MTExMy4xIKXMDSoASAFQAw%3D%3D
                     if (b.StartsWith("https://www.google.com/maps/place"))
                     {
-                        var a = item.GetAttribute("aria-label");
+                        //var a = item.GetAttribute("aria-label");
                         results.Add(b);
                     }
                 }
@@ -168,7 +160,7 @@ namespace Gluten.Core.DataProcessing.Service
                 var innerText = item.Text;
                 var b = item.GetAttribute("href");
                 if (!string.IsNullOrWhiteSpace(b)
-                    && !innerText.ToLower().Contains("permanently closed"))
+                    && !innerText.Contains("permanently closed", StringComparison.CurrentCultureIgnoreCase))
                 {
                     if (b.StartsWith("https://www.google.com/maps/place"))
                     {
@@ -187,11 +179,11 @@ namespace Gluten.Core.DataProcessing.Service
         public void UpdatePinList(string newUrl, DetailedTopic topic, ref int urlsCreated)
         {
             newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
-            var pin = _pinHelper.TryToGenerateMapPin(newUrl, false, "");
+            var pin = _pinHelper.TryToGenerateMapPin(newUrl, false, newUrl);
             if (pin != null)
             {
                 urlsCreated++;
-                if (topic.UrlsV2 == null) topic.UrlsV2 = new List<TopicLink>();
+                topic.UrlsV2 ??= [];
                 topic.UrlsV2.Add(new TopicLink()
                 {
                     AiGenerated = true,

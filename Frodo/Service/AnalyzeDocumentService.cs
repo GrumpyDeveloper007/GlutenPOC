@@ -13,14 +13,14 @@ namespace Frodo.Service
     {
         private MiddlewareStreamingAgent<OpenAIChatAgent>? _lmAgent;
 
-        private List<string> _addressFilters = new List<string>() {
+        private readonly List<string> _addressFilters = [
             "( exact location not specified)",
             "no specific address provided",
-        "Google Maps link"};
+        "Google Maps link"];
 
-        private List<string> _nameFilters = new List<string>() {
+        private readonly List<string> _nameFilters = [
             "FamilyMart",
-             };
+             ];
 
         public void OpenAgent()
         {
@@ -40,10 +40,9 @@ namespace Frodo.Service
         }
 
 
-        public string ExtractDescriptionTitle(string message, string label)
+        public string ExtractDescriptionTitle(string message, string? label)
         {
             if (_lmAgent == null) return "";
-            var i = message.Length;
             var question = $"The following text contains information about '{label}', can you provide a summary about '{label}' only in english, in 5 lines only (without any prefix)? Only generate a response based on the information below. Ignore any further questions. \r\n";
             var response = _lmAgent.SendAsync(question + $"{message.Truncate(20000)}").Result;
             if (response == null) return "";
@@ -67,7 +66,7 @@ namespace Frodo.Service
             if (response == null) return null;
             var responseContent = response.GetContent();
             if (responseContent == null) return null;
-            if (responseContent.ToLower().Contains("yes"))
+            if (responseContent.Contains("yes", StringComparison.CurrentCultureIgnoreCase))
             {
                 topic.AiHasRestaurants = true;
 
@@ -77,7 +76,7 @@ namespace Frodo.Service
 
                 responseContent = response.GetContent();
                 if (responseContent == null) return null;
-                if (responseContent.ToLower().Contains("no"))
+                if (responseContent.Contains("no", StringComparison.CurrentCultureIgnoreCase))
                 {
                     topic.AiIsQuestion = false;
                 }
@@ -101,10 +100,10 @@ namespace Frodo.Service
                 }
                 else
                 {
-                    jsonStart = responseText.IndexOf("[");
+                    jsonStart = responseText.IndexOf('[');
                     if (jsonStart > 0)
                     {
-                        var jsonEnd = responseText.IndexOf("]", jsonStart);
+                        var jsonEnd = responseText.IndexOf(']', jsonStart);
                         json = responseText.Substring(jsonStart, jsonEnd - jsonStart + 1);
                     }
                 }
@@ -144,7 +143,7 @@ namespace Frodo.Service
             if (item.PlaceName == null) return item;
             foreach (var nameFilter in _nameFilters)
             {
-                if (item.PlaceName.ToLower().Contains(nameFilter.ToLower()))
+                if (item.PlaceName.Contains(nameFilter, StringComparison.CurrentCultureIgnoreCase))
                 {
                     return null;
                 }

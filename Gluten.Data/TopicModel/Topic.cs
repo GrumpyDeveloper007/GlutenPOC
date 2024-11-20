@@ -25,7 +25,7 @@ namespace Gluten.Data.TopicModel
 
     public class DetailedTopic : Topic
     {
-        public List<Response> ResponsesV2 { get; set; } = new List<Response>();
+        public List<Response> ResponsesV2 { get; set; } = [];
 
         public List<string>? HashTags { get; set; } = null;
 
@@ -63,13 +63,13 @@ namespace Gluten.Data.TopicModel
         public bool HasLink()
         {
             if (Title == null) return false;
-            return Title.ToLower().Contains("https://");
+            return Title.Contains("https://", StringComparison.CurrentCultureIgnoreCase);
         }
 
         public bool HasMapLink()
         {
             if (Title == null) return false;
-            return Title.ToLower().Contains("https://maps");
+            return Title.Contains("https://maps", StringComparison.CurrentCultureIgnoreCase);
         }
 
         public bool ResponseHasLink
@@ -79,7 +79,7 @@ namespace Gluten.Data.TopicModel
                 foreach (var response in ResponsesV2)
                 {
                     if (response.Message == null) return false;
-                    if (response.Message.ToLower().Contains("https://"))
+                    if (response.Message.Contains("https://", StringComparison.CurrentCultureIgnoreCase))
                         return true;
                 }
                 return false;
@@ -93,7 +93,7 @@ namespace Gluten.Data.TopicModel
                 foreach (var response in ResponsesV2)
                 {
                     if (response.Message == null) return false;
-                    if (response.Message.ToLower().Contains("https://maps"))
+                    if (response.Message.Contains("https://maps", StringComparison.CurrentCultureIgnoreCase))
                         return true;
                 }
                 return false;

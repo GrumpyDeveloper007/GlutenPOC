@@ -16,7 +16,7 @@ namespace Frodo.Service
         {
             foreach (var item in pins)
             {
-                item.Topics.Clear();
+                item.Topics?.Clear();
             }
         }
 
@@ -24,7 +24,7 @@ namespace Frodo.Service
         {
             for (int i = pins.Count - 1; i >= 0; i--)
             {
-                if (pins[i].Topics.Count == 0)
+                if (pins[i].Topics != null && pins[i].Topics.Count == 0)
                 {
                     pins.RemoveAt(i);
                 }
@@ -216,7 +216,7 @@ namespace Frodo.Service
                     GeoLatatude = double.Parse(pinToAdd.GeoLatatude),
                     GeoLongitude = double.Parse(pinToAdd.GeoLongitude),
                     Label = pinToAdd.Label,
-                    Topics = new List<PinLinkInfo> { topicToAdd },
+                    Topics = [topicToAdd],
                 };
                 pins.Add(newPin);
                 if (cachePin != null && !string.IsNullOrWhiteSpace(cachePin.MapsUrl))
@@ -226,7 +226,7 @@ namespace Frodo.Service
                 return;
             }
             // dont add duplicates
-            if (matchingPinTopic.Topics == null) matchingPinTopic.Topics = new List<PinLinkInfo>();
+            matchingPinTopic.Topics ??= [];
             if (cachePin != null && !string.IsNullOrWhiteSpace(cachePin.MapsUrl))
             {
                 matchingPinTopic.MapsLink = cachePin.MapsUrl;
