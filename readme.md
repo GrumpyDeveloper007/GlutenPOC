@@ -25,3 +25,24 @@ Parse/process collected information to make it cleaner, quicker to read. Create 
 Use AI to help extract key data fields.
 Create a database indexed on location, so it can be later used to search for relevant local information.
 
+# User document V0
+
+This application provides a map view with selectable pins.
+
+![App Image](./Docs/AppImage.png)
+
+when a pin is selected the name of the restaurant will be shown with links to facebook groups posts.
+
+![](./Docs/PinSelection.png)
+
+An AI generated summary is also shown, along with a google maps link (this is useful to navigate to or get more detailed information).
+
+![](./Docs/AIGeneratedSummary.png)
+
+There is a button to move the map to your current location.
+
+![](/Docs/MoveToCurrentLocation.png)
+
+Note: Pins and summaries are AI generated, always verify the information by reading the linked group posts and the restaurant staff.
+
+![](/Docs/AIGeneratedSummary.png)
