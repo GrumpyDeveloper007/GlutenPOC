@@ -11,9 +11,9 @@ namespace Gluten.Data.TopicModel
         public double GeoLongitude { get; set; }
         public double GeoLatatude { get; set; }
         public string? Label { get; set; }
-
         public string? Description { get; set; }
         public List<PinLinkInfo>? Topics { get; set; }
+        public string? MapsLink { get; set; }
     }
 
     public class PinLinkInfo

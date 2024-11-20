@@ -2,11 +2,6 @@
 using Gluten.Core.Service;
 using Gluten.Data.TopicModel;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Frodo.Service
 {
@@ -26,7 +21,7 @@ namespace Frodo.Service
                 {
                     if (line != null)
                     {
-                        var messages = line.Split(new string[] { "}/r/n" }, StringSplitOptions.None);
+                        var messages = line.Split(new string[] { "/r/n" }, StringSplitOptions.None);
                         // Process the line
                         i++;
                         Console.WriteLine(i);
@@ -35,20 +30,12 @@ namespace Frodo.Service
                             try
                             {
                                 GroupRoot? m;
-                                if (messages.Length > 1 && message != messages[messages.Length - 1])
-                                {
-                                    m = JsonConvert.DeserializeObject<GroupRoot>(message + "}");
-                                }
-                                else
-                                {
-                                    m = JsonConvert.DeserializeObject<GroupRoot>(message);
-                                }
+                                m = JsonConvert.DeserializeObject<GroupRoot>(message);
                                 ProcessModel(m, topics);
                             }
-                            catch (Exception)
+                            catch (Exception ex)
                             {
-                                Console.WriteLine(message);
-
+                                Console.WriteLine(ex.Message);
                             }
                         }
                     }
@@ -64,6 +51,16 @@ namespace Frodo.Service
 
             var a = groupRoot.data.node.comet_sections;
             var nodeId = groupRoot.data.node.id;
+
+            if (groupRoot.data.node.group_feed?.edges != null && a == null)
+                foreach (var edge in groupRoot.data.node.group_feed.edges)
+                {
+                    var node = edge.node;
+                    nodeId = node.id;
+                    a = node.comet_sections;
+
+                }
+
             if (a != null)
             {
                 var story = a.content.story;
@@ -88,8 +85,6 @@ namespace Frodo.Service
                 }
                 currentTopic.Title = messageText;
                 currentTopic.FacebookUrl = story?.wwwURL;
-
-
 
                 currentTopic.GroupId = a.feedback.story.story_ufi_container.story.target_group.id;
                 if (currentTopic.GroupId == null)

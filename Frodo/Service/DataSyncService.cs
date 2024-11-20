@@ -49,6 +49,8 @@ namespace Frodo.Service
                 Topics = topics;
             }
 
+            Console.WriteLine("--------------------------------------");
+            Console.WriteLine($"\r\nReading captured FB data");
             _topicLoaderService.ReadFileLineByLine("D:\\Coding\\Gluten\\Smeagol\\bin\\Debug\\net8.0\\Responses.txt", Topics);
 
             _analyzeDocumentService.OpenAgent();
@@ -63,7 +65,7 @@ namespace Frodo.Service
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nUpdating pin information for Ai Venues");
-            UpdatePinsForAiVenues();
+            //UpdatePinsForAiVenues();
             _topicsHelper.SaveTopics(DBFileName, Topics);
 
             Console.WriteLine("--------------------------------------");
@@ -92,20 +94,59 @@ namespace Frodo.Service
             }
         }
 
+        private List<PinTopic> ExtractPinExport(List<PinTopic> pins, List<DetailedTopic> topics, MappingService mapper)
+        {
+            foreach (var topic in topics)
+            {
+                var newT = mapper.Map<PinLinkInfo, Topic>(topic);
+                if (topic.AiVenues != null)
+                {
+                    foreach (var aiVenue in topic.AiVenues)
+                    {
+                        if (aiVenue.Pin != null
+                            && !string.IsNullOrWhiteSpace(aiVenue.Pin.GeoLatatude)
+                            && !string.IsNullOrWhiteSpace(aiVenue.Pin.GeoLongitude)
+                            && DataHelper.IsPinWithinExpectedRange(topic.GroupId, double.Parse(aiVenue.Pin.GeoLatatude), double.Parse(aiVenue.Pin.GeoLongitude)))
+                        {
+                            var existingPin = DataHelper.IsPinInList(aiVenue.Pin, pins);
+                            var cachePin = _pinHelper.TryGetPin(aiVenue.Pin.Label);
+                            DataHelper.AddIfNotExists(pins, existingPin, newT, aiVenue.Pin, cachePin);
+                        }
+                    }
+                }
+
+                if (topic.UrlsV2 != null)
+                {
+                    foreach (var url in topic.UrlsV2)
+                    {
+
+                        if (url.Pin != null
+                            && !string.IsNullOrWhiteSpace(url.Pin.GeoLatatude)
+                            && !string.IsNullOrWhiteSpace(url.Pin.GeoLongitude)
+                            && DataHelper.IsPinWithinExpectedRange(topic.GroupId, double.Parse(url.Pin.GeoLatatude), double.Parse(url.Pin.GeoLongitude)))
+                        {
+                            var existingPin = DataHelper.IsPinInList(url.Pin, pins);
+                            var cachePin = _pinHelper.TryGetPin(url.Pin.Label);
+                            DataHelper.AddIfNotExists(pins, existingPin, newT, url.Pin, cachePin);
+                        }
+                    }
+                }
+            }
+            return pins;
+        }
+
+
         /// <summary>
         /// Group data by pin (venue), export to json
         /// </summary>
         private void GenerateTopicExport()
         {
-            List<Topic> tempTopics = new List<Topic>();
-            foreach (var t in Topics)
-            {
-                var newT = _mappingService.Map<Topic, DetailedTopic>(t);
-                tempTopics.Add(newT);
-            }
             List<PinTopic>? pins = _databaseLoaderService.LoadPinTopics();
             if (pins == null) pins = new List<PinTopic>();
-            pins = DataHelper.ExtractPinExport(pins, tempTopics, _mappingService);
+
+            DataHelper.CleanTopics(pins);
+            pins = ExtractPinExport(pins, Topics, _mappingService);
+            DataHelper.RemoveEmptyPins(pins);
 
             var ii = 0;
             foreach (var pin in pins)
@@ -123,7 +164,7 @@ namespace Frodo.Service
                         _databaseLoaderService.SavePinTopics(pins);
                     }
                 }
-                Console.WriteLine($"Updating descriptions - {ii}");
+                Console.WriteLine($"Updating descriptions - {ii} of {pins.Count}");
                 ii++;
             }
 
@@ -168,10 +209,6 @@ namespace Frodo.Service
             int responseLinkCount = 0;
             int responseMapsLinkCount = 0;
             int mapsCallCount = 0;
-            string unProcessedUrls = "";
-            int unProcessedUrlsCount = 0;
-            int pinCount = 0;
-            bool tryProcessLinks = true;
             for (int i = 0; i < Topics.Count; i++)
             {
                 Console.WriteLine($"Processing {i} of {Topics.Count}");
@@ -199,28 +236,19 @@ namespace Frodo.Service
                 {
                     var url = topic.UrlsV2[t].Url;
 
-                    if (topic.UrlsV2[t].Pin == null
-                        && tryProcessLinks)
+                    if (topic.UrlsV2[t].Pin == null)
                     {
-                        if (topic.UrlsV2[t].Pin == null)
+                        var newUrl = _seleniumMapsUrlProcessor.CheckUrlForMapLinks(url);
+                        topic.UrlsV2[t].Url = newUrl;
+                        var cachePin = _pinHelper.TryToGenerateMapPin(newUrl, false, "");
+                        if (cachePin != null)
                         {
-                            var newUrl = _seleniumMapsUrlProcessor.CheckUrlForMapLinks(url);
-                            topic.UrlsV2[t].Url = newUrl;
-                            var cachePin = _pinHelper.TryToGenerateMapPin(newUrl, false, "");
-                            if (cachePin != null)
-                            {
-                                var newPin = _mappingService.Map<TopicPin, TopicPinCache>(cachePin);
-                                topic.UrlsV2[t].Pin = newPin;
-                            }
-                            mapsCallCount++;
+                            var newPin = _mappingService.Map<TopicPin, TopicPinCache>(cachePin);
+                            topic.UrlsV2[t].Pin = newPin;
                         }
+                        mapsCallCount++;
+                    }
 
-                    }
-                    else
-                    {
-                        //TODO: Not sure about data structure?
-                        //topic.UrlsV2[t].Pin.MapsUrl = topic.UrlsV2[t].Url;
-                    }
                     mapsLinkCount++;
                 }
 
@@ -243,50 +271,28 @@ namespace Frodo.Service
                         {
                             var url = links[t].Url;
 
-                            if (links[t].Pin == null
-                                && tryProcessLinks)
+                            if (links[t].Pin == null)
                             {
-                                if (links[t].Pin == null)
+                                var newUrl = _seleniumMapsUrlProcessor.CheckUrlForMapLinks(url);
+                                links[t].Url = newUrl;
+                                var cachePin = _pinHelper.TryToGenerateMapPin(newUrl, false, "");
+                                if (cachePin != null)
                                 {
-                                    var newUrl = _seleniumMapsUrlProcessor.CheckUrlForMapLinks(url);
-                                    links[t].Url = newUrl;
-                                    var cachePin = _pinHelper.TryToGenerateMapPin(newUrl, false, "");
-                                    if (cachePin != null)
-                                    {
-                                        var newPin = _mappingService.Map<TopicPin, TopicPinCache>(cachePin);
-                                        links[t].Pin = newPin;
-                                    }
-                                    mapsCallCount++;
+                                    var newPin = _mappingService.Map<TopicPin, TopicPinCache>(cachePin);
+                                    links[t].Pin = newPin;
                                 }
-
+                                mapsCallCount++;
                             }
+
                             mapsLinkCount++;
                         }
                     }
                 }
 
-                if (topic.HasMapPin() && topic.HasMapLink())
-                {
-                    unProcessedUrlsCount++;
-                    unProcessedUrls += topic.UrlsV2[0] + "/r/n";
-                }
-
                 if (topic.ResponseHasLink) responseLinkCount++;
                 if (topic.ResponseHasMapLink) responseMapsLinkCount++;
-
-                pinCount += topic.UrlsV2.Where(o => o.Pin != null).Count();
-
-                foreach (var response in topic.ResponsesV2)
-                {
-                    if (response.Links != null)
-                    {
-                        pinCount += response.Links.Where(o => o.Pin != null).Count();
-                    }
-                }
             }
 
-            Console.WriteLine($"Pin Count : {pinCount}");
-            Console.WriteLine($"Unprocessed Links : {unProcessedUrlsCount}");
             Console.WriteLine($"Has Links : {linkCount}");
             Console.WriteLine($"Has Maps Links : {mapsLinkCount}");
             Console.WriteLine($"Has Response Links : {responseLinkCount}");
@@ -303,9 +309,10 @@ namespace Frodo.Service
             {
                 DetailedTopic? topic = Topics[i];
                 Console.WriteLine($"Processing AI pins {i} of {Topics.Count}");
-                if (i % 5 == 0)
+                if (i % 10 == 0)
                 {
                     _topicsHelper.SaveTopics(DBFileName, Topics);
+                    _databaseLoaderService.SavePinDB();
                 }
 
                 // Remove any duplicated pins
@@ -342,7 +349,6 @@ namespace Frodo.Service
                             ai.Pin = _mappingService.Map<TopicPin, TopicPinCache>(cachedPin);
                             continue;
                         }
-                        _databaseLoaderService.SavePinDB();
                     }
 
                     if (ai.Pin == null)

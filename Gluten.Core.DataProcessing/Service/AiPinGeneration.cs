@@ -57,7 +57,16 @@ namespace Gluten.Core.DataProcessing.Service
             "Sheraton",
             "Disney hotels",
             "Universal Studios",
-            "Gate Building"
+            "Gate Building",
+            "OSAKA RESTAURANT",
+            "Tsuji Safety Food",
+            "Equal Eats",
+            "Backup restaurant name",
+            "Hilton Tokyo breakfast buffet",
+            "Seibu Department store",
+            "Sushi restaurant",
+            "Conveyor belt sushi place",
+            "Yakiniku/Korean BBQ restaurant"
              };
 
         private List<string> _okToSkip = new List<string>() {

@@ -1589,10 +1589,16 @@ namespace Smeagol.FacebookModel
     {
         public string __dr { get; set; }
     }
+    public class GroupFeed
+    {
+        public List<Edge> edges { get; set; }
+    }
 
     public class Node
     {
         public string __typename { get; set; }
+        public GroupFeed group_feed { get; set; }
+
         public string __isFeedUnit { get; set; }
         public string __isCacheable { get; set; }
         public string cache_id { get; set; }
