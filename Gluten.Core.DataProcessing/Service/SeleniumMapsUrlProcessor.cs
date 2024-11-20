@@ -85,15 +85,6 @@ namespace Gluten.Core.DataProcessing.Service
             //<a class="hfpxzc" aria-label="7-Eleven Japan Headquarters" href="https://www.google.com/maps/place/7-Eleven+Japan+Headquarters/data=!4m7!3m6!1s0x60188c62364deaa9:0x2eafa6f977eeef68!8m2!3d35.685892!4d139.734094!16s%2Fg%2F1vc81t47!19sChIJqepNNmKMGGARaO_ud_mmry4?authuser=0&amp;hl=en&amp;rclk=1" jsaction="pane.wfvdle10;focus:pane.wfvdle10;blur:pane.wfvdle10;auxclick:pane.wfvdle10;keydown:pane.wfvdle10;clickmod:pane.wfvdle10" jslog="12690;track:click,contextmenu;mutable:true;metadata:WyIwYWhVS0V3ajRnWnFmX3VhSkF4VngxemdHSGFLVEJwa1E4QmNJTGlnQSIsbnVsbCwyXQ=="></a>
             var elements = _driver.FindElements(By.CssSelector("[aria-label]"));
             //"https://www.google.com/maps/place/7-Eleven+Asakusa+Kokusaidori+Store/data=!4m7!3m6!1s0x60188ebf9036d3b3:0x98f8048bde38bac0!8m2!3d35.713365!4d139.7925459!16s%2Fg%2F1tgpsmb6!19sChIJs9M2kL-OGGARwLo43osE-Jg?authuser=0&hl=en&rclk=1"
-            foreach (var item in elements)
-            {
-                var b = item.GetAttribute("href");
-                if (!string.IsNullOrWhiteSpace(b))
-                {
-                    var a = item.GetAttribute("aria-label");
-
-                }
-            }
             return elements;
         }
 
@@ -154,7 +145,22 @@ namespace Gluten.Core.DataProcessing.Service
                 }
             }
             return url;
+        }
 
+        public string GetMeta(string? placeName)
+        {
+            if (placeName == null) return "";
+            var r = GetSearchResults();
+            foreach (var item in r)
+            {
+                var innerText = item.Text;
+                var a = item.GetAttribute("aria-label");
+                if (placeName == a || placeName == null)
+                {
+                    return item.GetAttribute("innerHTML");
+                }
+            }
+            return "";
         }
 
     }

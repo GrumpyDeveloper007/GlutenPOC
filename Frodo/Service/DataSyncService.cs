@@ -206,11 +206,6 @@ namespace Frodo.Service
             {
                 Console.WriteLine($"Processing {i} of {Topics.Count}");
                 var topic = Topics[i];
-                string responseText = "";
-                foreach (var response in topic.ResponsesV2)
-                {
-                    responseText += response + " , ";
-                }
                 // Update url list from title
                 topic.HashTags = StringHelper.ExtractHashtags(topic.Title);
                 var newUrls = StringHelper.ExtractUrls(topic.Title);
@@ -232,8 +227,9 @@ namespace Frodo.Service
                     if (topic.UrlsV2[t].Pin == null || _regeneratePins)
                     {
                         var newUrl = _seleniumMapsUrlProcessor.CheckUrlForMapLinks(url);
+                        var meta = _seleniumMapsUrlProcessor.GetMeta(null);
                         topic.UrlsV2[t].Url = newUrl;
-                        var cachePin = _pinHelper.TryToGenerateMapPin(newUrl, false, url);
+                        var cachePin = _pinHelper.TryToGenerateMapPin(newUrl, false, url, meta);
                         if (cachePin != null)
                         {
                             var newPin = _mappingService.Map<TopicPin, TopicPinCache>(cachePin);
@@ -267,8 +263,9 @@ namespace Frodo.Service
                             if (links[t].Pin == null || _regeneratePins)
                             {
                                 var newUrl = _seleniumMapsUrlProcessor.CheckUrlForMapLinks(url);
+                                var meta = _seleniumMapsUrlProcessor.GetMeta(null);
                                 links[t].Url = newUrl;
-                                var cachePin = _pinHelper.TryToGenerateMapPin(newUrl, false, url);
+                                var cachePin = _pinHelper.TryToGenerateMapPin(newUrl, false, url, meta);
                                 if (cachePin != null)
                                 {
                                     var newPin = _mappingService.Map<TopicPin, TopicPinCache>(cachePin);
@@ -365,7 +362,7 @@ namespace Frodo.Service
                         }
 
                         // If we are unable to get a specific pin, generate chain urls, to add later
-                        if (ai.Pin == null || (_regeneratePins && currentUrl != null))
+                        if (ai.Pin == null)//|| (_regeneratePins && currentUrl != null)
                         {
                             Console.WriteLine($"Searching for a chain");
                             if (aiPin.IsPlaceNameAChain(ai, chainUrls, groupId))

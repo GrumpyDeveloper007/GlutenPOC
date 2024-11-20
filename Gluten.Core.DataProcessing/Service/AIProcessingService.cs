@@ -179,7 +179,8 @@ namespace Gluten.Core.DataProcessing.Service
         public void UpdatePinList(string newUrl, DetailedTopic topic, ref int urlsCreated)
         {
             newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
-            var pin = _pinHelper.TryToGenerateMapPin(newUrl, false, newUrl);
+            var meta = _seleniumMapsUrlProcessor.GetMeta(null);
+            var pin = _pinHelper.TryToGenerateMapPin(newUrl, false, newUrl, meta);
             if (pin != null)
             {
                 urlsCreated++;
@@ -197,13 +198,15 @@ namespace Gluten.Core.DataProcessing.Service
         public TopicPinCache? GetPinFromCurrentUrl(bool onlyFromData, string restaurantName)
         {
             var newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
-            var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData, restaurantName);
+            var meta = _seleniumMapsUrlProcessor.GetMeta(restaurantName);
+            var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData, restaurantName, meta);
             return pin;
         }
 
         public TopicPinCache? GetPinFromCurrentUrl(string newUrl, bool onlyFromData, string restaurantName)
         {
-            var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData, restaurantName);
+            var meta = _seleniumMapsUrlProcessor.GetMeta(restaurantName);
+            var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData, restaurantName, meta);
             return pin;
         }
 
