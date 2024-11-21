@@ -1,4 +1,5 @@
 ﻿using Gluten.Core.Service;
+using Gluten.Data.ClientModel;
 using Gluten.Data.TopicModel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
@@ -10,19 +11,20 @@ using System.Threading.Tasks;
 
 namespace Frodo.Service
 {
+    /// <summary>
+    /// Provides load/save functionality for our databases (currently in memory/file based)
+    /// </summary>
     internal class DatabaseLoaderService
     {
         private readonly string PinCacheDBFileName = "D:\\Coding\\Gluten\\pinCache.json";
         private readonly string ExportDBFileName = "D:\\Coding\\Gluten\\TopicsExport.json";
 
-        private PinHelper _pinHelper;
+        private readonly PinHelper _pinHelper;
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
         public DatabaseLoaderService()
-        {
-            _pinHelper = LoadPinHelper();
-        }
-
-        public PinHelper LoadPinHelper()
         {
             string json;
             json = File.ReadAllText(PinCacheDBFileName);
@@ -31,17 +33,32 @@ namespace Frodo.Service
             {
                 _pinHelper = new PinHelper(pins);
             }
+            else
+            {
+                _pinHelper = new PinHelper([]);
+            }
+        }
+
+        /// <summary>
+        /// Gets the PinHelper
+        /// </summary>
+        public PinHelper GetPinHelper()
+        {
             return _pinHelper;
         }
 
-
-
+        /// <summary>
+        /// Saves the pin caches file
+        /// </summary>
         public void SavePinDB()
         {
             var pinCache = _pinHelper.GetCache();
             SaveDb(PinCacheDBFileName, pinCache);
         }
 
+        /// <summary>
+        /// Loads the previously generated pin topic export file
+        /// </summary>
         public List<PinTopic>? LoadPinTopics()
         {
             return TryLoadJson<PinTopic>(ExportDBFileName);
@@ -56,7 +73,7 @@ namespace Frodo.Service
         }
 
 
-        public static List<classType>? TryLoadJson<classType>(string fileName)
+        private static List<classType>? TryLoadJson<classType>(string fileName)
         {
             List<classType>? topics = null;
             if (File.Exists(fileName))
@@ -69,7 +86,7 @@ namespace Frodo.Service
             return topics;
         }
 
-        public static void SaveDb<typeToSave>(string fileName, typeToSave topics)
+        private static void SaveDb<typeToSave>(string fileName, typeToSave topics)
         {
             var json = JsonConvert.SerializeObject(topics, Formatting.Indented,
                 [new StringEnumConverter()]);

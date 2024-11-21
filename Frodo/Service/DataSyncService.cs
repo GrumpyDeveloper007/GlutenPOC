@@ -1,11 +1,13 @@
 ﻿using Gluten.Core.DataProcessing.Service;
 using Gluten.Core.Service;
+using Gluten.Data.ClientModel;
 using Gluten.Data.TopicModel;
 
 namespace Frodo.Service
 {
     /// <summary>
     /// Scan response information collected from FB, do some basic processing
+    /// All the magic happens here
     /// </summary>
     internal class DataSyncService
     {
@@ -18,6 +20,7 @@ namespace Frodo.Service
         private readonly DatabaseLoaderService _databaseLoaderService;
         private readonly MappingService _mappingService = new();
         private readonly MapsMetaExtractorService _mapsMetaExtractorService = new();
+        private readonly FBGroupService _fbGroupService = new();
 
         public List<DetailedTopic> Topics = [];
         private readonly string DBFileName = "D:\\Coding\\Gluten\\Topics.json";
@@ -47,6 +50,10 @@ namespace Frodo.Service
             Console.WriteLine($"\r\nReading captured FB data");
             _topicLoaderService.ReadFileLineByLine("D:\\Coding\\Gluten\\Smeagol\\bin\\Debug\\net8.0\\Responses.txt", Topics);
 
+            Console.WriteLine("--------------------------------------");
+            Console.WriteLine($"\r\nProcessing topics, generating short titles");
+            GenerateShortTitles();
+
             _analyzeDocumentService.OpenAgent();
 
             Console.WriteLine("--------------------------------------");
@@ -74,14 +81,30 @@ namespace Frodo.Service
             Console.WriteLine($"\r\nComplete, exit...");
         }
 
+        private void GenerateShortTitles()
+        {
+            for (int i = 0; i < Topics.Count; i++)
+            {
+                Console.WriteLine($"Processing {i} of {Topics.Count}");
+                var topic = Topics[i];
+                if (string.IsNullOrWhiteSpace(topic.ShortTitle))
+                {
+                    topic.ShortTitle = _analyzeDocumentService.GenerateShortTitle(topic.Title);
+                }
+            }
+        }
+
         private void ExtractMetaInfoFromPinCache()
         {
             int i = 0;
             var cache = _pinHelper.GetCache();
             foreach (var item in cache)
             {
-                Console.WriteLine($"Processing pin meta {i} or {cache.Count()}");
-                item.Value.MetaData = _mapsMetaExtractorService.ExtractMeta(item.Value.MetaHtml);
+                Console.WriteLine($"Processing pin meta {i} or {cache.Count}");
+                if (item.Value.MetaData == null)
+                {
+                    item.Value.MetaData = _mapsMetaExtractorService.ExtractMeta(item.Value.MetaHtml);
+                }
                 i++;
             }
             _databaseLoaderService.SavePinDB();
@@ -118,7 +141,7 @@ namespace Frodo.Service
                         if (aiVenue.Pin != null
                             && !string.IsNullOrWhiteSpace(aiVenue.Pin.GeoLatatude)
                             && !string.IsNullOrWhiteSpace(aiVenue.Pin.GeoLongitude)
-                            && DataHelper.IsPinWithinExpectedRange(topic.GroupId, double.Parse(aiVenue.Pin.GeoLatatude), double.Parse(aiVenue.Pin.GeoLongitude)))
+                            && FBGroupService.IsPinWithinExpectedRange(topic.GroupId, double.Parse(aiVenue.Pin.GeoLatatude), double.Parse(aiVenue.Pin.GeoLongitude)))
                         {
                             var existingPin = DataHelper.IsPinInList(aiVenue.Pin, pins);
                             var cachePin = _pinHelper.TryGetPin(aiVenue.Pin.Label);
@@ -135,7 +158,7 @@ namespace Frodo.Service
                         if (url.Pin != null
                             && !string.IsNullOrWhiteSpace(url.Pin.GeoLatatude)
                             && !string.IsNullOrWhiteSpace(url.Pin.GeoLongitude)
-                            && DataHelper.IsPinWithinExpectedRange(topic.GroupId, double.Parse(url.Pin.GeoLatatude), double.Parse(url.Pin.GeoLongitude)))
+                            && FBGroupService.IsPinWithinExpectedRange(topic.GroupId, double.Parse(url.Pin.GeoLatatude), double.Parse(url.Pin.GeoLongitude)))
                         {
                             var existingPin = DataHelper.IsPinInList(url.Pin, pins);
                             var cachePin = _pinHelper.TryGetPin(url.Pin.Label);
@@ -159,6 +182,7 @@ namespace Frodo.Service
             DataHelper.CleanTopics(pins);
             pins = ExtractPinExport(pins, Topics, _mappingService);
             DataHelper.RemoveEmptyPins(pins);
+            DataHelper.RemoveTopicTitles(pins);
 
             var ii = 0;
             foreach (var pin in pins)
@@ -313,7 +337,7 @@ namespace Frodo.Service
         /// </summary>
         private void UpdatePinsForAiVenues()
         {
-            var aiPin = new AiPinGeneration(_aIProcessingService, _mappingService);
+            var aiPin = new AiPinGeneration(_aIProcessingService, _mappingService, _fbGroupService);
             for (int i = 0; i < Topics.Count; i++)
             {
                 DetailedTopic? topic = Topics[i];
@@ -363,7 +387,7 @@ namespace Frodo.Service
 
                     if (ai.Pin == null || _regeneratePins)
                     {
-                        var groupId = "379994195544478";
+                        var groupId = FBGroupService.DefaultGroupId;
                         if (string.IsNullOrWhiteSpace(topic.GroupId))
                         {
                             Console.WriteLine($"Unknown group Id {i}, using default");
@@ -374,10 +398,9 @@ namespace Frodo.Service
                             groupId = topic.GroupId;
                         }
 
-                        string? currentUrl = null;
                         if (ai.Pin == null || _regeneratePins)
                         {
-                            currentUrl = aiPin.GetMapPinForPlaceName(ai, groupId);
+                            aiPin.GetMapPinForPlaceName(ai, groupId);
                         }
 
                         // If we are unable to get a specific pin, generate chain urls, to add later
@@ -409,9 +432,11 @@ namespace Frodo.Service
                     if (pin != null)
                     {
                         // Add pin to AiGenerated
-                        var newVenue = new AiVenue();
-                        newVenue.Pin = _mappingService.Map<TopicPin, TopicPinCache>(pin);
-                        newVenue.PlaceName = pin.Label;
+                        var newVenue = new AiVenue
+                        {
+                            Pin = _mappingService.Map<TopicPin, TopicPinCache>(pin),
+                            PlaceName = pin.Label
+                        };
                         if (!DataHelper.IsInList(topic.AiVenues, newVenue, -1))
                         {
                             topic.AiVenues.Add(newVenue);

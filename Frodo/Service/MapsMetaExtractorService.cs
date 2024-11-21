@@ -10,14 +10,14 @@ namespace Frodo.Service
 {
     internal class MapsMetaExtractorService
     {
-        public List<string> _restaurantTypes = new();
+        public List<string> _restaurantTypes = [];
 
         class LabelNode
         {
-            public string Name { get; set; }
-            public List<LabelNode> Child { get; set; } = new();
+            public string Name { get; set; } = "";
+            public List<LabelNode> Child { get; set; } = [];
 
-            public List<string> Buttons { get; set; } = new();
+            public List<string> Buttons { get; set; } = [];
         }
 
         public PinCacheMeta? ExtractMeta(string? html)
@@ -67,7 +67,6 @@ namespace Frodo.Service
                     if (!result.Price.StartsWith("Price:"))
                     {
                         result.Price = "";
-                        result = result;
                     }
                     if (result.RestaurantType.Contains("reviews", StringComparison.InvariantCultureIgnoreCase)
                         || result.RestaurantType == "."
@@ -114,7 +113,7 @@ namespace Frodo.Service
 
                         )
                     {
-                        result = result;
+                        Console.WriteLine($"Unknown restaurant type : {result.RestaurantType}");
                     }
                     if (!result.Stars.Contains("stars"))
                     {
@@ -132,7 +131,7 @@ namespace Frodo.Service
         private static void TraverseHtml(string html, LabelNode rootNode)
         {
             // Load the HTML into an HtmlDocument
-            HtmlDocument document = new HtmlDocument();
+            HtmlDocument document = new();
             document.LoadHtml(html);
 
             // Get the root node

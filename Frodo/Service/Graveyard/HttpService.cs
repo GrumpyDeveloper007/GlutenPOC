@@ -7,7 +7,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Frodo.Service
+namespace Frodo.Service.Graveyard
 {
     public class HttpService
     {
@@ -15,11 +15,6 @@ namespace Frodo.Service
 
         public HttpService()
         {
-            HttpClientHandler handler = new HttpClientHandler
-            {
-                AutomaticDecompression = DecompressionMethods.All
-            };
-
             _client = new HttpClient();
         }
 
@@ -50,7 +45,7 @@ namespace Frodo.Service
         {
             using HttpContent content = new StringContent(data, Encoding.UTF8, contentType);
 
-            HttpRequestMessage requestMessage = new HttpRequestMessage()
+            HttpRequestMessage requestMessage = new()
             {
                 Content = content,
                 Method = HttpMethod.Post,

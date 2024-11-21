@@ -1,13 +1,11 @@
 ﻿using Gluten.Data.TopicModel;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace Frodo.Service
 {
+    /// <summary>
+    /// General helper function for string
+    /// </summary>
     internal class StringHelper
     {
         public static List<string> ExtractHashtags(string text)

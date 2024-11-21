@@ -1,20 +1,14 @@
 ﻿using Gluten.Data.TopicModel;
-using OpenQA.Selenium.BiDi.Modules.BrowsingContext;
-using System;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Gluten.Core.DataProcessing.Service
 {
-    public class AiPinGeneration(AIProcessingService aIProcessingService, MappingService mappingService)
+    public class AiPinGeneration(AIProcessingService aIProcessingService, MappingService mappingService,
+        FBGroupService fBGroupService)
     {
         private readonly AIProcessingService _aIProcessingService = aIProcessingService;
         private readonly MappingService _mappingService = mappingService;
-        private readonly List<string> _addressFilters = new List<string>() {
+
+        private readonly List<string> _addressFilters = [
             "( exact location not specified)",
             "(No specific address mentioned)",
             "(no address provided)",
@@ -31,9 +25,9 @@ namespace Gluten.Core.DataProcessing.Service
             "no specific address provided",
             "Not specified",
             "Google Maps link",
-        };
+        ];
 
-        private readonly List<string> _nameFilters = new List<string>() {
+        private readonly List<string> _nameFilters = [
             "Groceries",
             "Train Station",
             "Tokyo Station",
@@ -61,9 +55,9 @@ namespace Gluten.Core.DataProcessing.Service
             "Sushi restaurant",
             "Conveyor belt sushi place",
             "Yakiniku/Korean BBQ restaurant"
-             };
+             ];
 
-        private readonly List<string> _okToSkip = new List<string>() {
+        private readonly List<string> _okToSkip = [
             "Starbucks",
             "Lawson natural",
             "Lawsons",
@@ -89,66 +83,31 @@ namespace Gluten.Core.DataProcessing.Service
             "Street food stall",
             "East Cafe",
             "Kingdom"
-             };
+             ];
 
-        private readonly Dictionary<string, string> _knownGroupIds = new Dictionary<string, string>()
-        {
-            {"379994195544478","Japan" },//Gluten-Free in Japan!
-            {"1025248344200757","Australia" },
-            {"361337232353766","Vietnam" },
-            {"806902313439614","Thailand" },
-            {"3087018218214300","Bail" },
-            {"1420852834795381","South Korea" },
-            {"1015752345220391","Thailand" },//Gluten Free Chiang Mai
-            {"852980778556330","Fiji" },
-            {"353439621914938","Taipei" },
-            {"319517678837045","Vietnam" },//Gluten Free Hanoi
-            {"660915839470807","Vietnam" },//Gluten Free Saigon (Ho Chi Minh City)
-            {"823200180025057","Vietnam" },//Gluten-free Hội An Community
-            {"422262581142441","Hong Kong" },//Gluten Free in Hong Kong
-            {"302515126584130","Philippines" },
-            {"1053129328213251","Thailand" },//Gluten Free Thailand
-            {"182984958515029","Singapore" },//Gluten Free Singapore - Support Group
-//            {"","" },
-        };
 
-        static string RemoveDiacritics(string text)
-        {
-            var normalizedString = text.Normalize(NormalizationForm.FormD);
-            var stringBuilder = new StringBuilder(capacity: normalizedString.Length);
-
-            for (int i = 0; i < normalizedString.Length; i++)
-            {
-                char c = normalizedString[i];
-                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
-                if (unicodeCategory != UnicodeCategory.NonSpacingMark)
-                {
-                    stringBuilder.Append(c);
-                }
-            }
-
-            return stringBuilder
-                .ToString()
-                .Normalize(NormalizationForm.FormC);
-        }
-
+        /// <summary>
+        /// Returns a list of urls if the placename search results in multiple results,
+        /// Filters returned results by placename, so if a search is very general, 
+        /// for example 'Store', we dont just return lots of random locations
+        /// </summary>
         public bool IsPlaceNameAChain(AiVenue venue, List<string> chainUrls, string groupId)
         {
             if (!IsInPlaceNameSkipList(venue.PlaceName)
             && venue.Pin == null
                 && !string.IsNullOrWhiteSpace(venue.PlaceName))
             {
-                _aIProcessingService.GetMapUrl(venue.PlaceName + $", {_knownGroupIds[groupId]}");
+                _aIProcessingService.GetMapUrl(venue.PlaceName + $", {fBGroupService.GetCountryName(groupId)}");
                 var mapUrls = _aIProcessingService.GetMapUrls();
                 var placeNames = _aIProcessingService.GetMapPlaceNames();
 
                 // Try to filter general searches
                 var matchingPlaces = new List<string>();
-                var searchString = RemoveDiacritics(venue.PlaceName).ToUpper();
+                var searchString = StringHelper.RemoveDiacritics(venue.PlaceName).ToUpper();
                 for (int t = 0; t < placeNames.Count; t++)
                 {
                     string? i = placeNames[t];
-                    var processedString = RemoveDiacritics(i).ToUpper();
+                    var processedString = StringHelper.RemoveDiacritics(i).ToUpper();
                     if (processedString.Contains(searchString, StringComparison.InvariantCulture))
                     {
                         matchingPlaces.Add(mapUrls[t]);
@@ -161,7 +120,9 @@ namespace Gluten.Core.DataProcessing.Service
             return false;
         }
 
-
+        /// <summary>
+        /// Tries to generate a pin based on the venue place name 
+        /// </summary>
         public string? GetMapPinForPlaceName(AiVenue venue, string groupId)
         {
             string? currentNewUrl = null;
@@ -170,7 +131,7 @@ namespace Gluten.Core.DataProcessing.Service
             if (!IsInPlaceNameSkipList(venue.PlaceName)
                 && !string.IsNullOrWhiteSpace(venue.PlaceName))
             {
-                string? restaurantName = venue.PlaceName + $", {_knownGroupIds[groupId]}";
+                string? restaurantName = venue.PlaceName + $", {fBGroupService.GetCountryName(groupId)}";
                 currentNewUrl = _aIProcessingService.GetMapUrl(restaurantName);
 
                 if (currentNewUrl != null)

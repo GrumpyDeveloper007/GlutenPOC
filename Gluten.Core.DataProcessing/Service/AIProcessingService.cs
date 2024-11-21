@@ -1,4 +1,5 @@
 ﻿using Azure.AI.TextAnalytics;
+using Gluten.Core.DataProcessing.Service.Graveyard;
 using Gluten.Core.Service;
 using Gluten.Data.TopicModel;
 using System.Web;
@@ -9,101 +10,27 @@ namespace Gluten.Core.DataProcessing.Service
     /// <summary>
     /// Trys to extracted formatted information from human written posts
     /// </summary>
-    /// <remarks>
-    /// Constructor
-    /// </remarks>
-    public class AIProcessingService(NaturalLanguageProcessor naturalLanguageProcessor,
+    public class AIProcessingService(
         SeleniumMapsUrlProcessor seleniumMapsUrlProcessor, PinHelper pinHelper, MappingService mappingService)
     {
-        private readonly NaturalLanguageProcessor _naturalLanguageProcessor = naturalLanguageProcessor;
         private readonly PinHelper _pinHelper = pinHelper;
         private readonly SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor = seleniumMapsUrlProcessor;
         private readonly MappingService _mappingService = mappingService;
 
         /// <summary>
-        /// Processes all the topics in a list
+        /// Uses google maps to search for a place name
         /// </summary>
-        public void AIProcessing(List<DetailedTopic> topics)
-        {
-            int aiQueries = 0;
-            int urlsCreated = 0;
-            if (topics == null) return;
-
-            for (int i = 0; i < topics.Count; i++)
-            {
-                var topic = topics[i];
-                if (!topic.HasMapPin() && topic.AiParsed == false)
-                {
-                    aiQueries++;
-                    var restaurantName = "";
-                    var newUrl = ProcessTopic(topic, ref restaurantName);
-                    if (newUrl != null)
-                    {
-                        UpdatePinList(newUrl, topic, ref urlsCreated);
-                    }
-                }
-            }
-            Console.WriteLine($"AI Queries : {aiQueries}");
-            Console.WriteLine($"AI Urls created : {urlsCreated}");
-        }
-
-        /// <summary>
-        /// Tries to extract location information from a single topic title
-        /// </summary>
-        public string? ProcessTopic(DetailedTopic topic, ref string restaurantName)
-        {
-            if (!topic.HasMapPin() && topic.AiParsed == false)
-            {
-                var aiResponse = _naturalLanguageProcessor.Process(topic.Title);
-                restaurantName = "";
-                var city = "";
-                topic.AiParsed = true;
-                foreach (var item in aiResponse)
-                {
-                    if (item.Category == EntityCategory.Location && item.SubCategory == null)
-                    {
-                        restaurantName = item.Text;
-                    }
-                    if (item.Category == EntityCategory.Location && item.SubCategory == "City")
-                    {
-                        city = item.Text;
-                    }
-
-                    /*
-                     * TODO: Not required at the moment, remove?
-                    if (topic.AiTitleInfoV2 == null) topic.AiTitleInfoV2 = new List<AiInformation>();
-                    topic.AiTitleInfoV2.Add(new AiInformation()
-                    {
-                        Text = item.Text,
-                        Category = item.Category.ToString(),
-                        SubCategory = item.SubCategory,
-                        ConfidenceScore = item.ConfidenceScore,
-                        Length = item.Length,
-                        Offset = item.Offset
-                    });
-                    */
-                }
-
-                // Skip if all we have is the city name
-                if (!string.IsNullOrEmpty(restaurantName))
-                {
-                    return GetMapUrl($"{restaurantName},{city}");
-                }
-            }
-
-            return null;
-
-        }
-
         public string GetMapUrl(string searchString)
         {
             var searchParameter = HttpUtility.UrlEncode(searchString);
             var mapsLink = $"http://maps.google.com/?q={searchParameter}";
-            // TODO: Hacks
             var newUrl = _seleniumMapsUrlProcessor.CheckUrlForMapLinks(mapsLink);
             return newUrl;
         }
 
+        /// <summary>
+        /// Checks the currently shown page to see if 'permanently closed' is shown
+        /// </summary>
         public bool IsPermanentlyClosed(string? placeName, out string meta)
         {
             meta = "";
@@ -125,6 +52,9 @@ namespace Gluten.Core.DataProcessing.Service
             return false;
         }
 
+        /// <summary>
+        /// When google maps returns multiple results, this function will try to extact the link for each location
+        /// </summary>
         public List<string> GetMapUrls()
         {
             var results = new List<string>();
@@ -147,10 +77,12 @@ namespace Gluten.Core.DataProcessing.Service
                     }
                 }
             }
-
             return results;
         }
 
+        /// <summary>
+        /// When google maps returns multiple results, this function will try to extact the place name for each result
+        /// </summary>
         public List<string> GetMapPlaceNames()
         {
             var results = new List<string>();
@@ -174,9 +106,30 @@ namespace Gluten.Core.DataProcessing.Service
         }
 
         /// <summary>
+        /// Tries to get a pin from the currenty displayed page
+        /// </summary>
+        public TopicPinCache? GetPinFromCurrentUrl(bool onlyFromData, string restaurantName)
+        {
+            var newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
+            var meta = _seleniumMapsUrlProcessor.GetMeta(restaurantName);
+            var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData, restaurantName, meta);
+            return pin;
+        }
+
+        /// <summary>
+        /// Tries to get a pin from the currenty displayed page
+        /// </summary>
+        public TopicPinCache? GetPinFromCurrentUrl(string newUrl, bool onlyFromData, string restaurantName)
+        {
+            var meta = _seleniumMapsUrlProcessor.GetMeta(restaurantName);
+            var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData, restaurantName, meta);
+            return pin;
+        }
+
+        /// <summary>
         /// Gets the current url shown in the browser and tries to extract a geo coordinate
         /// </summary>
-        public void UpdatePinList(string newUrl, DetailedTopic topic, ref int urlsCreated)
+        private void UpdatePinList(string newUrl, DetailedTopic topic, ref int urlsCreated)
         {
             newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
             var meta = _seleniumMapsUrlProcessor.GetMeta(null);
@@ -194,21 +147,5 @@ namespace Gluten.Core.DataProcessing.Service
                 });
             }
         }
-
-        public TopicPinCache? GetPinFromCurrentUrl(bool onlyFromData, string restaurantName)
-        {
-            var newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
-            var meta = _seleniumMapsUrlProcessor.GetMeta(restaurantName);
-            var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData, restaurantName, meta);
-            return pin;
-        }
-
-        public TopicPinCache? GetPinFromCurrentUrl(string newUrl, bool onlyFromData, string restaurantName)
-        {
-            var meta = _seleniumMapsUrlProcessor.GetMeta(restaurantName);
-            var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData, restaurantName, meta);
-            return pin;
-        }
-
     }
 }

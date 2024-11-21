@@ -17,8 +17,8 @@ namespace Gluten.Core.DataProcessing.Service
     public class SeleniumMapsUrlProcessor
     {
         private string _responsefileName = Environment.CurrentDirectory + "/Responses.txt";
-        private ChromeDriver _driver = new ChromeDriver();
-        private bool _started = false;
+        private readonly ChromeDriver _driver = new ChromeDriver();
+        private readonly bool _started = false;
 
         /// <summary>
         /// Start Selenium
@@ -123,8 +123,8 @@ namespace Gluten.Core.DataProcessing.Service
             {
                 if (!url.Contains("/@"))
                 {
-                    var newUrl = GoAndWaitForUrlChange(url);
-                    newUrl = GetCurrentUrl();
+                    GoAndWaitForUrlChange(url);
+                    var newUrl = GetCurrentUrl();
                     newUrl = HttpUtility.UrlDecode(newUrl);
                     int timeout = 10;
                     while (!newUrl.Contains("/@") && timeout > 0)

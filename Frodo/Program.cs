@@ -22,12 +22,12 @@ if (settings == null)
 
 var dbLoader = new DatabaseLoaderService();
 
-var nlp = new NaturalLanguageProcessor(settings.AIEndPoint, settings.AIApiKey);
-var pinHelper = dbLoader.LoadPinHelper();
+//var nlp = new NaturalLanguageProcessor(settings.AIEndPoint, settings.AIApiKey);
+var pinHelper = dbLoader.GetPinHelper();
 var selenium = new SeleniumMapsUrlProcessor();
 var mapper = new MappingService();
 
-var ai = new AIProcessingService(nlp, selenium, pinHelper, mapper);
+var ai = new AIProcessingService(selenium, pinHelper, mapper);
 var service = new DataSyncService(ai, selenium, pinHelper, dbLoader);
 service.ProcessFile();
 

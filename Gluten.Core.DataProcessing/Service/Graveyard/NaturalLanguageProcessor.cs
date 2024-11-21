@@ -1,13 +1,8 @@
 ﻿using Azure.AI.TextAnalytics;
 using Azure;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Diagnostics;
 
-namespace Gluten.Core.DataProcessing.Service
+namespace Gluten.Core.DataProcessing.Service.Graveyard
 {
     /// <summary>
     /// Uses Azure AI to help process human written messages/topics

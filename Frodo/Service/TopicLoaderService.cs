@@ -5,10 +5,16 @@ using Newtonsoft.Json;
 
 namespace Frodo.Service
 {
+    /// <summary>
+    /// Processes the data captured from FB groups
+    /// </summary>
     internal class TopicLoaderService
     {
         private readonly TopicHelper _topicHelper = new();
 
+        /// <summary>
+        /// Loads the data objects captured from FB groups, extracts the information we are interested in
+        /// </summary>
         public void ReadFileLineByLine(string filePath, List<DetailedTopic> topics)
         {
             // Open the file and read each line

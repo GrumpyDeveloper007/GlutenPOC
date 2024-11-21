@@ -13,6 +13,7 @@ namespace Gluten.Data.TopicModel
     public class Topic
     {
         public required string Title { get; set; }
+        public string? ShortTitle { get; set; }
 
         public string? FacebookUrl { get; set; }
         public string? NodeID { get; set; }
