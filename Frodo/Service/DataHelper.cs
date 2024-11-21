@@ -218,11 +218,17 @@ namespace Frodo.Service
                     Label = pinToAdd.Label,
                     Topics = [topicToAdd],
                 };
-                pins.Add(newPin);
                 if (cachePin != null && !string.IsNullOrWhiteSpace(cachePin.MapsUrl))
                 {
                     newPin.MapsLink = cachePin.MapsUrl;
+                    if (cachePin.MetaData != null)
+                    {
+                        newPin.RestaurantType = cachePin.MetaData.RestaurantType;
+                        newPin.Stars = cachePin.MetaData.Stars;
+                        newPin.Price = cachePin.MetaData.Price;
+                    }
                 }
+                pins.Add(newPin);
                 return;
             }
             // dont add duplicates
@@ -230,6 +236,12 @@ namespace Frodo.Service
             if (cachePin != null && !string.IsNullOrWhiteSpace(cachePin.MapsUrl))
             {
                 matchingPinTopic.MapsLink = cachePin.MapsUrl;
+            }
+            if (cachePin != null && cachePin.MetaData != null)
+            {
+                matchingPinTopic.Stars = cachePin.MetaData.Stars;
+                matchingPinTopic.RestaurantType = cachePin.MetaData.RestaurantType;
+                matchingPinTopic.Price = cachePin.MetaData.Price;
             }
             foreach (var existingTopic in matchingPinTopic.Topics)
             {

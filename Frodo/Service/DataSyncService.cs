@@ -17,6 +17,7 @@ namespace Frodo.Service
         private readonly AIProcessingService _aIProcessingService;
         private readonly DatabaseLoaderService _databaseLoaderService;
         private readonly MappingService _mappingService = new();
+        private readonly MapsMetaExtractorService _mapsMetaExtractorService = new();
 
         public List<DetailedTopic> Topics = [];
         private readonly string DBFileName = "D:\\Coding\\Gluten\\Topics.json";
@@ -58,8 +59,12 @@ namespace Frodo.Service
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nUpdating pin information for Ai Venues");
-            UpdatePinsForAiVenues();
+            //UpdatePinsForAiVenues();
             _topicsHelper.SaveTopics(DBFileName, Topics);
+
+            Console.WriteLine("--------------------------------------");
+            Console.WriteLine($"\r\nExtracting meta info for pins");
+            ExtractMetaInfoFromPinCache();
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nGenerating data for client application");
@@ -68,6 +73,20 @@ namespace Frodo.Service
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nComplete, exit...");
         }
+
+        private void ExtractMetaInfoFromPinCache()
+        {
+            int i = 0;
+            var cache = _pinHelper.GetCache();
+            foreach (var item in cache)
+            {
+                Console.WriteLine($"Processing pin meta {i} or {cache.Count()}");
+                item.Value.MetaData = _mapsMetaExtractorService.ExtractMeta(item.Value.MetaHtml);
+                i++;
+            }
+            _databaseLoaderService.SavePinDB();
+        }
+
 
         /// <summary>
         /// Use AI to extract information from unformatted human generated data

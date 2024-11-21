@@ -36,6 +36,7 @@ namespace Gluten.Core.DataProcessing.Service
         private readonly List<string> _nameFilters = new List<string>() {
             "Groceries",
             "Train Station",
+            "Tokyo Station",
             "Supermarket",
             "Unknown Restaurant",
             "Tokyo shops",

@@ -18,6 +18,11 @@ Automate as much as possible the above process, provide information to fellow co
  - create a MAUI app
  - create something I can use
  - explore any interest by other potential users
+ 
+## Pricing 
+
+ - Maps $25/month
+ 
 
 ## Top level design 
 

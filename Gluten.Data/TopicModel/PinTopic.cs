@@ -14,6 +14,10 @@ namespace Gluten.Data.TopicModel
         public string? Description { get; set; }
         public List<PinLinkInfo>? Topics { get; set; }
         public string? MapsLink { get; set; }
+        public string RestaurantType { get; set; }
+        public string Price { get; set; }
+        public string Stars { get; set; }
+
     }
 
     public class PinLinkInfo

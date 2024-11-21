@@ -10,6 +10,9 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gluten.Data", "..\Gluten.Data\Gluten.Data.csproj", "{F69DEFB1-9BFE-4328-88F1-3AAD368C32A4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4EE943BB-8D20-4781-9533-8C072E32EE51}"
+	ProjectSection(SolutionItems) = preProject
+		..\readme.md = ..\readme.md
+	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gluten.Core", "..\Gluten.Core\Gluten.Core.csproj", "{B817FA6E-7E2B-41EE-817B-58719CA91C0B}"
 EndProject
