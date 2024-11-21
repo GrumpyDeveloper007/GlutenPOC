@@ -31,6 +31,7 @@ namespace Gluten.Data.TopicModel
         public List<string>? HashTags { get; set; } = null;
 
         public string GroupId { get; set; } = "";
+        public DateTimeOffset? PostCreated { get; set; }
 
         //public List<AiInformation>? AiTitleInfoV2 { get; set; }
 

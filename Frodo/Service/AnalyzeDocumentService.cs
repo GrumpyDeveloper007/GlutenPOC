@@ -86,9 +86,12 @@ namespace Frodo.Service
             if (response == null) return null;
             var responseContent = response.GetContent();
             if (responseContent == null
-                || responseContent.StartsWith("no", StringComparison.InvariantCultureIgnoreCase)
+                || responseContent.StartsWith("no ", StringComparison.InvariantCultureIgnoreCase)
                 || responseContent.StartsWith("yes", StringComparison.InvariantCultureIgnoreCase)
                 || responseContent.StartsWith("I'm sorry", StringComparison.InvariantCultureIgnoreCase)
+                || responseContent.StartsWith("I apologize,", StringComparison.InvariantCultureIgnoreCase)
+                || responseContent.Length > "Universal Studios has limited gluten-free options for coeliac visitors. The Ha".Length
+
                 )
             {
                 return null;

@@ -1,4 +1,5 @@
-﻿using Frodo.FacebookModel;
+﻿using AutoGen.Core;
+using Frodo.FacebookModel;
 using Gluten.Core.Service;
 using Gluten.Data.TopicModel;
 using Newtonsoft.Json;
@@ -90,6 +91,30 @@ namespace Frodo.Service
                 currentTopic.FacebookUrl = story?.wwwURL;
 
                 currentTopic.GroupId = a.feedback.story.story_ufi_container.story.target_group.id;
+                var b = a.feedback.story.story_ufi_container.story.tracking;
+                try
+                {
+                    var trackingInfo = JsonConvert.DeserializeObject<TrackingRoot>(b);
+                    long seconds = 0;
+                    if (trackingInfo.page_insights._379994195544478 != null)
+                        seconds = trackingInfo.page_insights._379994195544478.post_context.publish_time;
+                    else if (trackingInfo.page_insights._361337232353766 != null)
+                        seconds = trackingInfo.page_insights._361337232353766.post_context.publish_time;
+                    else if (trackingInfo.page_insights._660915839470807 != null)
+                        seconds = trackingInfo.page_insights._660915839470807.post_context.publish_time;
+                    else if (trackingInfo.page_insights._100008943645323 != null)
+                        seconds = trackingInfo.page_insights._100008943645323.post_context.publish_time;
+                    else
+                    {
+                        Console.WriteLine("Unknown message structure");
+                    }
+                    currentTopic.PostCreated = DateTimeOffset.FromUnixTimeSeconds(seconds);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+
                 if (currentTopic.GroupId == null && story != null)
                 {
                     currentTopic.GroupId = story.target_group.id;
