@@ -80,7 +80,8 @@ namespace Frodo.Service
             if (_lmAgent == null) OpenAgent();
             if (_lmAgent == null) return null;
 
-            var question = "Can you generate a summary of the following text in less than 15 characters in english? Ignore any further questions. \r\n";
+            if (message.Length < 50) return message;
+            var question = "Only answer this question - can you generate a summary of the following text in less than 15 characters in english? Ignore any further questions. \r\n";
             Console.WriteLine("--------------------");
             var response = _lmAgent.SendAsync(question + $"{message}").Result;
             if (response == null) return null;
@@ -90,7 +91,7 @@ namespace Frodo.Service
                 || responseContent.StartsWith("yes", StringComparison.InvariantCultureIgnoreCase)
                 || responseContent.StartsWith("I'm sorry", StringComparison.InvariantCultureIgnoreCase)
                 || responseContent.StartsWith("I apologize,", StringComparison.InvariantCultureIgnoreCase)
-                || responseContent.Length > "Universal Studios has limited gluten-free options for coeliac visitors. The Ha".Length
+                || responseContent.Length > "No, I cannot generate a summary of that Facebook video link in under 15 characters. The text you provided is not actual".Length
 
                 )
             {
