@@ -104,6 +104,29 @@ namespace Frodo.Service
                         seconds = trackingInfo.page_insights._660915839470807.post_context.publish_time;
                     else if (trackingInfo.page_insights._100008943645323 != null)
                         seconds = trackingInfo.page_insights._100008943645323.post_context.publish_time;
+                    else if (trackingInfo.page_insights._61561347076615 != null)
+                        seconds = trackingInfo.page_insights._61561347076615.post_context.publish_time;
+                    else if (trackingInfo.page_insights._330239776846883 != null)
+                        seconds = trackingInfo.page_insights._330239776846883.post_context.publish_time;
+                    else if (trackingInfo.page_insights._353439621914938 != null)
+                        seconds = trackingInfo.page_insights._353439621914938.post_context.publish_time;
+                    else if (trackingInfo.page_insights._319517678837045 != null)
+                        seconds = trackingInfo.page_insights._319517678837045.post_context.publish_time;
+                    else if (trackingInfo.page_insights._852980778556330 != null)
+                        seconds = trackingInfo.page_insights._852980778556330.post_context.publish_time;
+                    else if (trackingInfo.page_insights._100083231515067 != null)
+                        seconds = trackingInfo.page_insights._100083231515067.post_context.publish_time;
+                    else if (trackingInfo.page_insights._1015752345220391 != null)
+                        seconds = trackingInfo.page_insights._1015752345220391.post_context.publish_time;
+                    else if (trackingInfo.page_insights._422262581142441 != null)
+                        seconds = trackingInfo.page_insights._422262581142441.post_context.publish_time;
+                    else if (trackingInfo.page_insights._302515126584130 != null)
+                        seconds = trackingInfo.page_insights._302515126584130.post_context.publish_time;
+                    else if (trackingInfo.page_insights._1420852834795381 != null)
+                        seconds = trackingInfo.page_insights._1420852834795381.post_context.publish_time;
+                    else if (trackingInfo.page_insights._1053129328213251 != null)
+                        seconds = trackingInfo.page_insights._1053129328213251.post_context.publish_time;
+
                     else
                     {
                         Console.WriteLine("Unknown message structure");
