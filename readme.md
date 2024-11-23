@@ -61,6 +61,10 @@ Multiple projects that contain key core functionality.
 
 ## TODO 
 
+Use wish list
+ - some way to address keeping the shop info up-to-date/accurate
+ - import/export of google map pin lists
+
 These items continuously change during the POC phase, but here are some highlights -
 
  - improve data processing
