@@ -1,4 +1,5 @@
-﻿using Gluten.Data.TopicModel;
+﻿using Gluten.Data;
+using Gluten.Data.TopicModel;
 
 namespace Gluten.Core.DataProcessing.Service
 {

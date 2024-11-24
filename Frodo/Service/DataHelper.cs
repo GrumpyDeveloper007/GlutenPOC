@@ -1,4 +1,5 @@
-﻿using Gluten.Data.ClientModel;
+﻿using Gluten.Data;
+using Gluten.Data.ClientModel;
 using Gluten.Data.TopicModel;
 
 namespace Frodo.Service

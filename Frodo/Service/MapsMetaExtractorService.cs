@@ -1,4 +1,4 @@
-﻿using Gluten.Data.TopicModel;
+﻿using Gluten.Data;
 using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;

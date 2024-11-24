@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using Gluten.Data;
 using Gluten.Data.ClientModel;
 using Gluten.Data.TopicModel;
 using System;

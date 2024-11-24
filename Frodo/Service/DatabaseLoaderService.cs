@@ -1,4 +1,5 @@
 ﻿using Gluten.Core.Service;
+using Gluten.Data;
 using Gluten.Data.ClientModel;
 using Gluten.Data.TopicModel;
 using Newtonsoft.Json;

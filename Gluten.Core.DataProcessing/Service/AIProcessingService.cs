@@ -1,5 +1,6 @@
 ﻿using Azure.AI.TextAnalytics;
 using Gluten.Core.Service;
+using Gluten.Data;
 using Gluten.Data.TopicModel;
 using System.Web;
 using System.Xml.Linq;
