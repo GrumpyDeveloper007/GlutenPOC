@@ -2,6 +2,8 @@
 using Gluten.Core.Service;
 using Gluten.Data;
 using Gluten.Data.ClientModel;
+using Gluten.Data.PinCache;
+using Gluten.Data.PinDescription;
 using Gluten.Data.TopicModel;
 
 namespace Frodo.Service
@@ -10,15 +12,18 @@ namespace Frodo.Service
     /// Scan response information collected from FB, do some basic processing
     /// All the magic happens here
     /// </summary>
-    internal class DataSyncService
+    internal class DataSyncService(AIProcessingService aIProcessingService,
+        SeleniumMapsUrlProcessor seleniumMapsUrlProcessor,
+        PinHelper pinHelper,
+        DatabaseLoaderService databaseLoaderService)
     {
         private readonly TopicsHelper _topicsHelper = new();
-        private readonly SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor;
+        private readonly SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor = seleniumMapsUrlProcessor;
         private readonly AnalyzeDocumentService _analyzeDocumentService = new();
         private readonly TopicLoaderService _topicLoaderService = new();
-        private readonly PinHelper _pinHelper;
-        private readonly AIProcessingService _aIProcessingService;
-        private readonly DatabaseLoaderService _databaseLoaderService;
+        private readonly PinHelper _pinHelper = pinHelper;
+        private readonly AIProcessingService _aIProcessingService = aIProcessingService;
+        private readonly DatabaseLoaderService _databaseLoaderService = databaseLoaderService;
         private readonly MappingService _mappingService = new();
         private readonly MapsMetaExtractorService _mapsMetaExtractorService = new();
         private readonly FBGroupService _fbGroupService = new();
@@ -26,18 +31,6 @@ namespace Frodo.Service
         public List<DetailedTopic> Topics = [];
         private readonly string DBFileName = "D:\\Coding\\Gluten\\Topics.json";
         private readonly bool _regeneratePins = false;
-
-        public DataSyncService(AIProcessingService aIProcessingService,
-            SeleniumMapsUrlProcessor seleniumMapsUrlProcessor,
-            PinHelper pinHelper,
-            DatabaseLoaderService databaseLoaderService)
-        {
-            _aIProcessingService = aIProcessingService;
-            _seleniumMapsUrlProcessor = seleniumMapsUrlProcessor;
-            _pinHelper = pinHelper;
-            _databaseLoaderService = databaseLoaderService;
-        }
-
 
         public void ProcessFile()
         {
@@ -104,7 +97,7 @@ namespace Frodo.Service
             foreach (var item in cache)
             {
                 Console.WriteLine($"Processing pin meta {i} or {cache.Count}");
-                if (item.Value.MetaHtml == null)
+                if (item.Value.MetaHtml == null && item.Value.MapsUrl != null)
                 {
                     // load meta if missing
                     _seleniumMapsUrlProcessor.GoAndWaitForUrlChange(item.Value.MapsUrl);
@@ -149,7 +142,7 @@ namespace Frodo.Service
         {
             foreach (var topic in topics)
             {
-                var newT = mapper.Map<PinLinkInfo, Topic>(topic);
+                var newT = mapper.Map<PinLinkInfo, DetailedTopic>(topic);
 
                 if (topic.GroupId != FBGroupService.DefaultGroupId) continue;
 
@@ -210,11 +203,12 @@ namespace Frodo.Service
                     var message = "";
                     if (pin.Topics != null)
                     {
-                        List<string> nodes = new List<string>();
+                        List<string> nodes = [];
                         foreach (var item in pin.Topics)
                         {
                             message += " " + item.Title;
-                            nodes.Add(item.NodeID);
+                            if (item.NodeID != null)
+                                nodes.Add(item.NodeID);
                         }
 
                         var existingCache = _databaseLoaderService.GetPinDescriptionCache(nodes);
@@ -249,33 +243,6 @@ namespace Frodo.Service
 
 
         /// <summary>
-        /// Try to sync Topic data with data extracted from the web
-        /// </summary>
-        private void CheckForUpdatedUrls(DetailedTopic topic, List<TopicLink> newUrls)
-        {
-            if (topic.UrlsV2 == null) return;
-            if (topic.UrlsV2.Count != newUrls.Count)
-            {
-                Console.WriteLine("Mismatch in url detection");
-            }
-            else
-            {
-                for (int t = 0; t < topic.UrlsV2.Count; t++)
-                {
-                    if (topic.UrlsV2[t].Pin == null)
-                    {
-                        if (topic.UrlsV2[t].Url != newUrls[t].Url
-                            && !topic.UrlsV2[t].Url.Contains("/@")
-                            && !topic.UrlsV2[t].Url.Contains("https://www.google.com/maps/d/viewer"))
-                        {
-                            topic.UrlsV2[t].Url = newUrls[t].Url;
-                        }
-                    }
-                }
-            }
-        }
-
-        /// <summary>
         /// Scan detected urls, try to generate pin information
         /// </summary>
         private void UpdateMessageAndResponseUrls()
@@ -298,7 +265,7 @@ namespace Frodo.Service
                 }
                 else
                 {
-                    CheckForUpdatedUrls(topic, newUrls);
+                    DataHelper.CheckForUpdatedUrls(topic, newUrls);
                 }
 
                 // Check for links in topics
@@ -371,27 +338,6 @@ namespace Frodo.Service
             Console.WriteLine($"Has Response Links : {responseLinkCount}");
             Console.WriteLine($"Has Response Maps Links : {responseMapsLinkCount}");
         }
-
-        private void FixData()
-        {
-            for (int i = 0; i < Topics.Count; i++)
-            {
-                DetailedTopic? topic = Topics[i];
-                Console.WriteLine($"Processing pins {i} of {Topics.Count}");
-
-                // Remove any duplicated pins
-                if (topic.AiVenues != null)
-                {
-                    for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
-                    {
-                        if (topic.AiVenues[t].Pin != null)
-                        {
-                        }
-                    }
-                }
-            }
-        }
-
 
         /// <summary>
         /// Scan generated Ai Venues and try to generate any missing pins

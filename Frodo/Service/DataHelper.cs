@@ -1,5 +1,5 @@
-﻿using Gluten.Data;
-using Gluten.Data.ClientModel;
+﻿using Gluten.Data.ClientModel;
+using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
 
 namespace Frodo.Service
@@ -147,6 +147,33 @@ namespace Frodo.Service
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// Try to sync Topic data with data extracted from the web
+        /// </summary>
+        public static void CheckForUpdatedUrls(DetailedTopic topic, List<TopicLink> newUrls)
+        {
+            if (topic.UrlsV2 == null) return;
+            if (topic.UrlsV2.Count != newUrls.Count)
+            {
+                Console.WriteLine("Mismatch in url detection");
+            }
+            else
+            {
+                for (int t = 0; t < topic.UrlsV2.Count; t++)
+                {
+                    if (topic.UrlsV2[t].Pin == null)
+                    {
+                        if (topic.UrlsV2[t].Url != newUrls[t].Url
+                            && !topic.UrlsV2[t].Url.Contains("/@")
+                            && !topic.UrlsV2[t].Url.Contains("https://www.google.com/maps/d/viewer"))
+                        {
+                            topic.UrlsV2[t].Url = newUrls[t].Url;
+                        }
+                    }
+                }
+            }
         }
     }
 }

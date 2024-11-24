@@ -1,4 +1,4 @@
-﻿namespace Gluten.Data
+﻿namespace Gluten.Data.PinCache
 {
     public class TopicPinCache
     {

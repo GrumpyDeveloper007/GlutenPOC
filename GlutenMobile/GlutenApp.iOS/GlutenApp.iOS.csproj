@@ -16,6 +16,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<ProjectReference Include="..\..\Gluten.Data\Gluten.Data.csproj" />
 		<ProjectReference Include="..\GlutenApp\GlutenApp.csproj" />
 	</ItemGroup>
 

@@ -17,7 +17,7 @@ namespace Frodo.Service
         private MiddlewareStreamingAgent<OpenAIChatAgent>? _lmAgent;
 
         // TODO: Clean up multiple filter lists
-        private readonly List<string> _addressFilters = new() {
+        private readonly List<string> _addressFilters = [
             "( exact location not specified)",
             "(No specific address mentioned)",
             "(no address provided)",
@@ -34,7 +34,7 @@ namespace Frodo.Service
             "no specific address provided",
             "Not specified",
             "Google Maps link",
-        };
+        ];
 
         private readonly List<string> _nameFilters = [];
 

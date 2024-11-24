@@ -4,11 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Gluten.Data.TopicModel
+namespace Gluten.Data.PinDescription
 {
     public class PinDescriptionCache
     {
-        public List<string> Nodes { get; set; } = new List<string>();
+        public List<string> Nodes { get; set; } = [];
         public string? Description { get; set; }
     }
 }

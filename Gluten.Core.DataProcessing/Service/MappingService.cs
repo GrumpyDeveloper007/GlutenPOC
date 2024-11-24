@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
-using Gluten.Data;
 using Gluten.Data.ClientModel;
+using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
 using System;
 using System.Collections.Generic;
@@ -24,9 +24,7 @@ namespace Gluten.Core.DataProcessing.Service
         {
             var config = new MapperConfiguration(cfg =>
             {
-                cfg.CreateMap<DetailedTopic, Topic>();
                 cfg.CreateMap<DetailedTopic, PinLinkInfo>();
-                cfg.CreateMap<Topic, PinLinkInfo>();
                 cfg.CreateMap<TopicPin, TopicPinCache>();
                 cfg.CreateMap<TopicPinCache, TopicPin>();
             });

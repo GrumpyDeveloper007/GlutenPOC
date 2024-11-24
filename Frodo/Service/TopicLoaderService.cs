@@ -12,6 +12,7 @@ namespace Frodo.Service
     internal class TopicLoaderService
     {
         private readonly TopicHelper _topicHelper = new();
+        internal static readonly string[] crlf = ["/r/n"];
 
         /// <summary>
         /// Loads the data objects captured from FB groups, extracts the information we are interested in
@@ -26,7 +27,7 @@ namespace Frodo.Service
             {
                 if (line != null)
                 {
-                    var messages = line.Split(new string[] { "/r/n" }, StringSplitOptions.None);
+                    var messages = line.Split(crlf, StringSplitOptions.None);
                     // Process the line
                     i++;
                     Console.WriteLine(i);
@@ -96,7 +97,11 @@ namespace Frodo.Service
                 {
                     var trackingInfo = JsonConvert.DeserializeObject<TrackingRoot>(b);
                     long seconds = 0;
-                    if (trackingInfo.page_insights._379994195544478 != null)
+                    if (trackingInfo == null)
+                    {
+                        Console.WriteLine("Unable to Deserialize tracking info");
+                    }
+                    else if (trackingInfo.page_insights._379994195544478 != null)
                         seconds = trackingInfo.page_insights._379994195544478.post_context.publish_time;
                     else if (trackingInfo.page_insights._361337232353766 != null)
                         seconds = trackingInfo.page_insights._361337232353766.post_context.publish_time;
@@ -126,7 +131,6 @@ namespace Frodo.Service
                         seconds = trackingInfo.page_insights._1420852834795381.post_context.publish_time;
                     else if (trackingInfo.page_insights._1053129328213251 != null)
                         seconds = trackingInfo.page_insights._1053129328213251.post_context.publish_time;
-
                     else
                     {
                         Console.WriteLine("Unknown message structure");

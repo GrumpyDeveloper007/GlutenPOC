@@ -1,7 +1,17 @@
 ﻿namespace Gluten.Data.TopicModel
 {
-    public class DetailedTopic : Topic
+    public class DetailedTopic
     {
+        public required string Title { get; set; }
+        public string? ShortTitle { get; set; }
+
+        public string? FacebookUrl { get; set; }
+        public string? NodeID { get; set; }
+
+        public List<AiVenue>? AiVenues { get; set; }
+
+        public List<TopicLink>? UrlsV2 { get; set; }
+
         public List<Response> ResponsesV2 { get; set; } = [];
 
         public List<string>? HashTags { get; set; } = null;

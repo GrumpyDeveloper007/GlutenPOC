@@ -1,7 +1,7 @@
 ﻿using Gluten.Core.Service;
-using Gluten.Data;
 using Gluten.Data.ClientModel;
-using Gluten.Data.TopicModel;
+using Gluten.Data.PinCache;
+using Gluten.Data.PinDescription;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System;
@@ -23,7 +23,7 @@ namespace Frodo.Service
         private readonly string PinDescriptionCacheFileName = "D:\\Coding\\Gluten\\PinDescriptionCache.json";
 
         private readonly PinHelper _pinHelper;
-        private List<PinDescriptionCache> _pinDescriptionsCache;
+        private readonly List<PinDescriptionCache> _pinDescriptionsCache;
 
         /// <summary>
         /// Constructor
@@ -51,20 +51,16 @@ namespace Frodo.Service
                 }
 
             }
-            if (_pinDescriptionsCache == null)
-            {
-                _pinDescriptionsCache = new List<PinDescriptionCache>();
-            }
+            _pinDescriptionsCache ??= [];
         }
 
         public PinDescriptionCache? GetPinDescriptionCache(List<string> nodes)
         {
-            var found = false;
             foreach (var item in _pinDescriptionsCache)
             {
                 if (item.Nodes.Count == nodes.Count)
                 {
-                    found = true;
+                    var found = true;
                     for (int i = 0; i < nodes.Count; i++)
                     {
                         if (item.Nodes[i] != nodes[i])
@@ -84,12 +80,11 @@ namespace Frodo.Service
 
         public void AddPinDescriptionCache(PinDescriptionCache pinDescriptionsCache)
         {
-            var found = false;
             foreach (var item in _pinDescriptionsCache)
             {
                 if (item.Nodes.Count == pinDescriptionsCache.Nodes.Count)
                 {
-                    found = true;
+                    var found = true;
                     for (int i = 0; i < pinDescriptionsCache.Nodes.Count; i++)
                     {
                         if (item.Nodes[i] != pinDescriptionsCache.Nodes[i])

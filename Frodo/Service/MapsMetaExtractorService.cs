@@ -1,4 +1,4 @@
-﻿using Gluten.Data;
+﻿using Gluten.Data.PinCache;
 using HtmlAgilityPack;
 using System;
 using System.Collections.Generic;
@@ -11,9 +11,9 @@ namespace Frodo.Service
 {
     internal class MapsMetaExtractorService
     {
-        private List<string> _restaurantTypes = [];
+        private readonly List<string> _restaurantTypes = [];
 
-        private List<string> _ignoreList = [
+        private readonly List<string> _ignoreList = [
             "Train station",
             "Airports",
             "airport",
@@ -190,7 +190,7 @@ namespace Frodo.Service
             return result;
         }
 
-        public void AddRestaurantType(string restaurant)
+        public void AddRestaurantType(string? restaurant)
         {
             if (!string.IsNullOrWhiteSpace(restaurant) && !_restaurantTypes.Contains(restaurant))
             {
