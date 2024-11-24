@@ -22,12 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Gluten.Core.DataProcessing\Gluten.Core.DataProcessing.csproj" />
-    <ProjectReference Include="..\Gluten.Core\Gluten.Core.csproj" />
-    <ProjectReference Include="..\Gluten.Data\Gluten.Data.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Update="local.settings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -35,6 +29,12 @@
 
   <ItemGroup>
     <Folder Include="Service\Graveyard\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\_Library\Gluten.Core.DataProcessing\Gluten.Core.DataProcessing.csproj" />
+    <ProjectReference Include="..\_Library\Gluten.Core\Gluten.Core.csproj" />
+    <ProjectReference Include="..\_Library\Gluten.Data\Gluten.Data.csproj" />
   </ItemGroup>
 
 </Project>
