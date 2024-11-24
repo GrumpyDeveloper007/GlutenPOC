@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:local="clr-namespace:GlutenApp.Controls;assembly=GlutenApp"
+             x:Class="GlutenApp.Pages.CardPage"
+             Title="Card" Loaded="ContentPage_Loaded">
+    <VerticalStackLayout>
+        <Label x:Name="CardLanguage"
+            Text="placeholder"
+            VerticalOptions="Center" 
+            HorizontalOptions="Center" />
+
+        <local:PinchToZoomContainer>
+            <Image
+                x:Name="CardImage"
+                Margin="0"
+                Aspect="AspectFit"
+                />
+        </local:PinchToZoomContainer>
+
+    </VerticalStackLayout>
+</ContentPage>
