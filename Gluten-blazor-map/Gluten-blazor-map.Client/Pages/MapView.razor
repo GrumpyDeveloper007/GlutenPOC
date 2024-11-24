@@ -1,0 +1,79 @@
+﻿@inject HttpClient Http
+@inject NavigationManager Navigator
+@page "/mapview"
+@rendermode InteractiveAuto
+<h3>MapView</h3>
+
+<h1>Counter</h1>
+
+<p role="status">Current count: @currentCount</p>
+
+<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+
+@using Gluten.Data.ClientModel
+@using Syncfusion.Blazor.Maps
+
+@if (LargestCities.Count > 0)
+{
+    <SfMaps Height="450" Width="720">
+        <MapsTitleSettings Text="@LargestCities.Count().ToString()">
+            <MapsTitleTextStyle Size="16px" />
+        </MapsTitleSettings>
+        <MapsZoomSettings Enable="true"></MapsZoomSettings>
+        <MapsLayers>
+            <MapsLayer UrlTemplate="http://a.tile.openstreetmap.fr/osmfr/level/tileX/tileY.png" TValue="string">
+                <MapsMarkerClusterSettings AllowClustering="true" Shape="MarkerType.Image" Height="40" Width="40" ImageUrl="images/maps/cluster.svg">
+                    <MapsLayerMarkerClusterLabelStyle Color="#FFFFFF" />
+                </MapsMarkerClusterSettings>
+                <MapsMarkerSettings>
+                    <MapsMarker Visible="true" Shape="MarkerType.Image" ImageUrl="images/maps/ballon.png" Height="20" Width="20" DataSource="@LargestCities" TValue="PinTopic">
+                        <MapsMarkerTooltipSettings Visible="true" ValuePath="Name" Format="<b>${Name}</b><br>Population: <b>${Population}" />
+                    </MapsMarker>
+                </MapsMarkerSettings>
+            </MapsLayer>
+        </MapsLayers>
+    </SfMaps>
+}
+
+
+@code {
+    public List<MapPin> LargestCities = new List<MapPin>();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        Http.BaseAddress = new Uri(Navigator.BaseUri);
+        var data = await Http.GetFromJsonAsync<PinTopic[]>("TopicsExport.json");
+
+        foreach (var item in data)
+        {
+            var a = new MapPin
+                {
+                    Latitude = item.GeoLatatude,
+                    Longitude = item.GeoLongitude,
+                    Population = 1,
+                    Name = item.Label
+                };
+            LargestCities.Add(a);
+        }
+        currentCount = LargestCities.Count();
+    }
+
+    public class MapPin
+    {
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+        public string Name { get; set; }
+        public double Population { get; set; }
+        public string Country { get; set; }
+        public string Continent { get; set; }
+        public string Color { get; set; }
+        public string Shape { get; set; }
+    };
+    private int currentCount = 0;
+
+    private void IncrementCount()
+    {
+        currentCount++;
+    }
+}

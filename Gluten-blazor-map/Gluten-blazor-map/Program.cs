@@ -1,5 +1,6 @@
 using Gluten_blazor_map.Client.Pages;
 using Gluten_blazor_map.Components;
+using Syncfusion.Blazor;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +8,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddInteractiveWebAssemblyComponents();
+
+builder.Services.AddSyncfusionBlazor();
+
+Syncfusion.Licensing.SyncfusionLicenseProvider.RegisterLicense("Ngo9BigBOggjHTQxAR8/V1NDaF1cX2hIf0x1RXxbf1x0ZFNMYV9bR3NPIiBoS35RckRiW3xfeHVWRWVVVUF/");
 
 var app = builder.Build();
 

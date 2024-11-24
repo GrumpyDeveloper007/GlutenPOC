@@ -12,6 +12,11 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.11" />
+    <PackageReference Include="Syncfusion.Blazor.Maps" Version="27.2.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Gluten.Data\Gluten.Data.csproj" />
   </ItemGroup>
 
 </Project>
