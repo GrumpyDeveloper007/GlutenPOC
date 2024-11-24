@@ -18,6 +18,7 @@ namespace Frodo.Service
     {
         private readonly string PinCacheDBFileName = "D:\\Coding\\Gluten\\pinCache.json";
         private readonly string ExportDBFileName = "D:\\Coding\\Gluten\\TopicsExport.json";
+        private readonly string RestaurantsFileName = "D:\\Coding\\Gluten\\Restaurant.txt";
 
         private readonly PinHelper _pinHelper;
 
@@ -37,6 +38,17 @@ namespace Frodo.Service
             {
                 _pinHelper = new PinHelper([]);
             }
+        }
+
+        public void SaveRestaurantList(List<string> restaurants)
+        {
+            //eg. 'Train station',
+            string fileText = "";
+            foreach (var item in restaurants)
+            {
+                fileText += $"'{item}',\r\n";
+            }
+            File.WriteAllText(RestaurantsFileName, fileText);
         }
 
         /// <summary>

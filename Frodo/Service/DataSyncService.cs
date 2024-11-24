@@ -98,15 +98,29 @@ namespace Frodo.Service
         {
             int i = 0;
             var cache = _pinHelper.GetCache();
+            _mapsMetaExtractorService.ClearRestaurantType();
             foreach (var item in cache)
             {
                 Console.WriteLine($"Processing pin meta {i} or {cache.Count}");
+                if (item.Value.MetaHtml == null)
+                {
+                    // load meta if missing
+                    _seleniumMapsUrlProcessor.GoAndWaitForUrlChange(item.Value.MapsUrl);
+                    item.Value.MetaHtml = _seleniumMapsUrlProcessor.GetMeta(item.Value.Label);
+                }
+
                 if (item.Value.MetaData == null)
                 {
                     item.Value.MetaData = _mapsMetaExtractorService.ExtractMeta(item.Value.MetaHtml);
                 }
+                else
+                {
+                    _mapsMetaExtractorService.AddRestaurantType(item.Value.MetaData.RestaurantType);
+                }
                 i++;
             }
+            var restaurants = _mapsMetaExtractorService.GetRestuarantTypes();
+            _databaseLoaderService.SaveRestaurantList(restaurants);
             _databaseLoaderService.SavePinDB();
         }
 
@@ -134,6 +148,9 @@ namespace Frodo.Service
             foreach (var topic in topics)
             {
                 var newT = mapper.Map<PinLinkInfo, Topic>(topic);
+
+                if (topic.GroupId != FBGroupService.DefaultGroupId) continue;
+
                 if (topic.AiVenues != null)
                 {
                     foreach (var aiVenue in topic.AiVenues)

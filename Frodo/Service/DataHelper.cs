@@ -116,6 +116,10 @@ namespace Frodo.Service
                 matchingPinTopic.RestaurantType = cachePin.MetaData.RestaurantType;
                 matchingPinTopic.Price = cachePin.MetaData.Price;
             }
+            else
+            {
+                Console.WriteLine("No meta data found");
+            }
             foreach (var existingTopic in matchingPinTopic.Topics)
             {
                 if (existingTopic.NodeID == topicToAdd.NodeID)

@@ -9,5 +9,7 @@
         public string? NodeID { get; set; }
         public string? Title { get; set; }
         public string? ShortTitle { get; set; }
+        public DateTimeOffset? PostCreated { get; set; }
+
     }
 }

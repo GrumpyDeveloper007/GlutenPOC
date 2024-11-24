@@ -5,12 +5,85 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Frodo.Service
 {
     internal class MapsMetaExtractorService
     {
-        public List<string> _restaurantTypes = [];
+        private List<string> _restaurantTypes = [];
+
+        private List<string> _ignoreList = [
+            "Train station",
+            "Airports",
+            "airport",
+            "Sightseeing tour agency",
+            "Laundromat",
+            "Historical landmark",
+            "Island",
+            "Electronics manufacturer",
+            "Corporate office",
+            "Theme park",
+            "Subway station",
+            "Food manufacturer",
+            "Art museum",
+            "International airport",
+            "Airport",
+            "Garden",
+            "Cinema",
+            "Manufacturer",
+            "Observation deck",
+            "Mountain peak",
+            "Amusement park",
+            "Bridge",
+            "Soy sauce maker",
+            "Housing development",
+            "Massage spa",
+            "Waterfall",
+            "Delivery service",
+            "Water treatment supplier",
+            "River",
+            "Event venue",
+            "Museum",
+            "Florist",
+            "Park",
+            "Tourist attraction",
+            "Business park",
+            "Hair salon",
+            "Holiday apartment",
+            "Car racing track",
+            "Language school",
+            "Host club",
+            "Shinto shrine",
+            "Cultural center",
+            "Foreign consulate",
+            "Non-profit organization",
+            "Truck parts supplier",
+            "Gift shop",
+            "Lake",
+            "Spa",
+            "Festival",
+            "Beach",
+            "Dog trainer",
+            "Concert hall",
+            "Tour operator",
+            "Art gallery",
+            "Health and beauty sho",
+            "public bath",
+            "review",
+            "City park",
+            "Community center",
+            "Cooking class",
+            "Coworking space",
+            "Garment exporter",
+            "General hospital",
+            "Medical clinic",
+            "Modern art museum",
+            "Mobile caterer",
+            "Scenic spot",
+            "public bath",
+            "Yoga studio"
+            ];
 
         class LabelNode
         {
@@ -18,6 +91,25 @@ namespace Frodo.Service
             public List<LabelNode> Child { get; set; } = [];
 
             public List<string> Buttons { get; set; } = [];
+        }
+
+        public List<string> GetRestuarantTypes()
+        {
+            _restaurantTypes.Sort();
+            var data = new List<string>();
+            foreach (var item in _restaurantTypes)
+            {
+                if (!item.Contains("shop", StringComparison.InvariantCultureIgnoreCase)
+                    && !item.Contains("store", StringComparison.InvariantCultureIgnoreCase)
+                    && !item.Contains("market", StringComparison.InvariantCultureIgnoreCase)
+                    && !item.Contains("hotel", StringComparison.InvariantCultureIgnoreCase)
+                    && !_ignoreList.Any(s => item.Contains(s, StringComparison.InvariantCultureIgnoreCase))
+                    )
+                {
+                    data.Add(item);
+                }
+            }
+            return data;
         }
 
         public PinCacheMeta? ExtractMeta(string? html)
@@ -68,63 +160,47 @@ namespace Frodo.Service
                     {
                         result.Price = "";
                     }
-                    if (result.RestaurantType.Contains("reviews", StringComparison.InvariantCultureIgnoreCase)
+                    if (result.RestaurantType.Contains("review", StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        Console.WriteLine($"Unknown restaurant type : {result.RestaurantType}");
+                    }
+                    if (result.RestaurantType.Contains("review", StringComparison.InvariantCultureIgnoreCase)
                         || result.RestaurantType == "."
                         || result.RestaurantType == "")
                     {
                         result.RestaurantType = "";
                     }
 
-                    // TODO: Extract a list and add support for filtering in client app
-                    if (!string.IsNullOrWhiteSpace(result.RestaurantType)
-                        && !result.RestaurantType.Contains("restaurant", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("snack", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("cafe", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("cake", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("Confectionery", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("Convenience", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("Pub", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("market", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("shop", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("store", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("Creperie", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("Yakatabune", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("Bakery", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("和食店", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("Crab House", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("Bar", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("Hawker stall", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("steakhouse", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("steak house", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("Food court", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("ベーカリー", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("Patisserie", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("ケーキ屋", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("delicatessen", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("takeaway", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("居酒屋", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("teahouse", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("tea house", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("beer", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("Bristo", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("Bistro", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("Brew", StringComparison.InvariantCultureIgnoreCase)
-                        && !result.RestaurantType.Contains("Deli", StringComparison.InvariantCultureIgnoreCase)
-
-                        )
-                    {
-                        Console.WriteLine($"Unknown restaurant type : {result.RestaurantType}");
-                    }
                     if (!result.Stars.Contains("stars"))
                     {
                         result.Stars = "";
                     }
                 }
-                _restaurantTypes.Add(result.RestaurantType);
+                if (html.Contains("permanently closed", StringComparison.CurrentCultureIgnoreCase))
+                {
+                    result.PermanentlyClosed = true;
+                }
+                if (!string.IsNullOrWhiteSpace(result.RestaurantType) && !_restaurantTypes.Contains(result.RestaurantType))
+                {
+                    _restaurantTypes.Add(result.RestaurantType);
+                }
 
             }
 
             return result;
+        }
+
+        public void AddRestaurantType(string restaurant)
+        {
+            if (!string.IsNullOrWhiteSpace(restaurant) && !_restaurantTypes.Contains(restaurant))
+            {
+                _restaurantTypes.Add(restaurant);
+            }
+        }
+
+        public void ClearRestaurantType()
+        {
+            _restaurantTypes.Clear();
         }
 
 

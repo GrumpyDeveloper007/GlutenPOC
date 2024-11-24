@@ -20,7 +20,5 @@ namespace Gluten.Data.ClientModel
         public string? RestaurantType { get; set; }
         public string? Price { get; set; }
         public string? Stars { get; set; }
-        public DateTimeOffset? PostCreated { get; set; }
-
     }
 }
