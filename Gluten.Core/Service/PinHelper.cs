@@ -108,7 +108,7 @@ namespace Gluten.Core.Service
             {
                 Label = label,
                 Address = label,
-                GeoLatatude = lat,
+                GeoLatitude = lat,
                 GeoLongitude = lon,
                 MapsUrl = mapsUrl,
                 PlaceName = searchString,

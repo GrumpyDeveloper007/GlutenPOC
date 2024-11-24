@@ -12,7 +12,7 @@ namespace Gluten.Data.ClientModel
     public class PinTopic
     {
         public double GeoLongitude { get; set; }
-        public double GeoLatatude { get; set; }
+        public double GeoLatitude { get; set; }
         public string? Label { get; set; }
         public string? Description { get; set; }
         public List<PinLinkInfo>? Topics { get; set; }

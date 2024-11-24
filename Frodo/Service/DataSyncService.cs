@@ -24,7 +24,7 @@ namespace Frodo.Service
 
         public List<DetailedTopic> Topics = [];
         private readonly string DBFileName = "D:\\Coding\\Gluten\\Topics.json";
-        private readonly bool _regeneratePins = true;
+        private readonly bool _regeneratePins = false;
 
         public DataSyncService(AIProcessingService aIProcessingService,
             SeleniumMapsUrlProcessor seleniumMapsUrlProcessor,
@@ -50,6 +50,7 @@ namespace Frodo.Service
             Console.WriteLine($"\r\nReading captured FB data");
             _topicLoaderService.ReadFileLineByLine("D:\\Coding\\Gluten\\Smeagol\\bin\\Debug\\net8.0\\Responses.txt", Topics);
 
+            //FixData();
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nProcessing topics, generating short titles");
             GenerateShortTitles();
@@ -66,7 +67,7 @@ namespace Frodo.Service
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nUpdating pin information for Ai Venues");
-            //UpdatePinsForAiVenues();
+            UpdatePinsForAiVenues();
             _topicsHelper.SaveTopics(DBFileName, Topics);
 
             Console.WriteLine("--------------------------------------");
@@ -156,9 +157,9 @@ namespace Frodo.Service
                     foreach (var aiVenue in topic.AiVenues)
                     {
                         if (aiVenue.Pin != null
-                            && !string.IsNullOrWhiteSpace(aiVenue.Pin.GeoLatatude)
+                            && !string.IsNullOrWhiteSpace(aiVenue.Pin.GeoLatitude)
                             && !string.IsNullOrWhiteSpace(aiVenue.Pin.GeoLongitude)
-                            && FBGroupService.IsPinWithinExpectedRange(topic.GroupId, double.Parse(aiVenue.Pin.GeoLatatude), double.Parse(aiVenue.Pin.GeoLongitude)))
+                            && FBGroupService.IsPinWithinExpectedRange(topic.GroupId, double.Parse(aiVenue.Pin.GeoLatitude), double.Parse(aiVenue.Pin.GeoLongitude)))
                         {
                             var existingPin = DataHelper.IsPinInList(aiVenue.Pin, pins);
                             var cachePin = _pinHelper.TryGetPin(aiVenue.Pin.Label);
@@ -173,9 +174,9 @@ namespace Frodo.Service
                     {
 
                         if (url.Pin != null
-                            && !string.IsNullOrWhiteSpace(url.Pin.GeoLatatude)
+                            && !string.IsNullOrWhiteSpace(url.Pin.GeoLatitude)
                             && !string.IsNullOrWhiteSpace(url.Pin.GeoLongitude)
-                            && FBGroupService.IsPinWithinExpectedRange(topic.GroupId, double.Parse(url.Pin.GeoLatatude), double.Parse(url.Pin.GeoLongitude)))
+                            && FBGroupService.IsPinWithinExpectedRange(topic.GroupId, double.Parse(url.Pin.GeoLatitude), double.Parse(url.Pin.GeoLongitude)))
                         {
                             var existingPin = DataHelper.IsPinInList(url.Pin, pins);
                             var cachePin = _pinHelper.TryGetPin(url.Pin.Label);
@@ -209,12 +210,32 @@ namespace Frodo.Service
                     var message = "";
                     if (pin.Topics != null)
                     {
+                        List<string> nodes = new List<string>();
                         foreach (var item in pin.Topics)
                         {
                             message += " " + item.Title;
+                            nodes.Add(item.NodeID);
                         }
-                        pin.Description = _analyzeDocumentService.ExtractDescriptionTitle(message, pin.Label);
+
+                        var existingCache = _databaseLoaderService.GetPinDescriptionCache(nodes);
+                        if (existingCache == null)
+                        {
+
+                            pin.Description = _analyzeDocumentService.ExtractDescriptionTitle(message, pin.Label);
+                            var cache = new PinDescriptionCache()
+                            {
+                                Nodes = nodes,
+                                Description = pin.Description
+                            };
+                            _databaseLoaderService.AddPinDescriptionCache(cache);
+                            _databaseLoaderService.SavePinDescriptionCache();
+                        }
+                        else
+                        {
+                            pin.Description = existingCache.Description;
+                        }
                         _databaseLoaderService.SavePinTopics(pins);
+
                     }
                 }
                 Console.WriteLine($"Updating descriptions - {ii} of {pins.Count}");
@@ -349,6 +370,27 @@ namespace Frodo.Service
             Console.WriteLine($"Has Response Maps Links : {responseMapsLinkCount}");
         }
 
+        private void FixData()
+        {
+            for (int i = 0; i < Topics.Count; i++)
+            {
+                DetailedTopic? topic = Topics[i];
+                Console.WriteLine($"Processing pins {i} of {Topics.Count}");
+
+                // Remove any duplicated pins
+                if (topic.AiVenues != null)
+                {
+                    for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
+                    {
+                        if (topic.AiVenues[t].Pin != null)
+                        {
+                        }
+                    }
+                }
+            }
+        }
+
+
         /// <summary>
         /// Scan generated Ai Venues and try to generate any missing pins
         /// </summary>
@@ -402,7 +444,7 @@ namespace Frodo.Service
                         }
                     }
 
-                    if (ai.Pin == null || _regeneratePins)
+                    if (ai.Pin == null)//|| _regeneratePins
                     {
                         var groupId = FBGroupService.DefaultGroupId;
                         if (string.IsNullOrWhiteSpace(topic.GroupId))

@@ -64,7 +64,7 @@ namespace Frodo.Service
         {
             if (_lmAgent == null) OpenAgent();
             if (_lmAgent == null) return "";
-            var question = $"The following text contains information about '{label}', can you provide a summary about '{label}' only in english, in 5 lines only (without any prefix)? Only generate a response based on the information below. Ignore any further questions. \r\n";
+            var question = $"The following text contains information about '{label}', can you provide a summary about '{label}' only in english, in 5 lines or less, skip any address info (without any prefix)? Only generate a response based on the information below. Ignore any further questions. \r\n";
             var response = _lmAgent.SendAsync(question + $"{message.Truncate(20000)}").Result;
             if (response == null) return "";
             var responseContent = response.GetContent();

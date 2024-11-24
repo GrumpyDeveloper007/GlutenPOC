@@ -61,7 +61,7 @@ namespace Frodo.Service
                 if (i != newVenueIndex
                     && item.Pin != null && venue.Pin != null
                     && item.Pin.GeoLongitude == venue.Pin.GeoLongitude
-                    && item.Pin.GeoLatatude == venue.Pin.GeoLatatude)
+                    && item.Pin.GeoLatitude == venue.Pin.GeoLatitude)
                 {
                     return true;
                 }
@@ -78,7 +78,7 @@ namespace Frodo.Service
         {
             if (pinToAdd == null) return;
             if (pinToAdd == null) return;
-            if (string.IsNullOrWhiteSpace(pinToAdd.GeoLatatude)) return;
+            if (string.IsNullOrWhiteSpace(pinToAdd.GeoLatitude)) return;
             if (string.IsNullOrWhiteSpace(pinToAdd.GeoLongitude)) return;
 
             // if pin not found, add it to the list
@@ -86,7 +86,7 @@ namespace Frodo.Service
             {
                 var newPin = new PinTopic
                 {
-                    GeoLatatude = double.Parse(pinToAdd.GeoLatatude),
+                    GeoLatitude = double.Parse(pinToAdd.GeoLatitude),
                     GeoLongitude = double.Parse(pinToAdd.GeoLongitude),
                     Label = pinToAdd.Label,
                     Topics = [topicToAdd],
@@ -138,9 +138,9 @@ namespace Frodo.Service
             foreach (var pin in pins)
             {
                 if (topicPin != null &&
-                    !string.IsNullOrWhiteSpace(topicPin.GeoLatatude) &&
+                    !string.IsNullOrWhiteSpace(topicPin.GeoLatitude) &&
                     !string.IsNullOrWhiteSpace(topicPin.GeoLongitude) &&
-                    pin.GeoLatatude == double.Parse(topicPin.GeoLatatude) && pin.GeoLongitude == double.Parse(topicPin.GeoLongitude))
+                    pin.GeoLatitude == double.Parse(topicPin.GeoLatitude) && pin.GeoLongitude == double.Parse(topicPin.GeoLongitude))
                 {
                     return pin;
                 }
