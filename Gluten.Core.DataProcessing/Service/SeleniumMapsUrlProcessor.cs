@@ -16,8 +16,8 @@ namespace Gluten.Core.DataProcessing.Service
     /// </summary>
     public class SeleniumMapsUrlProcessor
     {
-        private string _responsefileName = Environment.CurrentDirectory + "/Responses.txt";
-        private readonly ChromeDriver _driver = new ChromeDriver();
+        private readonly string _responsefileName = Environment.CurrentDirectory + "/Responses.txt";
+        private readonly ChromeDriver _driver = new();
         private readonly bool _started = false;
 
         /// <summary>

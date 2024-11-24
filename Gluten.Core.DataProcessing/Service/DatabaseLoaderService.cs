@@ -10,12 +10,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Frodo.Service
+namespace Gluten.Core.DataProcessing.Service
 {
     /// <summary>
     /// Provides load/save functionality for our databases (currently in memory/file based)
     /// </summary>
-    internal class DatabaseLoaderService
+    public class DatabaseLoaderService
     {
         private readonly string PinCacheDBFileName = "D:\\Coding\\Gluten\\pinCache.json";
         private readonly string ExportDBFileName = "D:\\Coding\\Gluten\\TopicsExport.json";
@@ -149,7 +149,7 @@ namespace Frodo.Service
         /// </summary>
         public void SavePinTopics(List<PinTopic> pins)
         {
-            SaveDb<List<PinTopic>>(ExportDBFileName, pins);
+            SaveDb(ExportDBFileName, pins);
         }
 
 

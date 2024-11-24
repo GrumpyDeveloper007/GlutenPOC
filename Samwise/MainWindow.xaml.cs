@@ -12,6 +12,8 @@ using System.Windows.Input;
 namespace Samwise
 {
     /// <summary>
+    /// TODO: Clean up/remove code, this app isnt really needed
+    /// 
     /// Interactive topic processor, ideally this would be handled with AI, but for now we do some basic searching and present
     /// it to the user and allow them time to check and select their own map location, then update the DB
     /// 
@@ -26,7 +28,7 @@ namespace Samwise
 
         private int _index;
         private int _mapIndex;
-        private List<Topic> _topics;
+        private List<DetailedTopic> _topics;
         private string _currentNewUrl;
         private string DBFileName = "D:\\Coding\\Gluten\\Topics.json";
 
@@ -50,12 +52,18 @@ namespace Samwise
 
                 //FixIncorrectPins();
 
-                var nlp = new NaturalLanguageProcessor(settings.AIEndPoint, settings.AIApiKey);
-                _seleniumMapsUrlProcessor = new SeleniumMapsUrlProcessor();
-                _seleniumMapsUrlProcessor.Start();
+                var dbLoader = new DatabaseLoaderService();
 
-                _aIProcessingService = new AIProcessingService(nlp, _seleniumMapsUrlProcessor);
-                _aiPinGeneration = new AiPinGeneration(_aIProcessingService);
+                //var nlp = new NaturalLanguageProcessor(settings.AIEndPoint, settings.AIApiKey);
+                var pinHelper = dbLoader.GetPinHelper();
+                var selenium = new SeleniumMapsUrlProcessor();
+                var mapper = new MappingService();
+                var fbGroupService = new FBGroupService();
+                //var nlp = new NaturalLanguageProcessor(settings.AIEndPoint, settings.AIApiKey);
+                _seleniumMapsUrlProcessor = new SeleniumMapsUrlProcessor();
+
+                _aIProcessingService = new AIProcessingService(_seleniumMapsUrlProcessor, pinHelper, mapper);
+                _aiPinGeneration = new AiPinGeneration(_aIProcessingService, mapper, fbGroupService);
 
 
                 if (_topics == null)
