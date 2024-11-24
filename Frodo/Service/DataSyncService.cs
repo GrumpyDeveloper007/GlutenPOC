@@ -200,7 +200,6 @@ namespace Frodo.Service
             DataHelper.CleanTopics(pins);
             pins = ExtractPinExport(pins, Topics, _mappingService);
             DataHelper.RemoveEmptyPins(pins);
-            DataHelper.RemoveTopicTitles(pins);
 
             var ii = 0;
             foreach (var pin in pins)
@@ -241,6 +240,8 @@ namespace Frodo.Service
                 Console.WriteLine($"Updating descriptions - {ii} of {pins.Count}");
                 ii++;
             }
+            DataHelper.RemoveTopicTitles(pins);
+
 
             _databaseLoaderService.SavePinTopics(pins);
         }
