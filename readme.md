@@ -11,6 +11,9 @@ i.e. on google maps
 
 Automate as much as possible the above process, provide information to fellow coeliacs and people who wish to eat gluten free
 
+Demo link - https://gray-smoke-001bcb21e.5.azurestaticapps.net/
+
+
 ## Project Goals 
 
  - create angular demo app
