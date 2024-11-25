@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Gluten.Core.DataProcessing.Service
+namespace Gluten.Core.DataProcessing.Helper
 {
     /// <summary>
     /// General string helper functions

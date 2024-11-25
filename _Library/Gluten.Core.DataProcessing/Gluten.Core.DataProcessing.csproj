@@ -19,8 +19,4 @@
     <ProjectReference Include="..\Gluten.Data\Gluten.Data.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Service\Graveyard\" />
-  </ItemGroup>
-
 </Project>

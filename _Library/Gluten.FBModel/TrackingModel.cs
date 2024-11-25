@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 #pragma warning disable CS8618
 #pragma warning disable IDE1006
 
-namespace Frodo.FacebookModel
+namespace Gluten.FBModel
 {
     // Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
     public class _379994195544478

@@ -1,4 +1,5 @@
-﻿using Gluten.Core.DataProcessing.Service;
+﻿using Frodo.Helper;
+using Gluten.Core.DataProcessing.Service;
 using Gluten.Core.Service;
 using Gluten.Data;
 using Gluten.Data.ClientModel;
@@ -57,7 +58,7 @@ namespace Frodo.Service
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nStarting AI processing - detecting venue name/address");
-            //TODO: Skip for now - ScanTopicsUseAiToDetectVenueInfo();
+            ScanTopicsUseAiToDetectVenueInfo();
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nUpdating pin information for Ai Venues");

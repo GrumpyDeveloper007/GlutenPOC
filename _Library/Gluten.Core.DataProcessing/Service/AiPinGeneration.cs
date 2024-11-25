@@ -1,4 +1,5 @@
-﻿using Gluten.Data.PinCache;
+﻿using Gluten.Core.DataProcessing.Helper;
+using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
 
 namespace Gluten.Core.DataProcessing.Service

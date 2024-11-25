@@ -8,8 +8,12 @@ using System.Threading.Tasks;
 #pragma warning disable CS8618
 #pragma warning disable IDE1006
 
-namespace Smeagol.FacebookModel
+namespace Gluten.FBModel
 {
+    public class SimpleGroupRoot
+    {
+        public string label { get; set; }
+    }
     // Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
     public class ActionLink
     {
@@ -1590,6 +1594,7 @@ namespace Smeagol.FacebookModel
     {
         public string __dr { get; set; }
     }
+
     public class GroupFeed
     {
         public List<Edge> edges { get; set; }
@@ -1597,9 +1602,9 @@ namespace Smeagol.FacebookModel
 
     public class Node
     {
-        public string __typename { get; set; }
         public GroupFeed group_feed { get; set; }
 
+        public string __typename { get; set; }
         public string __isFeedUnit { get; set; }
         public string __isCacheable { get; set; }
         public string cache_id { get; set; }
@@ -1776,11 +1781,6 @@ namespace Smeagol.FacebookModel
         public List<object> path { get; set; }
         public Data data { get; set; }
         public Extensions extensions { get; set; }
-    }
-
-    public class SimpleGroupRoot
-    {
-        public string label { get; set; }
     }
 
     public class RsrcMap
@@ -2292,4 +2292,3 @@ namespace Smeagol.FacebookModel
 
 
 }
-

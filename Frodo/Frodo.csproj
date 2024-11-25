@@ -28,13 +28,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Service\Graveyard\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\_Library\Gluten.Core.DataProcessing\Gluten.Core.DataProcessing.csproj" />
     <ProjectReference Include="..\_Library\Gluten.Core\Gluten.Core.csproj" />
     <ProjectReference Include="..\_Library\Gluten.Data\Gluten.Data.csproj" />
+    <ProjectReference Include="..\_Library\Gluten.FBModel\Gluten.FBModel.csproj" />
   </ItemGroup>
 
 </Project>

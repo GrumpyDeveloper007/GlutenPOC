@@ -2,7 +2,7 @@
 using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
 
-namespace Frodo.Service
+namespace Frodo.Helper
 {
     /// <summary>
     /// General helpers for working with data structures

@@ -1,7 +1,7 @@
 ﻿using Gluten.Data.TopicModel;
 using System.Text.RegularExpressions;
 
-namespace Frodo.Service
+namespace Frodo.Helper
 {
     /// <summary>
     /// General helper function for string
@@ -12,11 +12,11 @@ namespace Frodo.Service
         {
             // Define a regular expression to match hashtags
             string pattern = @"#\w+";
-            Regex regex = new Regex(pattern);
+            Regex regex = new(pattern);
             MatchCollection matches = regex.Matches(text);
 
             // Store the extracted hashtags in a list
-            List<string> hashtags = new List<string>();
+            List<string> hashtags = [];
             foreach (Match match in matches)
             {
                 hashtags.Add(match.Value);
@@ -36,7 +36,7 @@ namespace Frodo.Service
             //From search
             //string pattern = @"/(?:(?:https?|ftp|file):\/\/|www\.|ftp\.)(?:\([-A-Z0-9+&@#\/%=~_|$?!:,.]*\)|[-A-Z0-9+&@#\/%=~_|$?!:,.])*(?:\([-A-Z0-9+&@#\/%=~_|$?!:,.]*\)|[A-Z0-9+&@#\/%=~_|$])/igm";
 
-            Regex regex = new Regex(pattern);
+            Regex regex = new(pattern);
             MatchCollection matches = regex.Matches(text);
 
             // Store the extracted URLs in a list
@@ -44,7 +44,7 @@ namespace Frodo.Service
             foreach (Match match in matches)
             {
                 var url = match.Value;
-                if (url.EndsWith("."))
+                if (url.EndsWith('.'))
                     url = url.Substring(0, url.Length - 1);
                 var topicUrl = new TopicLink() { Url = url };
 
