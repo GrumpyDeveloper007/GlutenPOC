@@ -4,6 +4,7 @@
     {
         public required string Title { get; set; }
         public string? ShortTitle { get; set; }
+        public bool ShortTitleProcessed { get; set; } = false;
 
         public string? FacebookUrl { get; set; }
         public string? NodeID { get; set; }

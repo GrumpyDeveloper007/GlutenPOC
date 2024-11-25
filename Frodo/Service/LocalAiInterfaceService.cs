@@ -135,7 +135,7 @@ namespace Frodo.Service
                     topic.AiIsQuestion = true;
                 }
 
-                question = "can you extract any references to places to eat and street addresses of those places and respond only with json in the following format [{PlaceName:\"<Insert place name here>\",Address:\"<insert address here>\"}]? Ignore any further questions. \r\n";
+                question = "can you extract any references to places to eat and street addresses of those places and respond only with json in the following format [{PlaceName:\"<Insert place name here>\",Address:\"<insert address here>\"},]? Ignore any further questions. \r\n";
                 Console.WriteLine(question);
                 response = _lmAgent.SendAsync(question + $"{message}").Result;
 
@@ -169,6 +169,10 @@ namespace Frodo.Service
                     Console.WriteLine(ex.Message);
                 }
 
+            }
+            else
+            {
+                topic.AiIsQuestion = true;
             }
             return null;
         }

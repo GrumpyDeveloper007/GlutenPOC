@@ -20,7 +20,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gluten.Core.DataProcessing"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Library", "Library", "{C6A34CDF-ECF0-47A4-8156-48FDDDB63B86}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gluten.FBModel", "..\_Library\Gluten.FBModel\Gluten.FBModel.csproj", "{74FA49B4-2B8B-4A0F-8BDA-BCBE84653A6F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gluten.FBModel", "..\_Library\Gluten.FBModel\Gluten.FBModel.csproj", "{74FA49B4-2B8B-4A0F-8BDA-BCBE84653A6F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gluten.Core.LocationProcessing", "..\_Library\Gluten.Core.LocationProcessing\Gluten.Core.LocationProcessing.csproj", "{312130D7-6029-475F-B0BF-79400C71EB12}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -52,6 +54,10 @@ Global
 		{74FA49B4-2B8B-4A0F-8BDA-BCBE84653A6F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{74FA49B4-2B8B-4A0F-8BDA-BCBE84653A6F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{74FA49B4-2B8B-4A0F-8BDA-BCBE84653A6F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{312130D7-6029-475F-B0BF-79400C71EB12}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{312130D7-6029-475F-B0BF-79400C71EB12}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{312130D7-6029-475F-B0BF-79400C71EB12}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{312130D7-6029-475F-B0BF-79400C71EB12}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -62,6 +68,7 @@ Global
 		{B817FA6E-7E2B-41EE-817B-58719CA91C0B} = {C6A34CDF-ECF0-47A4-8156-48FDDDB63B86}
 		{4AB2068B-8569-45D9-BE0A-C789368DE305} = {C6A34CDF-ECF0-47A4-8156-48FDDDB63B86}
 		{74FA49B4-2B8B-4A0F-8BDA-BCBE84653A6F} = {C6A34CDF-ECF0-47A4-8156-48FDDDB63B86}
+		{312130D7-6029-475F-B0BF-79400C71EB12} = {C6A34CDF-ECF0-47A4-8156-48FDDDB63B86}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {24D9E986-3B48-4FDB-B633-8FF279C38A92}

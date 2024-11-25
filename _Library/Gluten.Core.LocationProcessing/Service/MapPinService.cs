@@ -1,11 +1,10 @@
-﻿using Azure.AI.TextAnalytics;
-using Gluten.Core.Service;
+﻿using Gluten.Core.Service;
 using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
 using System.Web;
 using System.Xml.Linq;
 
-namespace Gluten.Core.DataProcessing.Service
+namespace Gluten.Core.LocationProcessing.Service
 {
     /// <summary>
     /// Google map pin handling service, generates pins from place names, gathers meta data

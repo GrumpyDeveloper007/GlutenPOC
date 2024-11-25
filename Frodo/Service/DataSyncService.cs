@@ -1,5 +1,6 @@
 ﻿using Frodo.Helper;
 using Gluten.Core.DataProcessing.Service;
+using Gluten.Core.LocationProcessing.Service;
 using Gluten.Core.Service;
 using Gluten.Data;
 using Gluten.Data.ClientModel;
@@ -76,15 +77,23 @@ namespace Frodo.Service
 
         private void GenerateShortTitles()
         {
+            int shortTitlesAdded = 0;
             for (int i = 0; i < Topics.Count; i++)
             {
-                Console.WriteLine($"Processing {i} of {Topics.Count}");
+                if (i % 10 == 0)
+                    Console.WriteLine($"Processing {i} of {Topics.Count}");
                 var topic = Topics[i];
-                if (string.IsNullOrWhiteSpace(topic.ShortTitle))
+                if (string.IsNullOrWhiteSpace(topic.ShortTitle) && !topic.ShortTitleProcessed)
                 {
                     topic.ShortTitle = _analyzeDocumentService.GenerateShortTitle(topic.Title);
+                    topic.ShortTitleProcessed = true;
+                    if (!string.IsNullOrWhiteSpace(topic.ShortTitle))
+                    {
+                        shortTitlesAdded++;
+                    }
                 }
             }
+            Console.WriteLine($"Added short title : {shortTitlesAdded}");
         }
 
         private void ExtractMetaInfoFromPinCache()
@@ -247,11 +256,6 @@ namespace Frodo.Service
             {
                 DetailedTopic? topic = Topics[i];
                 Console.WriteLine($"Processing AI pins {i} of {Topics.Count}");
-                if (i % 10 == 0)
-                {
-                    _topicsHelper.SaveTopics(Topics);
-                    _databaseLoaderService.SavePinDB();
-                }
 
                 // Remove any duplicated pins
                 if (topic.AiVenues != null)
@@ -290,7 +294,7 @@ namespace Frodo.Service
                         }
                     }
 
-                    if (ai.Pin == null)//|| _regeneratePins
+                    if (ai.Pin == null && !ai.PinSearchDone)//|| _regeneratePins
                     {
                         var groupId = FBGroupService.DefaultGroupId;
                         if (string.IsNullOrWhiteSpace(topic.GroupId))
@@ -319,6 +323,7 @@ namespace Frodo.Service
                             }
                         }
                     }
+                    ai.PinSearchDone = true;
                 }
 
                 // Remove any pins that dont have names
@@ -351,6 +356,9 @@ namespace Frodo.Service
                 }
 
             }
+            _topicsHelper.SaveTopics(Topics);
+            _databaseLoaderService.SavePinDB();
+
 
         }
 

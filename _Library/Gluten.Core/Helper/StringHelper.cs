@@ -5,12 +5,12 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Gluten.Core.DataProcessing.Helper
+namespace Gluten.Core.Helper
 {
     /// <summary>
     /// General string helper functions
     /// </summary>
-    internal class StringHelper
+    public class StringHelper
     {
         /// <summary>
         /// Makes names more comparable by removing irrelevant characters 

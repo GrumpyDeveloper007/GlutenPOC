@@ -59,21 +59,25 @@ application in time for my visit to Japan. This project remains however is curre
 
 POC MAUI application for android. 
 
-## Gluten.Core 
-
-Multiple projects that contain key core functionality.
-
 ## Gluten.Data 
 
 Contains classes for the data model
 
-## Gluten.DataProcessing
+## Gluten.Core 
+
+Contains functionality that is used by most projects.
+
+## Gluten.Core.DataProcessing
 
 Provides services and helpers to process data extracted from Facebook.
 
+## Gluten.Core.LocationProcessing
+
+Provides services and helpers to process and extract data from google maps.
+
 ## Gluten.FBModel
 
-Contains data structures that represent a snapshot of FB models
+Contains data structures that represent a snapshot of FB models.
 
 ## TODO 
 

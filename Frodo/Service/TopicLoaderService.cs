@@ -29,7 +29,8 @@ namespace Frodo.Service
                     var messages = line.Split(crlf, StringSplitOptions.None);
                     // Process the line
                     i++;
-                    Console.WriteLine(i);
+                    if (i % 100 == 0)
+                        Console.WriteLine(i);
                     foreach (var message in messages)
                     {
                         try

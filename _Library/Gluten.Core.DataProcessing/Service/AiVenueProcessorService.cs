@@ -1,4 +1,5 @@
-﻿using Gluten.Core.DataProcessing.Helper;
+﻿using Gluten.Core.Helper;
+using Gluten.Core.LocationProcessing.Service;
 using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
 
@@ -51,6 +52,10 @@ namespace Gluten.Core.DataProcessing.Service
             "Disney hotels",
             "Universal Studios",
             "Gate Building",
+            "Volcano",
+            "mochi place",
+            "sumo wrestling",
+            "Kyoto Tower GF treats store"
              ];
 
         /// <summary>

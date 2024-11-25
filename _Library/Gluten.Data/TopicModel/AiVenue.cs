@@ -12,5 +12,6 @@ namespace Gluten.Data.TopicModel
         public string? Address { get; set; }
 
         public TopicPin? Pin { get; set; }
+        public bool PinSearchDone { get; set; } = false;
     }
 }

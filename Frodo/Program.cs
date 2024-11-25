@@ -2,6 +2,7 @@
 using Frodo;
 using Frodo.Service;
 using Gluten.Core.DataProcessing.Service;
+using Gluten.Core.LocationProcessing.Service;
 using Gluten.Core.Service;
 using Microsoft.Extensions.Configuration;
 

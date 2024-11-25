@@ -1,9 +1,9 @@
 ﻿using Gluten.Data.PinCache;
 using HtmlAgilityPack;
 
-namespace Frodo.Service
+namespace Gluten.Core.LocationProcessing.Service
 {
-    internal class MapsMetaExtractorService
+    public class MapsMetaExtractorService
     {
         private readonly List<string> _restaurantTypes = [];
 
