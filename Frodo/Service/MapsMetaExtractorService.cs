@@ -87,7 +87,7 @@ namespace Frodo.Service
             public List<string> Buttons { get; set; } = [];
         }
 
-        public List<string> GetRestuarantTypes()
+        public List<string> GetRestaurantTypes()
         {
             _restaurantTypes.Sort();
             var data = new List<string>();
@@ -128,6 +128,16 @@ namespace Frodo.Service
                     result = new PinCacheMeta
                     {
                         RestaurantType = root.Buttons[0],
+                    };
+                }
+                else if (root.Buttons.Count == 0)
+                {
+                    // ignore - normally region/city name
+                    result = new PinCacheMeta
+                    {
+                        Price = "",
+                        RestaurantType = "",
+                        Stars = ""
                     };
                 }
                 else if (root.Buttons[1].StartsWith("See rooms")

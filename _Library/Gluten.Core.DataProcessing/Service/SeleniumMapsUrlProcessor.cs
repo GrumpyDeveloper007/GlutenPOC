@@ -1,4 +1,5 @@
-﻿using OpenQA.Selenium;
+﻿using Gluten.Core.DataProcessing.Helper;
+using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.DevTools;
 using System;
@@ -16,7 +17,6 @@ namespace Gluten.Core.DataProcessing.Service
     /// </summary>
     public class SeleniumMapsUrlProcessor
     {
-        private readonly string _responsefileName = Environment.CurrentDirectory + "/Responses.txt";
         private readonly ChromeDriver _driver = new();
         private readonly bool _started = false;
 
@@ -150,12 +150,16 @@ namespace Gluten.Core.DataProcessing.Service
         public string GetMeta(string? placeName)
         {
             if (placeName == null) return "";
+            var placeNameWithoutAccents = StringHelper.RemoveIrrelevantChars(StringHelper.RemoveDiacritics(placeName));
             var r = GetSearchResults();
             foreach (var item in r)
             {
                 var innerText = item.Text;
                 var a = item.GetAttribute("aria-label");
-                if (placeName == a || placeName == null)
+                if (a.StartsWith(placeName, StringComparison.InvariantCultureIgnoreCase)
+                    || placeName.StartsWith(a, StringComparison.InvariantCultureIgnoreCase)
+                    || StringHelper.RemoveIrrelevantChars(StringHelper.RemoveDiacritics(a)).StartsWith(placeNameWithoutAccents, StringComparison.InvariantCultureIgnoreCase)
+                    )
                 {
                     return item.GetAttribute("innerHTML");
                 }

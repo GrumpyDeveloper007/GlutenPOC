@@ -105,22 +105,26 @@ namespace Frodo.Helper
                 pins.Add(newPin);
                 return;
             }
-            // dont add duplicates
             matchingPinTopic.Topics ??= [];
-            if (cachePin != null && !string.IsNullOrWhiteSpace(cachePin.MapsUrl))
+            if (cachePin != null)
             {
-                matchingPinTopic.MapsLink = cachePin.MapsUrl;
+                if (!string.IsNullOrWhiteSpace(cachePin.MapsUrl))
+                {
+                    matchingPinTopic.MapsLink = cachePin.MapsUrl;
+                }
+                if (cachePin.MetaData != null)
+                {
+                    matchingPinTopic.Stars = cachePin.MetaData.Stars;
+                    matchingPinTopic.RestaurantType = cachePin.MetaData.RestaurantType;
+                    matchingPinTopic.Price = cachePin.MetaData.Price;
+                }
+                else
+                {
+                    Console.WriteLine("No meta data found");
+                }
             }
-            if (cachePin != null && cachePin.MetaData != null)
-            {
-                matchingPinTopic.Stars = cachePin.MetaData.Stars;
-                matchingPinTopic.RestaurantType = cachePin.MetaData.RestaurantType;
-                matchingPinTopic.Price = cachePin.MetaData.Price;
-            }
-            else
-            {
-                Console.WriteLine("No meta data found");
-            }
+
+            // Add topic to the pin - dont add duplicates
             foreach (var existingTopic in matchingPinTopic.Topics)
             {
                 if (existingTopic.NodeID == topicToAdd.NodeID)

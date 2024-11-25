@@ -16,7 +16,8 @@ namespace Frodo.Service
     internal class DataSyncService(AIProcessingService aIProcessingService,
         SeleniumMapsUrlProcessor seleniumMapsUrlProcessor,
         PinHelper pinHelper,
-        DatabaseLoaderService databaseLoaderService)
+        DatabaseLoaderService databaseLoaderService,
+        MappingService mappingService)
     {
         private readonly TopicsHelper _topicsHelper = new();
         private readonly SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor = seleniumMapsUrlProcessor;
@@ -25,7 +26,7 @@ namespace Frodo.Service
         private readonly PinHelper _pinHelper = pinHelper;
         private readonly AIProcessingService _aIProcessingService = aIProcessingService;
         private readonly DatabaseLoaderService _databaseLoaderService = databaseLoaderService;
-        private readonly MappingService _mappingService = new();
+        private readonly MappingService _mappingService = mappingService;
         private readonly MapsMetaExtractorService _mapsMetaExtractorService = new();
         private readonly FBGroupService _fbGroupService = new();
 
@@ -98,24 +99,28 @@ namespace Frodo.Service
             foreach (var item in cache)
             {
                 Console.WriteLine($"Processing pin meta {i} or {cache.Count}");
-                if (item.Value.MetaHtml == null && item.Value.MapsUrl != null)
+                if (string.IsNullOrWhiteSpace(item.Value.MetaHtml) && item.Value.MapsUrl != null)
                 {
                     // load meta if missing
                     _seleniumMapsUrlProcessor.GoAndWaitForUrlChange(item.Value.MapsUrl);
                     item.Value.MetaHtml = _seleniumMapsUrlProcessor.GetMeta(item.Value.Label);
                 }
 
-                if (item.Value.MetaData == null)
+                if (item.Value.MetaData == null || string.IsNullOrWhiteSpace(item.Value.MetaData.RestaurantType))
                 {
                     item.Value.MetaData = _mapsMetaExtractorService.ExtractMeta(item.Value.MetaHtml);
                 }
-                else
+                if (item.Value.MetaData != null)
                 {
                     _mapsMetaExtractorService.AddRestaurantType(item.Value.MetaData.RestaurantType);
                 }
+                else
+                {
+                    Console.WriteLine($"Unable to get meta for {item.Value.Label}");
+                }
                 i++;
             }
-            var restaurants = _mapsMetaExtractorService.GetRestuarantTypes();
+            var restaurants = _mapsMetaExtractorService.GetRestaurantTypes();
             _databaseLoaderService.SaveRestaurantList(restaurants);
             _databaseLoaderService.SavePinDB();
         }
@@ -197,6 +202,7 @@ namespace Frodo.Service
             DataHelper.RemoveEmptyPins(pins);
 
             var ii = 0;
+            var unknownRestaurantType = 0;
             foreach (var pin in pins)
             {
                 if (string.IsNullOrEmpty(pin.Description))
@@ -233,6 +239,12 @@ namespace Frodo.Service
 
                     }
                 }
+
+                if (string.IsNullOrWhiteSpace(pin.RestaurantType))
+                {
+                    unknownRestaurantType++;
+                }
+
                 Console.WriteLine($"Updating descriptions - {ii} of {pins.Count}");
                 ii++;
             }
@@ -240,6 +252,7 @@ namespace Frodo.Service
 
 
             _databaseLoaderService.SavePinTopics(pins);
+            Console.WriteLine($"Unknown restaurant types : {unknownRestaurantType}");
         }
 
 

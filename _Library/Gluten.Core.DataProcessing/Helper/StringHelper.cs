@@ -13,6 +13,14 @@ namespace Gluten.Core.DataProcessing.Helper
     internal class StringHelper
     {
         /// <summary>
+        /// Makes names more comparable by removing irrelevant characters 
+        /// </summary>
+        public static string RemoveIrrelevantChars(string text)
+        {
+            return text.Replace(" ", "").Replace("-", "");
+        }
+
+        /// <summary>
         /// Tries to improve comparison results by replacing accent characters
         /// </summary>
         public static string RemoveDiacritics(string text)

@@ -19,8 +19,6 @@
         public string GroupId { get; set; } = "";
         public DateTimeOffset? PostCreated { get; set; }
 
-        //public List<AiInformation>? AiTitleInfoV2 { get; set; }
-
         public bool AiParsed { get; set; } = false;
 
         public bool AiIsQuestion { get; set; }

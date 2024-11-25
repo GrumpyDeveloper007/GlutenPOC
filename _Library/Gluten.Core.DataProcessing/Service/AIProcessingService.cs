@@ -11,11 +11,10 @@ namespace Gluten.Core.DataProcessing.Service
     /// Trys to extracted formatted information from human written posts
     /// </summary>
     public class AIProcessingService(
-        SeleniumMapsUrlProcessor seleniumMapsUrlProcessor, PinHelper pinHelper, MappingService mappingService)
+        SeleniumMapsUrlProcessor seleniumMapsUrlProcessor, PinHelper pinHelper)
     {
         private readonly PinHelper _pinHelper = pinHelper;
         private readonly SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor = seleniumMapsUrlProcessor;
-        private readonly MappingService _mappingService = mappingService;
 
         /// <summary>
         /// Uses google maps to search for a place name
@@ -124,28 +123,6 @@ namespace Gluten.Core.DataProcessing.Service
             var meta = _seleniumMapsUrlProcessor.GetMeta(restaurantName);
             var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData, restaurantName, meta);
             return pin;
-        }
-
-        /// <summary>
-        /// Gets the current url shown in the browser and tries to extract a geo coordinate
-        /// </summary>
-        private void UpdatePinList(string newUrl, DetailedTopic topic, ref int urlsCreated)
-        {
-            newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
-            var meta = _seleniumMapsUrlProcessor.GetMeta(null);
-            var pin = _pinHelper.TryToGenerateMapPin(newUrl, false, newUrl, meta);
-            if (pin != null)
-            {
-                urlsCreated++;
-                topic.UrlsV2 ??= [];
-                topic.UrlsV2.Add(new TopicLink()
-                {
-                    AiGenerated = true,
-                    Pin = _mappingService.Map<TopicPin, TopicPinCache>(pin),
-                    Url = newUrl
-
-                });
-            }
         }
     }
 }
