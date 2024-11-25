@@ -4,10 +4,13 @@ using Gluten.Data.TopicModel;
 
 namespace Gluten.Core.DataProcessing.Service
 {
-    public class AiPinGeneration(AIProcessingService aIProcessingService, MappingService mappingService,
+    /// <summary>
+    /// Processes the AIVenue data type
+    /// </summary>
+    public class AiVenueProcessorService(MapPinService aIProcessingService, MappingService mappingService,
         FBGroupService fBGroupService)
     {
-        private readonly AIProcessingService _aIProcessingService = aIProcessingService;
+        private readonly MapPinService _mapPinService = aIProcessingService;
         private readonly MappingService _mappingService = mappingService;
 
         private readonly List<string> _addressFilters = [
@@ -48,50 +51,12 @@ namespace Gluten.Core.DataProcessing.Service
             "Disney hotels",
             "Universal Studios",
             "Gate Building",
-            "OSAKA RESTAURANT",
-            "Tsuji Safety Food",
-            "Equal Eats",
-            "Backup restaurant name",
-            "Hilton Tokyo breakfast buffet",
-            "Seibu Department store",
-            "Sushi restaurant",
-            "Conveyor belt sushi place",
-            "Yakiniku/Korean BBQ restaurant"
              ];
-
-        private readonly List<string> _okToSkip = [
-            "Starbucks",
-            "Lawson natural",
-            "Lawsons",
-            "Yakiniku",
-            "Bikkuri Donki",
-            "Mos Burger",
-            "Pierre Herme",
-            "Teddy's Better Burgers",
-            "Seijo Isshi",
-            "Seijo Ishii",
-            "Eggs 'n Things",
-            "Bio-Ral",
-            "Supermarket",
-            "Aeon",
-            "Domino’s",
-            "Choice",
-            "GFT's",
-            "GFT",
-            "Tesco",
-            "Subway",
-            "Kaldi",
-            "Choice",
-            "Street food stall",
-            "East Cafe",
-            "Kingdom"
-             ];
-
 
         /// <summary>
         /// Returns a list of urls if the placename search results in multiple results,
         /// Filters returned results by placename, so if a search is very general, 
-        /// for example 'Store', we dont just return lots of random locations
+        /// for example 'Store', we don't just return lots of random locations
         /// </summary>
         public bool IsPlaceNameAChain(AiVenue venue, List<string> chainUrls, string groupId)
         {
@@ -99,9 +64,9 @@ namespace Gluten.Core.DataProcessing.Service
             && venue.Pin == null
                 && !string.IsNullOrWhiteSpace(venue.PlaceName))
             {
-                _aIProcessingService.GetMapUrl(venue.PlaceName + $", {fBGroupService.GetCountryName(groupId)}");
-                var mapUrls = _aIProcessingService.GetMapUrls();
-                var placeNames = _aIProcessingService.GetMapPlaceNames();
+                _mapPinService.GetMapUrl(venue.PlaceName + $", {fBGroupService.GetCountryName(groupId)}");
+                var mapUrls = _mapPinService.GetMapUrls();
+                var placeNames = _mapPinService.GetMapPlaceNames();
 
                 // Try to filter general searches
                 var matchingPlaces = new List<string>();
@@ -125,23 +90,22 @@ namespace Gluten.Core.DataProcessing.Service
         /// <summary>
         /// Tries to generate a pin based on the venue place name 
         /// </summary>
-        public string? GetMapPinForPlaceName(AiVenue venue, string groupId)
+        public void GetMapPinForPlaceName(AiVenue venue, string groupId)
         {
-            string? currentNewUrl = null;
-            if (venue == null) return null;
-            // Dont process if it is in the skip list
+            if (venue == null) return;
+            // Don't process if it is in the skip list
             if (!IsInPlaceNameSkipList(venue.PlaceName)
                 && !string.IsNullOrWhiteSpace(venue.PlaceName))
             {
                 string? restaurantName = venue.PlaceName + $", {fBGroupService.GetCountryName(groupId)}";
-                currentNewUrl = _aIProcessingService.GetMapUrl(restaurantName);
+                var currentNewUrl = _mapPinService.GetMapUrl(restaurantName);
 
                 if (currentNewUrl != null)
                 {
-                    var pin = _aIProcessingService.GetPinFromCurrentUrl(true, venue.PlaceName);
+                    var pin = _mapPinService.GetPinFromCurrentUrl(true, venue.PlaceName);
                     if (pin != null)
                     {
-                        if (!_aIProcessingService.IsPermanentlyClosed(pin.Label, out string meta))
+                        if (!_mapPinService.IsPermanentlyClosed(pin.Label, out string meta))
                         {
                             // Add pin to AiGenerated
                             pin.MetaHtml = meta;
@@ -151,8 +115,6 @@ namespace Gluten.Core.DataProcessing.Service
                         {
                             Console.WriteLine($"Permanently Closed");
                         }
-                        currentNewUrl = null;
-
                     }
                     else
                     {
@@ -162,13 +124,13 @@ namespace Gluten.Core.DataProcessing.Service
                         if (!string.IsNullOrWhiteSpace(address))
                         {
                             restaurantName = venue.PlaceName + " " + address;
-                            currentNewUrl = _aIProcessingService.GetMapUrl(restaurantName);
+                            _mapPinService.GetMapUrl(restaurantName);
 
-                            pin = _aIProcessingService.GetPinFromCurrentUrl(true, venue.PlaceName);
+                            pin = _mapPinService.GetPinFromCurrentUrl(true, venue.PlaceName);
                             if (pin != null)
                             {
                                 // Add pin to AiGenerated
-                                if (!_aIProcessingService.IsPermanentlyClosed(pin.Label, out string meta))
+                                if (!_mapPinService.IsPermanentlyClosed(pin.Label, out string meta))
                                 {
                                     pin.MetaHtml = meta;
                                     // Add pin to AiGenerated
@@ -178,30 +140,20 @@ namespace Gluten.Core.DataProcessing.Service
                                 {
                                     Console.WriteLine($"Permanently Closed");
                                 }
-                                currentNewUrl = null;
                             }
                             else
                             {
-                                // still unable to process
+                                Console.WriteLine($"Still unable to process :{venue.PlaceName}");
                             }
                         }
                     }
                 }
-
-                if (currentNewUrl != null
-                    && IsInOkToSkip(restaurantName))
-                {
-                    // If we cannot find a map location and the name is in the 'ok to skip' list we continue
-                    // e.g. restaurant chains without specific address info
-                    currentNewUrl = null;
-                }
             }
 
-            return currentNewUrl;
+            return;
         }
 
-
-        public string? FilterAddress(string? address)
+        private string? FilterAddress(string? address)
         {
             if (address == null) return null;
             foreach (var filter in _addressFilters)
@@ -211,22 +163,10 @@ namespace Gluten.Core.DataProcessing.Service
             return address.Trim();
         }
 
-        public bool IsInPlaceNameSkipList(string? placeName)
+        private bool IsInPlaceNameSkipList(string? placeName)
         {
             if (placeName == null) return false;
             foreach (var nameFilter in _nameFilters)
-            {
-                if (placeName.Contains(nameFilter, StringComparison.CurrentCultureIgnoreCase))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private bool IsInOkToSkip(string placeName)
-        {
-            foreach (var nameFilter in _okToSkip)
             {
                 if (placeName.Contains(nameFilter, StringComparison.CurrentCultureIgnoreCase))
                 {

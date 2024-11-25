@@ -25,10 +25,8 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         private void Start()
         {
-            var devTools = (IDevTools)_driver;
-
-            DevToolsSession session = devTools.GetDevToolsSession();
-            var domains = session.GetVersionSpecificDomains<DevToolsSessionDomains>();
+            DevToolsSession session = _driver.GetDevToolsSession();
+            //var domains = session.GetVersionSpecificDomains<DevToolsSessionDomains>();
         }
 
         /// <summary>

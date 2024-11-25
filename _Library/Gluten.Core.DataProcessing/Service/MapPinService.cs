@@ -8,9 +8,9 @@ using System.Xml.Linq;
 namespace Gluten.Core.DataProcessing.Service
 {
     /// <summary>
-    /// Trys to extracted formatted information from human written posts
+    /// Google map pin handling service, generates pins from place names, gathers meta data
     /// </summary>
-    public class AIProcessingService(
+    public class MapPinService(
         SeleniumMapsUrlProcessor seleniumMapsUrlProcessor, PinHelper pinHelper)
     {
         private readonly PinHelper _pinHelper = pinHelper;
@@ -52,7 +52,7 @@ namespace Gluten.Core.DataProcessing.Service
         }
 
         /// <summary>
-        /// When google maps returns multiple results, this function will try to extact the link for each location
+        /// When google maps returns multiple results, this function will try to extract the link for each location
         /// </summary>
         public List<string> GetMapUrls()
         {
@@ -80,7 +80,7 @@ namespace Gluten.Core.DataProcessing.Service
         }
 
         /// <summary>
-        /// When google maps returns multiple results, this function will try to extact the place name for each result
+        /// When google maps returns multiple results, this function will try to extract the place name for each result
         /// </summary>
         public List<string> GetMapPlaceNames()
         {
@@ -105,7 +105,7 @@ namespace Gluten.Core.DataProcessing.Service
         }
 
         /// <summary>
-        /// Tries to get a pin from the currenty displayed page
+        /// Tries to get a pin from the currently displayed page
         /// </summary>
         public TopicPinCache? GetPinFromCurrentUrl(bool onlyFromData, string restaurantName)
         {
@@ -116,7 +116,7 @@ namespace Gluten.Core.DataProcessing.Service
         }
 
         /// <summary>
-        /// Tries to get a pin from the currenty displayed page
+        /// Tries to get a pin from the currently displayed page
         /// </summary>
         public TopicPinCache? GetPinFromCurrentUrl(string newUrl, bool onlyFromData, string restaurantName)
         {

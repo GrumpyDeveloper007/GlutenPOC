@@ -12,7 +12,7 @@ namespace Frodo.Service
     /// <summary>
     /// Uses local AI to parse information and generate summary text
     /// </summary>
-    internal class AnalyzeDocumentService
+    internal class LocalAiInterfaceService
     {
         private MiddlewareStreamingAgent<OpenAIChatAgent>? _lmAgent;
 

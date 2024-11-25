@@ -14,16 +14,18 @@ namespace Gluten.Core.Service
     /// </summary>
     public class TopicsHelper
     {
+        private readonly string DBFileName = "D:\\Coding\\Gluten\\Topics.json";
+
         /// <summary>
         /// Loads the specified file
         /// </summary>
-        public List<DetailedTopic>? TryLoadTopics(string fileName)
+        public List<DetailedTopic>? TryLoadTopics()
         {
             List<DetailedTopic>? topics = null;
-            if (File.Exists(fileName))
+            if (File.Exists(DBFileName))
             {
                 string json;
-                json = File.ReadAllText(fileName);
+                json = File.ReadAllText(DBFileName);
                 var tempTopics = JsonConvert.DeserializeObject<List<DetailedTopic>>(json);
                 if (tempTopics != null) { topics = tempTopics; }
             }
@@ -33,11 +35,11 @@ namespace Gluten.Core.Service
         /// <summary>
         /// Saves the specified data to a file
         /// </summary>
-        public void SaveTopics(string fileName, List<DetailedTopic> topics)
+        public void SaveTopics(List<DetailedTopic> topics)
         {
             var json = JsonConvert.SerializeObject(topics, Formatting.Indented,
                 new JsonConverter[] { new StringEnumConverter() });
-            File.WriteAllText(fileName, json);
+            File.WriteAllText(DBFileName, json);
         }
     }
 }

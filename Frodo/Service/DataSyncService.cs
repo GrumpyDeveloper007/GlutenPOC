@@ -13,30 +13,28 @@ namespace Frodo.Service
     /// Scan response information collected from FB, do some basic processing
     /// All the magic happens here
     /// </summary>
-    internal class DataSyncService(AIProcessingService aIProcessingService,
-        SeleniumMapsUrlProcessor seleniumMapsUrlProcessor,
-        PinHelper pinHelper,
-        DatabaseLoaderService databaseLoaderService,
-        MappingService mappingService)
+    internal class DataSyncService(MapPinService _aIProcessingService,
+        SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor,
+        PinHelper _pinHelper,
+        DatabaseLoaderService _databaseLoaderService,
+        MappingService _mappingService,
+        ClientExportFileGenerator _clientExportFileGenerator)
     {
         private readonly TopicsHelper _topicsHelper = new();
-        private readonly SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor = seleniumMapsUrlProcessor;
-        private readonly AnalyzeDocumentService _analyzeDocumentService = new();
+        private readonly LocalAiInterfaceService _analyzeDocumentService = new();
         private readonly TopicLoaderService _topicLoaderService = new();
-        private readonly PinHelper _pinHelper = pinHelper;
-        private readonly AIProcessingService _aIProcessingService = aIProcessingService;
-        private readonly DatabaseLoaderService _databaseLoaderService = databaseLoaderService;
-        private readonly MappingService _mappingService = mappingService;
         private readonly MapsMetaExtractorService _mapsMetaExtractorService = new();
         private readonly FBGroupService _fbGroupService = new();
 
         public List<DetailedTopic> Topics = [];
-        private readonly string DBFileName = "D:\\Coding\\Gluten\\Topics.json";
         private readonly bool _regeneratePins = false;
 
+        /// <summary>
+        /// Processes the file generated from FB, run through many processing stages finally generating an export file for the client app
+        /// </summary>
         public void ProcessFile()
         {
-            var topics = _topicsHelper.TryLoadTopics(DBFileName);
+            var topics = _topicsHelper.TryLoadTopics();
             if (topics != null)
             {
                 Topics = topics;
@@ -51,8 +49,6 @@ namespace Frodo.Service
             Console.WriteLine($"\r\nProcessing topics, generating short titles");
             GenerateShortTitles();
 
-            _analyzeDocumentService.OpenAgent();
-
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nProcessing information from source");
             UpdateMessageAndResponseUrls();
@@ -64,7 +60,7 @@ namespace Frodo.Service
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nUpdating pin information for Ai Venues");
             UpdatePinsForAiVenues();
-            _topicsHelper.SaveTopics(DBFileName, Topics);
+            _topicsHelper.SaveTopics(Topics);
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nExtracting meta info for pins");
@@ -72,7 +68,7 @@ namespace Frodo.Service
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nGenerating data for client application");
-            GenerateTopicExport();
+            _clientExportFileGenerator.GenerateTopicExport(Topics);
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nComplete, exit...");
@@ -139,122 +135,10 @@ namespace Frodo.Service
                     DetailedTopic? topic = Topics[i];
                     var venue = _analyzeDocumentService.ExtractRestaurantNamesFromTitle(topic.Title, ref topic);
                     topic.AiVenues = venue;
-                    _topicsHelper.SaveTopics(DBFileName, Topics);
+                    _topicsHelper.SaveTopics(Topics);
                 }
             }
         }
-
-        private List<PinTopic> ExtractPinExport(List<PinTopic> pins, List<DetailedTopic> topics, MappingService mapper)
-        {
-            foreach (var topic in topics)
-            {
-                var newT = mapper.Map<PinLinkInfo, DetailedTopic>(topic);
-
-                if (topic.GroupId != FBGroupService.DefaultGroupId) continue;
-
-                if (topic.AiVenues != null)
-                {
-                    foreach (var aiVenue in topic.AiVenues)
-                    {
-                        if (aiVenue.Pin != null
-                            && !string.IsNullOrWhiteSpace(aiVenue.Pin.GeoLatitude)
-                            && !string.IsNullOrWhiteSpace(aiVenue.Pin.GeoLongitude)
-                            && FBGroupService.IsPinWithinExpectedRange(topic.GroupId, double.Parse(aiVenue.Pin.GeoLatitude), double.Parse(aiVenue.Pin.GeoLongitude)))
-                        {
-                            var existingPin = DataHelper.IsPinInList(aiVenue.Pin, pins);
-                            var cachePin = _pinHelper.TryGetPin(aiVenue.Pin.Label);
-                            DataHelper.AddIfNotExists(pins, existingPin, newT, aiVenue.Pin, cachePin);
-                        }
-                    }
-                }
-
-                if (topic.UrlsV2 != null)
-                {
-                    foreach (var url in topic.UrlsV2)
-                    {
-
-                        if (url.Pin != null
-                            && !string.IsNullOrWhiteSpace(url.Pin.GeoLatitude)
-                            && !string.IsNullOrWhiteSpace(url.Pin.GeoLongitude)
-                            && FBGroupService.IsPinWithinExpectedRange(topic.GroupId, double.Parse(url.Pin.GeoLatitude), double.Parse(url.Pin.GeoLongitude)))
-                        {
-                            var existingPin = DataHelper.IsPinInList(url.Pin, pins);
-                            var cachePin = _pinHelper.TryGetPin(url.Pin.Label);
-                            DataHelper.AddIfNotExists(pins, existingPin, newT, url.Pin, cachePin);
-                        }
-                    }
-                }
-            }
-            return pins;
-        }
-
-
-        /// <summary>
-        /// Group data by pin (venue), export to json
-        /// </summary>
-        private void GenerateTopicExport()
-        {
-            List<PinTopic>? pins = _databaseLoaderService.LoadPinTopics();
-            pins ??= [];
-
-            DataHelper.CleanTopics(pins);
-            pins = ExtractPinExport(pins, Topics, _mappingService);
-            DataHelper.RemoveEmptyPins(pins);
-
-            var ii = 0;
-            var unknownRestaurantType = 0;
-            foreach (var pin in pins)
-            {
-                if (string.IsNullOrEmpty(pin.Description))
-                {
-                    var message = "";
-                    if (pin.Topics != null)
-                    {
-                        List<string> nodes = [];
-                        foreach (var item in pin.Topics)
-                        {
-                            message += " " + item.Title;
-                            if (item.NodeID != null)
-                                nodes.Add(item.NodeID);
-                        }
-
-                        var existingCache = _databaseLoaderService.GetPinDescriptionCache(nodes);
-                        if (existingCache == null)
-                        {
-
-                            pin.Description = _analyzeDocumentService.ExtractDescriptionTitle(message, pin.Label);
-                            var cache = new PinDescriptionCache()
-                            {
-                                Nodes = nodes,
-                                Description = pin.Description
-                            };
-                            _databaseLoaderService.AddPinDescriptionCache(cache);
-                            _databaseLoaderService.SavePinDescriptionCache();
-                        }
-                        else
-                        {
-                            pin.Description = existingCache.Description;
-                        }
-                        _databaseLoaderService.SavePinTopics(pins);
-
-                    }
-                }
-
-                if (string.IsNullOrWhiteSpace(pin.RestaurantType))
-                {
-                    unknownRestaurantType++;
-                }
-
-                Console.WriteLine($"Updating descriptions - {ii} of {pins.Count}");
-                ii++;
-            }
-            DataHelper.RemoveTopicTitles(pins);
-
-
-            _databaseLoaderService.SavePinTopics(pins);
-            Console.WriteLine($"Unknown restaurant types : {unknownRestaurantType}");
-        }
-
 
         /// <summary>
         /// Scan detected urls, try to generate pin information
@@ -358,14 +242,14 @@ namespace Frodo.Service
         /// </summary>
         private void UpdatePinsForAiVenues()
         {
-            var aiPin = new AiPinGeneration(_aIProcessingService, _mappingService, _fbGroupService);
+            var aiPin = new AiVenueProcessorService(_aIProcessingService, _mappingService, _fbGroupService);
             for (int i = 0; i < Topics.Count; i++)
             {
                 DetailedTopic? topic = Topics[i];
                 Console.WriteLine($"Processing AI pins {i} of {Topics.Count}");
                 if (i % 10 == 0)
                 {
-                    _topicsHelper.SaveTopics(DBFileName, Topics);
+                    _topicsHelper.SaveTopics(Topics);
                     _databaseLoaderService.SavePinDB();
                 }
 

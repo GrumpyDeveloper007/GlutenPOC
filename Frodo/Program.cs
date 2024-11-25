@@ -27,8 +27,9 @@ var pinHelper = dbLoader.GetPinHelper();
 var selenium = new SeleniumMapsUrlProcessor();
 var mapper = new MappingService();
 
-var ai = new AIProcessingService(selenium, pinHelper);
-var service = new DataSyncService(ai, selenium, pinHelper, dbLoader, mapper);
+var ai = new MapPinService(selenium, pinHelper);
+var clientExportFileGenerator = new ClientExportFileGenerator(dbLoader, mapper, pinHelper);
+var service = new DataSyncService(ai, selenium, pinHelper, dbLoader, mapper, clientExportFileGenerator);
 service.ProcessFile();
 
 selenium.Stop();

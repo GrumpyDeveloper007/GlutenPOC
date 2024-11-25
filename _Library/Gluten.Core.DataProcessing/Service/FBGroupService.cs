@@ -14,7 +14,7 @@ namespace Gluten.Core.DataProcessing.Service
     {
         public static string DefaultGroupId = "379994195544478";
 
-        private readonly Dictionary<string, string> _knownGroupIds = new Dictionary<string, string>()
+        private readonly Dictionary<string, string> _knownGroupIds = new()
         {
             {"379994195544478","Japan" },//Gluten-Free in Japan!
             {"1025248344200757","Australia" },
