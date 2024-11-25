@@ -315,7 +315,7 @@ _ReSharper*/
 packages
 
 CoverageResults/
-/GlutenApp.Droid/AndroidManifest.xml
+**/AndroidManifest.xml
 /Topics.json
 /bookmarks.json
 /GlutenApp/Resources/Raw/Topics.json

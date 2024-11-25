@@ -18,6 +18,11 @@ Automate as much as possible the above process, provide information to fellow co
  - create a MAUI app
  - create something I can use
  - explore any interest by other potential users
+ 
+## Pricing 
+
+ - Maps $25/month
+ 
 
 ## Top level design 
 
@@ -55,6 +60,10 @@ Contains classes for the data model
 Multiple projects that contain key core functionality.
 
 ## TODO 
+
+Use wish list
+ - some way to address keeping the shop info up-to-date/accurate
+ - import/export of google map pin lists
 
 These items continuously change during the POC phase, but here are some highlights -
 

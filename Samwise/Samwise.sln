@@ -5,11 +5,13 @@ VisualStudioVersion = 17.11.35327.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Samwise", "Samwise.csproj", "{14FF8427-0AB7-4D48-AC26-80AA1495BD92}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gluten.Data", "..\Gluten.Data\Gluten.Data.csproj", "{3DA5DF96-897E-4128-9D7C-44D43BDF48AD}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gluten.Data", "..\_Library\Gluten.Data\Gluten.Data.csproj", "{3DA5DF96-897E-4128-9D7C-44D43BDF48AD}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gluten.Core", "..\Gluten.Core\Gluten.Core.csproj", "{9E863AD3-9808-471F-9841-05BF30EA3C9F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gluten.Core", "..\_Library\Gluten.Core\Gluten.Core.csproj", "{9E863AD3-9808-471F-9841-05BF30EA3C9F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gluten.Core.DataProcessing", "..\Gluten.Core.DataProcessing\Gluten.Core.DataProcessing.csproj", "{449DC00C-E385-46E8-A8A9-5CDC9330345A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gluten.Core.DataProcessing", "..\_Library\Gluten.Core.DataProcessing\Gluten.Core.DataProcessing.csproj", "{449DC00C-E385-46E8-A8A9-5CDC9330345A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Library", "Library", "{2FB55F54-91B4-45D3-89E5-656F1104A830}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -36,6 +38,11 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{3DA5DF96-897E-4128-9D7C-44D43BDF48AD} = {2FB55F54-91B4-45D3-89E5-656F1104A830}
+		{9E863AD3-9808-471F-9841-05BF30EA3C9F} = {2FB55F54-91B4-45D3-89E5-656F1104A830}
+		{449DC00C-E385-46E8-A8A9-5CDC9330345A} = {2FB55F54-91B4-45D3-89E5-656F1104A830}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {30CC0BF7-3590-44BD-828C-7D8BCD0172F4}

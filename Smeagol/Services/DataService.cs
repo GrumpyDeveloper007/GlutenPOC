@@ -1,5 +1,5 @@
-﻿using Newtonsoft.Json;
-using Smeagol.FacebookModel;
+﻿using Gluten.FBModel;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,40 +10,38 @@ namespace Smeagol.Services
 {
     internal class DataService
     {
-        private HashSet<string> _LoadedIds = new HashSet<string>();
+        private readonly HashSet<string> _LoadedIds = [];
 
         public void ReadFileLineByLine(string filePath)
         {
             if (!File.Exists(filePath)) return;
             // Open the file and read each line
-            using (StreamReader sr = new StreamReader(filePath))
+            using StreamReader sr = new(filePath);
+            string? line;
+            while ((line = sr.ReadLine()) != null)
             {
-                string? line;
-                while ((line = sr.ReadLine()) != null)
+                if (line != null)
                 {
-                    if (line != null)
+                    var messages = line.Split(new string[] { "}/r/n" }, StringSplitOptions.None);
+                    foreach (var message in messages)
                     {
-                        var messages = line.Split(new string[] { "}/r/n" }, StringSplitOptions.None);
-                        foreach (var message in messages)
+                        try
                         {
-                            try
+                            GroupRoot? m;
+                            if (messages.Length > 1 && message != messages[messages.Length - 1])
                             {
-                                GroupRoot? m;
-                                if (messages.Length > 1 && message != messages[messages.Length - 1])
-                                {
-                                    m = JsonConvert.DeserializeObject<GroupRoot>(message + "}");
-                                }
-                                else
-                                {
-                                    m = JsonConvert.DeserializeObject<GroupRoot>(message);
-                                }
-                                ProcessModel(m);
+                                m = JsonConvert.DeserializeObject<GroupRoot>(message + "}");
                             }
-                            catch (Exception)
+                            else
                             {
-                                Console.WriteLine(message);
+                                m = JsonConvert.DeserializeObject<GroupRoot>(message);
+                            }
+                            ProcessModel(m);
+                        }
+                        catch (Exception)
+                        {
+                            Console.WriteLine(message);
 
-                            }
                         }
                     }
                 }

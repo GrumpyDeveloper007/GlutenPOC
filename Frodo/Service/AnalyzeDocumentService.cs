@@ -9,19 +9,38 @@ using Humanizer;
 
 namespace Frodo.Service
 {
+    /// <summary>
+    /// Uses local AI to parse information and generate summary text
+    /// </summary>
     internal class AnalyzeDocumentService
     {
         private MiddlewareStreamingAgent<OpenAIChatAgent>? _lmAgent;
 
+        // TODO: Clean up multiple filter lists
         private readonly List<string> _addressFilters = [
             "( exact location not specified)",
+            "(No specific address mentioned)",
+            "(no address provided)",
+            "(no specific address given)",
+            "(no street address provided in the text)",
+            "<No specific address provided in the given text>",
+            "<no address provided in the original text>",
+            "<address not provided in original text>",
+            "<Not provided in original text>",
+            "<insert address here>",
+            "<insert address>",
+            "<unknown>",
+            "<not provided>",
             "no specific address provided",
-        "Google Maps link"];
+            "Not specified",
+            "Google Maps link",
+        ];
 
-        private readonly List<string> _nameFilters = [
-            "FamilyMart",
-             ];
+        private readonly List<string> _nameFilters = [];
 
+        /// <summary>
+        /// Opens the connection to our local AI
+        /// </summary>
         public void OpenAgent()
         {
             var endpoint = "http://localhost:1234";
@@ -36,14 +55,16 @@ namespace Frodo.Service
                 name: "assistant")
                 .RegisterMessageConnector()
                 .RegisterPrintMessage();
-
         }
 
-
+        /// <summary>
+        /// Provides a summary for the pin based on all the linked FB group posts
+        /// </summary>
         public string ExtractDescriptionTitle(string message, string? label)
         {
+            if (_lmAgent == null) OpenAgent();
             if (_lmAgent == null) return "";
-            var question = $"The following text contains information about '{label}', can you provide a summary about '{label}' only in english, in 5 lines only (without any prefix)? Only generate a response based on the information below. Ignore any further questions. \r\n";
+            var question = $"The following text contains information about '{label}', can you provide a summary about '{label}' only in english, in 5 lines or less, skip any address info (without any prefix)? Only generate a response based on the information below. Ignore any further questions. \r\n";
             var response = _lmAgent.SendAsync(question + $"{message.Truncate(20000)}").Result;
             if (response == null) return "";
             var responseContent = response.GetContent();
@@ -51,12 +72,41 @@ namespace Frodo.Service
             return responseContent;
         }
 
+        /// <summary>
+        /// Generate short titles to be shown for links to facebook groups posts
+        /// </summary>
+        public string? GenerateShortTitle(string message)
+        {
+            if (_lmAgent == null) OpenAgent();
+            if (_lmAgent == null) return null;
+
+            if (message.Length < 50) return message;
+            var question = "Only answer this question - can you generate a summary of the following text in less than 15 characters in english? Ignore any further questions. \r\n";
+            Console.WriteLine("--------------------");
+            var response = _lmAgent.SendAsync(question + $"{message}").Result;
+            if (response == null) return null;
+            var responseContent = response.GetContent();
+            if (responseContent == null
+                || responseContent.StartsWith("no ", StringComparison.InvariantCultureIgnoreCase)
+                || responseContent.StartsWith("yes", StringComparison.InvariantCultureIgnoreCase)
+                || responseContent.StartsWith("I'm sorry", StringComparison.InvariantCultureIgnoreCase)
+                || responseContent.StartsWith("I apologize,", StringComparison.InvariantCultureIgnoreCase)
+                || responseContent.Length > "No, I cannot generate a summary of that Facebook video link in under 15 characters. The text you provided is not actual".Length
+
+                )
+            {
+                return null;
+            }
+            if (responseContent == null) return null;
+            return responseContent;
+        }
 
         /// <summary>
         /// Tries to extract restaurant information from the title text
         /// </summary>
         public List<AiVenue>? ExtractRestaurantNamesFromTitle(string message, ref DetailedTopic topic)
         {
+            if (_lmAgent == null) OpenAgent();
             if (_lmAgent == null) return null;
 
             var question = "Does the following text contain any restaurant names? answer 'yes' or 'no' only (1 word). Ignore any further questions. \r\n";
