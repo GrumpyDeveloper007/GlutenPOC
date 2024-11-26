@@ -1,199 +1,74 @@
-﻿using Gluten.Core.DataProcessing.Service;
+﻿using AutoMapper;
+using Gluten.Core.DataProcessing.Service;
+using Gluten.Core.Helper;
+using Gluten.Core.LocationProcessing.Service;
 using Gluten.Core.Service;
-using Gluten.Data.TopicModel;
+using Gluten.Data.MapsModel;
+using Gluten.Data.PinCache;
 using Microsoft.Extensions.Configuration;
 using Samwise.Service;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
+using static Gluten.Core.LocationProcessing.Service.MapsMetaExtractorService;
 
 
 namespace Samwise
 {
     /// <summary>
-    /// TODO: Clean up/remove code, this app isnt really needed
-    /// 
-    /// Interactive topic processor, ideally this would be handled with AI, but for now we do some basic searching and present
-    /// it to the user and allow them time to check and select their own map location, then update the DB
-    /// 
-    /// Note: This has become more of a sandbox to create the code that can be used without user interaction
+    /// Interactive google maps helper tool, used to extract information from searches 
     /// </summary>
     public partial class MainWindow : Window
     {
-        private SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor;
-        private AIProcessingService _aIProcessingService;
-        private TopicsHelper _topicsHelper = new TopicsHelper();
-        private AiPinGeneration _aiPinGeneration;
+        private readonly SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor;
+        private readonly TopicsHelper _topicsHelper = new TopicsHelper();
+        private readonly MapsMetaExtractorService _mapsMetaExtractorService = new();
+        private readonly MapPinService _mapPinService;
+        private readonly PinHelper _pinHelper;
+        private readonly DatabaseLoaderService _dbLoader;
 
         private int _index;
-        private int _mapIndex;
-        private List<DetailedTopic> _topics;
-        private string _currentNewUrl;
-        private string DBFileName = "D:\\Coding\\Gluten\\Topics.json";
+        private List<GMapsPin> _pins;
 
         public MainWindow()
         {
             InitializeComponent();
+
+            _dbLoader = new DatabaseLoaderService();
+            _pinHelper = _dbLoader.GetPinHelper();
+
+            _pins = _dbLoader.LoadGMPins();
+
+            _seleniumMapsUrlProcessor = new SeleniumMapsUrlProcessor();
+            _mapPinService = new MapPinService(_seleniumMapsUrlProcessor, _pinHelper);
+
+            IConfigurationRoot config = new ConfigurationBuilder()
+                .AddJsonFile("local.settings.json")
+                .Build();
+
+            var settings = config.GetRequiredSection("Values").Get<SettingValues>();
+
+            _seleniumMapsUrlProcessor.GoToUrl("https://www.google.com/maps/search/gluten/@34.3975011,132.4539367,2422m/data=!3m1!1e3!4m2!2m1!6e5?entry=ttu&g_ep=EgoyMDI0MTExOS4yIKXMDSoASAFQAw%3D%3D");
         }
 
         private void butStart_Click(object sender, RoutedEventArgs e)
         {
             _index = 0;
-            if (_aIProcessingService == null)
-            {
-                IConfigurationRoot config = new ConfigurationBuilder()
-                .AddJsonFile("local.settings.json")
-                .Build();
-
-                var settings = config.GetRequiredSection("Values").Get<SettingValues>();
-
-                _topics = _topicsHelper.TryLoadTopics(DBFileName);
-
-                //FixIncorrectPins();
-
-                var dbLoader = new DatabaseLoaderService();
-
-                //var nlp = new NaturalLanguageProcessor(settings.AIEndPoint, settings.AIApiKey);
-                var pinHelper = dbLoader.GetPinHelper();
-                var selenium = new SeleniumMapsUrlProcessor();
-                var mapper = new MappingService();
-                var fbGroupService = new FBGroupService();
-                //var nlp = new NaturalLanguageProcessor(settings.AIEndPoint, settings.AIApiKey);
-                _seleniumMapsUrlProcessor = new SeleniumMapsUrlProcessor();
-
-                _aIProcessingService = new AIProcessingService(_seleniumMapsUrlProcessor, pinHelper, mapper);
-                _aiPinGeneration = new AiPinGeneration(_aIProcessingService, mapper, fbGroupService);
-
-
-                if (_topics == null)
-                {
-                    txtMessage.Text = "!! No topics available";
-                    return;
-                }
-                _index = 315;
-                ShowData(_index);
-
-                //ProcessNext();
-            }
         }
 
-
-        private void ProcessNext()
-        {
-            Mouse.OverrideCursor = System.Windows.Input.Cursors.Wait;
-            _currentNewUrl = null;
-
-            while (_currentNewUrl == null && _index < _topics.Count)
-            {
-                while (_currentNewUrl == null && _topics[_index].AiVenues != null && _mapIndex < _topics[_index].AiVenues.Count)
-                {
-                    ShowData(_index);
-
-                    _currentNewUrl = _aiPinGeneration.GetMapPinForPlaceName(_topics[_index].AiVenues[_mapIndex]);
-                    // Note: Remove line below to pause processing and review
-                    _currentNewUrl = null;
-
-                    if (_currentNewUrl == null) _mapIndex++;
-                }
-
-                // Save after every update
-                _topicsHelper.SaveTopics(DBFileName, _topics);
-
-                if (_currentNewUrl == null)
-                {
-                    _index++;
-                    _mapIndex = 0;
-                }
-            }
-
-            // TODO: Refactor
-            //while (_currentNewUrl == null && _index < _topics.Count)
-            //{
-            //    _currentNewUrl = _aIProcessingService.ProcessTopic(_topics[_index], ref restaurantName);
-            //    if (_currentNewUrl == null)
-            //    {
-            //        _index++;
-            //    }
-            //}
-
-            ShowData(_index);
-            if (_currentNewUrl == null)
-            {
-                txtUrl.Text = "";
-                txtMessage.Text = "";
-            }
-            else
-            {
-                txtUrl.Text = _currentNewUrl;
-            }
-            //txtSearchToken.Text = restaurantName;
-            Mouse.OverrideCursor = null;
-        }
 
         private void ShowData(int i)
         {
-            if (_topics == null) return;
-            if (i == _topics.Count) return;
-
-            txtMessage.Text = _topics[i].Title;
-            var tokens = "";
-            /*if (_topics[i].AiTitleInfoV2 != null)
-            {
-                foreach (var item in _topics[i].AiTitleInfoV2)
-                {
-                    tokens += $"{item.Category} : {item.Text}\n";
-                }
-            }*/
-            if (_topics[i].AiVenues != null)
-            {
-                foreach (var item in _topics[i].AiVenues)
-                {
-                    item.Address = _aiPinGeneration.FilterAddress(item.Address?.Trim());
-
-                    if (!_aiPinGeneration.IsInPlaceNameSkipList(item.PlaceName))
-                    {
-                        tokens += $"{item.PlaceName} : {item.Address}\n";
-                    }
-                }
-            }
-            txtTokenList.Text = tokens;
-            txtCounter.Text = $"{_index}/{_topics.Count}";
-        }
-
-        private void butAccept_Click(object sender, RoutedEventArgs e)
-        {
-            //int counter = 0;
-            //_aIProcessingService.UpdatePinList(_currentNewUrl, _topics[_index], ref counter);
-
-            var pin = _aIProcessingService.GetPinFromCurrentUrl(true);
-            if (pin != null)
-            {
-                // Add pin to AiGenerated
-                _topics[_index].AiVenues[_mapIndex].Pin = pin;
-            }
-            _topicsHelper.SaveTopics(DBFileName, _topics);
-            _mapIndex++;
-            //_index++;
-            ProcessNext();
-        }
-
-        private void butReject_Click(object sender, RoutedEventArgs e)
-        {
-            _topicsHelper.SaveTopics(DBFileName, _topics);
-            _mapIndex++;
-            //_index++;
-            ProcessNext();
-        }
-
-        private void butAddToIgnore_Click(object sender, RoutedEventArgs e)
-        {
-            // TODO
+            if (i == _pins.Count) return;
+            txtCounter.Text = $"{_index}/{_pins.Count}";
         }
 
         private void butFacebook_Click(object sender, RoutedEventArgs e)
         {
-            var url = _topics[_index].FacebookUrl;
+            var url = "";
             BrowserHelper.OpenUrl(url);
         }
 
@@ -208,11 +83,86 @@ namespace Samwise
 
         private void butRight_Click(object sender, RoutedEventArgs e)
         {
-            if (_index < _topics.Count)
+            if (_index < _pins.Count)
             {
                 _index++;
                 ShowData(_index);
             }
+        }
+
+        private void butCaptureInfo_Click(object sender, RoutedEventArgs e)
+        {
+            Mouse.OverrideCursor = Cursors.Wait;
+            var searchTerm = "gluten";
+            var html = _seleniumMapsUrlProcessor.GetFirstLabelInnerHTML();
+            var root = new LabelNode();
+            PinCacheMeta? result = null;
+            if (!string.IsNullOrWhiteSpace(html))
+            {
+                _mapsMetaExtractorService.TraverseHtml(html, root);
+
+                for (int i = 0; i < root.Child.Count; i++)
+                {
+                    if (root.Child[i].ResultsNode)
+                    {
+                        foreach (var item in root.Child[i].Child)
+                        {
+                            if (item.Child.Count > 0)
+                            {
+                                var placeName = item.Child[0].Name;
+                                var mapsUrl = item.Child[0].Href;
+                                var mapPin = _pinHelper.TryToGenerateMapPin(mapsUrl, true, placeName, item.InnerHtml);
+                                var comment = _mapsMetaExtractorService.GetComment(item.InnerHtml);
+                                var restaurantType = _mapsMetaExtractorService.GetRestaurantType(item.InnerHtml);
+
+                                if (mapsUrl != null)
+                                {
+                                    var pin = new GMapsPin
+                                    {
+                                        Label = placeName,
+                                        PlaceName = placeName,
+                                        RestaurantType = restaurantType,
+                                        MapsUrl = mapsUrl,
+                                        GeoLatitude = mapPin.GeoLatitude,
+                                        GeoLongitude = mapPin.GeoLongitude,
+                                        Comment = comment
+
+                                    };
+                                    if (item.Child.Count == 4)
+                                    {
+                                        pin.Stars = item.Child[1].Name;
+                                        pin.Price = item.Child[2].Name;
+                                    }
+                                    else if (item.Child.Count == 2)
+                                    {
+                                        pin.Stars = item.Child[1].Name;
+                                    }
+                                    else if (item.Child.Count == 3)
+                                    {
+                                        pin.Stars = item.Child[1].Name;
+                                    }
+                                    else
+                                    {
+                                        Console.WriteLine("No reviews or price guide");
+                                    }
+                                    GPinHelper.TryAddPin(_pins, pin);
+                                }
+                                else
+                                {
+                                    Console.WriteLine("Unknown entry");
+                                }
+                            }
+
+                        }
+
+                    }
+                }
+
+                var placeNames = _mapPinService.GetMapPlaceNames();
+
+                _dbLoader.SaveGMPins(_pins);
+            }
+            Mouse.OverrideCursor = null;
         }
     }
 }

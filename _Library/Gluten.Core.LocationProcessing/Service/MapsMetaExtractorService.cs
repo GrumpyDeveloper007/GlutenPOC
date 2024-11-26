@@ -1,5 +1,6 @@
 ﻿using Gluten.Data.PinCache;
 using HtmlAgilityPack;
+using System;
 
 namespace Gluten.Core.LocationProcessing.Service
 {
@@ -79,12 +80,17 @@ namespace Gluten.Core.LocationProcessing.Service
             "Yoga studio"
             ];
 
-        class LabelNode
+        public class LabelNode
         {
             public string Name { get; set; } = "";
             public List<LabelNode> Child { get; set; } = [];
 
             public List<string> Buttons { get; set; } = [];
+
+            public bool ResultsNode { get; set; }
+
+            public string InnerHtml { get; set; }
+            public string Href { get; set; }
         }
 
         public List<string> GetRestaurantTypes()
@@ -207,8 +213,75 @@ namespace Gluten.Core.LocationProcessing.Service
             _restaurantTypes.Clear();
         }
 
+        public string GetRestaurantType(string html)
+        {
+            HtmlDocument document = new();
+            document.LoadHtml(html);
 
-        private static void TraverseHtml(string html, LabelNode rootNode)
+            var spanNodes = document.DocumentNode.SelectNodes("//span[last()]");
+
+            if (spanNodes.Count > 5)
+            {
+                return spanNodes[5].InnerText;
+            }
+            return "";
+        }
+
+        public string GetComment(string html)
+        {
+            HtmlDocument document = new();
+            document.LoadHtml(html);
+
+            var spanNodes = document.DocumentNode.SelectNodes("//span[last()]");
+
+            var comment = spanNodes.Last().ParentNode.InnerHtml;
+            var comment2 = spanNodes.Last().ParentNode.InnerText;
+            if (!comment2.Contains("gluten", StringComparison.InvariantCultureIgnoreCase))
+            {
+                return "";
+            }
+            return comment2;
+
+            // example - 
+            //<div class="Nv2PK THOPZb CpccDe " jsaction="mouseover:pane.wfvdle11;mouseout:pane.wfvdle11">
+            //	<a class="hfpxzc" aria-label="Caffè Ponte" href="https://www.google.com/maps/place/Caff%C3%A8+Ponte/data=!4m7!3m6!1s0x355aa20d17743d03:0xb07a1b2acf4005d5!8m2!3d34.3939983!4d132.4542247!16s%2Fg%2F1hc0_5tqv!19sChIJAz10Fw2iWjUR1QVAzyoberA?authuser=0&amp;hl=en&amp;rclk=1" jsaction="pane.wfvdle11;focus:pane.wfvdle11;blur:pane.wfvdle11;auxclick:pane.wfvdle11;keydown:pane.wfvdle11;clickmod:pane.wfvdle11" jslog="12690;track:click,contextmenu;mutable:true;metadata:WyIwYWhVS0V3alZ5WmZMaXZtSkF4WHd1bU1HSFZYREZPUVE4QmNJTmlnQSIsbnVsbCwyXQ=="/>
+            //	<div class="rWbY0d"/>
+            //	<div class="bfdHYd Ppzolf OFBs3e  ">
+            //		<div class="rgFiGf OyjIsf "/>
+            //		<div class="hHbUWd"/>
+            //		<div class="rSy5If"/>
+            //		<div class="lI9IFe ">
+            //			<div class="y7PRA">
+            //			</div>
+            //			<div class="Rwjeuc"/>
+            //			<div class="SpFAAb">
+            //			</div>
+            //			<div class="qty3Ue">
+            //				<div class="AyRUI" aria-hidden="true" style="height: 8px;">&nbsp; </div>
+            //				<div class="n8sPKe fontBodySmall ccePVe ">
+            //					<div class="Ahnjwc fontBodyMedium ">
+            //						<div class="W6VQef ">
+            //							<div aria-hidden="true" class="JoXfOb fCbqBc" style="width: 16px; height: 16px;">
+            //								<img alt="" class="Jn12ke xcEj5d " src="https://ssl.gstatic.com/local/servicebusiness/default_user.png" style="width: 16px; height: 16px;"/>
+            //								<div class="ah5Ghc ">
+            //									<span style="font-weight: 400;">"There is a separate </span>
+            //									<span style="font-weight: 500;">gluten</span>
+            //									<span style="font-weight: 400;"> free menu and the staff was very nice."</span>
+            //								</div>
+            //							</div>
+            //							<div class="Q4BGF"/>
+            //						</div>
+            //					</div>
+            //				</div>
+            //				<div class="gwQ6lc" jsaction="click:mLt3mc"/>
+            //			</div>
+            //		</div>
+            //	</div>
+            return "";
+        }
+
+
+        public void TraverseHtml(string html, LabelNode rootNode)
         {
             // Load the HTML into an HtmlDocument
             HtmlDocument document = new();
@@ -230,20 +303,41 @@ namespace Gluten.Core.LocationProcessing.Service
             {
                 foreach (var attribute in node.Attributes)
                 {
+                    if (attribute.Name == "href")
+                    {
+                        currentParent.Href = attribute.Value;
+                    }
+
                     if (attribute.Name == "aria-label")
                     {
+                        var resultsNode = (attribute.Value.StartsWith("Results for"));
+
                         currentParent = new LabelNode
                         {
                             Name = attribute.Value,
+                            ResultsNode = resultsNode
                         };
                         parent.Child.Add(currentParent);
                     }
+
                 }
             }
 
             if (node.Name == "button" && !string.IsNullOrWhiteSpace(node.InnerText))
             {
                 currentParent.Buttons.Add(node.InnerText);
+            }
+
+
+            if (parent.ResultsNode)
+            {
+                var newParent = new LabelNode
+                {
+                    Name = "div",
+                    InnerHtml = node.InnerHtml
+                };
+                currentParent.Child.Add(newParent);
+                currentParent = newParent;
             }
 
             // Recurse through child nodes

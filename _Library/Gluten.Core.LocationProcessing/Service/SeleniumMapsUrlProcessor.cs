@@ -140,6 +140,22 @@ namespace Gluten.Core.LocationProcessing.Service
             return url;
         }
 
+        public string GetFirstLabelInnerHTML()
+        {
+            var r = GetSearchResults();
+            foreach (var item in r)
+            {
+                var innerText = item.Text;
+                var a = item.GetAttribute("aria-label");
+                if (a != null)
+                {
+                    return item.GetAttribute("innerHTML");
+                }
+            }
+            return "";
+        }
+
+
         public string GetMeta(string? placeName)
         {
             if (placeName == null) return "";

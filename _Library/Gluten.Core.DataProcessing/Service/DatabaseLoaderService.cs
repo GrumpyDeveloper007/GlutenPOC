@@ -1,5 +1,6 @@
 ﻿using Gluten.Core.Service;
 using Gluten.Data.ClientModel;
+using Gluten.Data.MapsModel;
 using Gluten.Data.PinCache;
 using Gluten.Data.PinDescription;
 using Newtonsoft.Json;
@@ -21,6 +22,7 @@ namespace Gluten.Core.DataProcessing.Service
         private readonly string ExportDBFileName = "D:\\Coding\\Gluten\\TopicsExport.json";
         private readonly string RestaurantsFileName = "D:\\Coding\\Gluten\\Restaurant.txt";
         private readonly string PinDescriptionCacheFileName = "D:\\Coding\\Gluten\\PinDescriptionCache.json";
+        private readonly string GMPinFileName = "D:\\Coding\\Gluten\\GMPin.json";
 
         private readonly PinHelper _pinHelper;
         private readonly List<PinDescriptionCache> _pinDescriptionsCache;
@@ -119,6 +121,17 @@ namespace Gluten.Core.DataProcessing.Service
             File.WriteAllText(RestaurantsFileName, fileText);
         }
 
+        public void SaveGMPins(List<GMapsPin> data)
+        {
+            SaveDb<List<GMapsPin>>(GMPinFileName, data);
+        }
+
+        public List<GMapsPin> LoadGMPins()
+        {
+            var data = TryLoadJson<GMapsPin>(GMPinFileName);
+            if (data == null) return new List<GMapsPin>();
+            return data;
+        }
         /// <summary>
         /// Gets the PinHelper
         /// </summary>

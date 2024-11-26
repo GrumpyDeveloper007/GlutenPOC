@@ -10,5 +10,6 @@
         public string? MapsUrl { get; set; }
         public string? MetaHtml { get; set; }
         public PinCacheMeta? MetaData { get; set; }
+        public bool MetaProcessed { get; set; } = false;
     }
 }

@@ -104,24 +104,28 @@ namespace Frodo.Service
             foreach (var item in cache)
             {
                 Console.WriteLine($"Processing pin meta {i} or {cache.Count}");
-                if (string.IsNullOrWhiteSpace(item.Value.MetaHtml) && item.Value.MapsUrl != null)
+                if (!item.Value.MetaProcessed)
                 {
-                    // load meta if missing
-                    _seleniumMapsUrlProcessor.GoAndWaitForUrlChange(item.Value.MapsUrl);
-                    item.Value.MetaHtml = _seleniumMapsUrlProcessor.GetMeta(item.Value.Label);
-                }
+                    if (string.IsNullOrWhiteSpace(item.Value.MetaHtml) && item.Value.MapsUrl != null)
+                    {
+                        // load meta if missing
+                        _seleniumMapsUrlProcessor.GoAndWaitForUrlChange(item.Value.MapsUrl);
+                        item.Value.MetaHtml = _seleniumMapsUrlProcessor.GetMeta(item.Value.Label);
+                    }
 
-                if (item.Value.MetaData == null || string.IsNullOrWhiteSpace(item.Value.MetaData.RestaurantType))
-                {
-                    item.Value.MetaData = _mapsMetaExtractorService.ExtractMeta(item.Value.MetaHtml);
-                }
-                if (item.Value.MetaData != null)
-                {
-                    _mapsMetaExtractorService.AddRestaurantType(item.Value.MetaData.RestaurantType);
-                }
-                else
-                {
-                    Console.WriteLine($"Unable to get meta for {item.Value.Label}");
+                    if (item.Value.MetaData == null || string.IsNullOrWhiteSpace(item.Value.MetaData.RestaurantType))
+                    {
+                        item.Value.MetaData = _mapsMetaExtractorService.ExtractMeta(item.Value.MetaHtml);
+                    }
+                    if (item.Value.MetaData != null)
+                    {
+                        _mapsMetaExtractorService.AddRestaurantType(item.Value.MetaData.RestaurantType);
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Unable to get meta for {item.Value.Label}");
+                    }
+                    item.Value.MetaProcessed = true;
                 }
                 i++;
             }

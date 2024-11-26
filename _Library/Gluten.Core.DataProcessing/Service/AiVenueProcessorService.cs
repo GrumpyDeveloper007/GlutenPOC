@@ -55,7 +55,11 @@ namespace Gluten.Core.DataProcessing.Service
             "Volcano",
             "mochi place",
             "sumo wrestling",
-            "Kyoto Tower GF treats store"
+            "Kyoto Tower GF treats store",
+            "Backup restaurant name",
+            "Conveyor belt sushi place",
+            "GF pizza place",
+            "Other sushi restaurant"
              ];
 
         /// <summary>
