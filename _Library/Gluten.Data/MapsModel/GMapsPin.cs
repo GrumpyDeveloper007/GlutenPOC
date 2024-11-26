@@ -18,6 +18,7 @@ namespace Gluten.Data.MapsModel
         public string? Price { get; set; }
         public string? Stars { get; set; }
         public string? Comment { get; set; }
+        public string? Description { get; set; }
 
     }
 }

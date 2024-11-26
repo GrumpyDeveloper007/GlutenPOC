@@ -20,6 +20,7 @@ namespace Gluten.Core.DataProcessing.Service
     {
         private readonly string PinCacheDBFileName = "D:\\Coding\\Gluten\\pinCache.json";
         private readonly string ExportDBFileName = "D:\\Coding\\Gluten\\TopicsExport.json";
+        private readonly string GMPinExportDBFileName = "D:\\Coding\\Gluten\\GMPinExport.json";
         private readonly string RestaurantsFileName = "D:\\Coding\\Gluten\\Restaurant.txt";
         private readonly string PinDescriptionCacheFileName = "D:\\Coding\\Gluten\\PinDescriptionCache.json";
         private readonly string GMPinFileName = "D:\\Coding\\Gluten\\GMPin.json";
@@ -165,6 +166,23 @@ namespace Gluten.Core.DataProcessing.Service
             SaveDb(ExportDBFileName, pins);
         }
 
+        /// <summary>
+        /// Loads the previously generated pin topic export file
+        /// </summary>
+        public List<GMapsPin> LoadGMMapPinExport()
+        {
+            var pins = TryLoadJson<GMapsPin>(GMPinExportDBFileName);
+            pins ??= new List<GMapsPin>();
+            return pins;
+        }
+
+        /// <summary>
+        /// Exports the information required by the client app to a file
+        /// </summary>
+        public void SaveGMMapPinExport(List<GMapsPin> pins)
+        {
+            SaveDb(GMPinExportDBFileName, pins);
+        }
 
         private static List<classType>? TryLoadJson<classType>(string fileName)
         {
