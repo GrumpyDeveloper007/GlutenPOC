@@ -85,11 +85,6 @@ internal class FacebookSniffer
     {
         if (e.ResponseUrl.ToLower() == "https://www.facebook.com/api/graphql/".ToLower())
         {
-            Debug.WriteLine("-- New Work Response received -- ");
-            Debug.WriteLine($"RequestId: {e.RequestId}");
-            Debug.WriteLine($"Url: {e.ResponseUrl}");
-            Debug.WriteLine($"ResponseBody: {e.ResponseBody}");
-
             // TODO: Create a better locking solution or post to a DB
             try
             {
@@ -97,6 +92,10 @@ internal class FacebookSniffer
                 {
                     System.IO.File.AppendAllText(_responsefileName, e.ResponseBody + "/r/n");
                     Console.WriteLine("Response saved");
+                }
+                else
+                {
+                    Console.WriteLine("Response skipped");
                 }
             }
             catch (Exception ex)

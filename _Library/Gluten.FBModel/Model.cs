@@ -1005,8 +1005,8 @@ namespace Gluten.FBModel
     {
         public Hsrp hsrp { get; set; }
         public Jsmods jsmods { get; set; }
-        public List<string> allResources { get; set; }
-        public TieredResources tieredResources { get; set; }
+        //public List<string> allResources { get; set; }
+        //public TieredResources tieredResources { get; set; }
     }
 
     public class Description
@@ -1036,7 +1036,7 @@ namespace Gluten.FBModel
     {
         public List<PrefetchUrisV2> prefetch_uris_v2 { get; set; }
         public bool is_final { get; set; }
-        public SrPayload sr_payload { get; set; }
+        //public SrPayload sr_payload { get; set; }
     }
 
     public class Feedback
@@ -1210,7 +1210,7 @@ namespace Gluten.FBModel
 
     public class Jsmods
     {
-        public List<List<object>> require { get; set; }
+        //public List<List<object>> require { get; set; }
     }
 
     public class Layout
