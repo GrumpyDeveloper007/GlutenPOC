@@ -15,13 +15,16 @@ namespace Gluten.Core.LocationProcessing.Service
         private readonly ChromeDriver _driver = new();
         private readonly bool _started = false;
 
+        private ReadOnlyCollection<IWebElement> _currentSearchResults = new([]);
+        private List<string> _InnerText = [];
+        private Dictionary<string, IWebElement> _AriaLabels = [];
+
         /// <summary>
         /// Start Selenium
         /// </summary>
         private void Start()
         {
             DevToolsSession session = _driver.GetDevToolsSession();
-            //var domains = session.GetVersionSpecificDomains<DevToolsSessionDomains>();
         }
 
         /// <summary>
@@ -51,6 +54,8 @@ namespace Gluten.Core.LocationProcessing.Service
                         return _driver.Url;
                     }
                 }
+                _currentSearchResults = PreLoadSearchResults();
+                //TODO: PreProcess();
             }
             catch (Exception ex)
             {
@@ -73,12 +78,15 @@ namespace Gluten.Core.LocationProcessing.Service
             }
         }
 
-        public ReadOnlyCollection<IWebElement> GetSearchResults()
+        private void PreProcess()
         {
-            //<a class="hfpxzc" aria-label="7-Eleven Japan Headquarters" href="https://www.google.com/maps/place/7-Eleven+Japan+Headquarters/data=!4m7!3m6!1s0x60188c62364deaa9:0x2eafa6f977eeef68!8m2!3d35.685892!4d139.734094!16s%2Fg%2F1vc81t47!19sChIJqepNNmKMGGARaO_ud_mmry4?authuser=0&amp;hl=en&amp;rclk=1" jsaction="pane.wfvdle10;focus:pane.wfvdle10;blur:pane.wfvdle10;auxclick:pane.wfvdle10;keydown:pane.wfvdle10;clickmod:pane.wfvdle10" jslog="12690;track:click,contextmenu;mutable:true;metadata:WyIwYWhVS0V3ajRnWnFmX3VhSkF4VngxemdHSGFLVEJwa1E4QmNJTGlnQSIsbnVsbCwyXQ=="></a>
-            var elements = _driver.FindElements(By.CssSelector("[aria-label]"));
-            //"https://www.google.com/maps/place/7-Eleven+Asakusa+Kokusaidori+Store/data=!4m7!3m6!1s0x60188ebf9036d3b3:0x98f8048bde38bac0!8m2!3d35.713365!4d139.7925459!16s%2Fg%2F1tgpsmb6!19sChIJs9M2kL-OGGARwLo43osE-Jg?authuser=0&hl=en&rclk=1"
-            return elements;
+            _AriaLabels = [];
+            _InnerText = [];
+            foreach (var item in _currentSearchResults)
+            {
+                _AriaLabels.Add(item.GetAttribute("aria-label"), item);
+                _InnerText.Add(item.Text);
+            }
         }
 
         /// <summary>
@@ -139,13 +147,35 @@ namespace Gluten.Core.LocationProcessing.Service
             }
             return url;
         }
+        /*
+                public Dictionary<string, IWebElement> GetAriaLabels()
+                {
+                    return _AriaLabels;
+                }
+
+                public List<string> GetInnerText()
+                {
+                    return _InnerText;
+                }*/
+
+        public ReadOnlyCollection<IWebElement> PreLoadSearchResults()
+        {
+            //<a class="hfpxzc" aria-label="7-Eleven Japan Headquarters" href="https://www.google.com/maps/place/7-Eleven+Japan+Headquarters/data=!4m7!3m6!1s0x60188c62364deaa9:0x2eafa6f977eeef68!8m2!3d35.685892!4d139.734094!16s%2Fg%2F1vc81t47!19sChIJqepNNmKMGGARaO_ud_mmry4?authuser=0&amp;hl=en&amp;rclk=1" jsaction="pane.wfvdle10;focus:pane.wfvdle10;blur:pane.wfvdle10;auxclick:pane.wfvdle10;keydown:pane.wfvdle10;clickmod:pane.wfvdle10" jslog="12690;track:click,contextmenu;mutable:true;metadata:WyIwYWhVS0V3ajRnWnFmX3VhSkF4VngxemdHSGFLVEJwa1E4QmNJTGlnQSIsbnVsbCwyXQ=="></a>
+            var elements = _driver.FindElements(By.CssSelector("[aria-label]"));
+            //"https://www.google.com/maps/place/7-Eleven+Asakusa+Kokusaidori+Store/data=!4m7!3m6!1s0x60188ebf9036d3b3:0x98f8048bde38bac0!8m2!3d35.713365!4d139.7925459!16s%2Fg%2F1tgpsmb6!19sChIJs9M2kL-OGGARwLo43osE-Jg?authuser=0&hl=en&rclk=1"
+            return elements;
+        }
+
+        public ReadOnlyCollection<IWebElement> GetSearchResults()
+        {
+            return _currentSearchResults;
+        }
 
         public string GetFirstLabelInnerHTML()
         {
             var r = GetSearchResults();
             foreach (var item in r)
             {
-                var innerText = item.Text;
                 var a = item.GetAttribute("aria-label");
                 if (a != null)
                 {
@@ -155,6 +185,10 @@ namespace Gluten.Core.LocationProcessing.Service
             return "";
         }
 
+        public string GetInnerHTML(IWebElement element)
+        {
+            return element.GetAttribute("innerHTML");
+        }
 
         public string GetMeta(string? placeName)
         {
@@ -163,7 +197,6 @@ namespace Gluten.Core.LocationProcessing.Service
             var r = GetSearchResults();
             foreach (var item in r)
             {
-                var innerText = item.Text;
                 var a = item.GetAttribute("aria-label");
                 if (a.StartsWith(placeName, StringComparison.InvariantCultureIgnoreCase)
                     || placeName.StartsWith(a, StringComparison.InvariantCultureIgnoreCase)
@@ -175,6 +208,28 @@ namespace Gluten.Core.LocationProcessing.Service
             }
             return "";
         }
+
+        public string GetMetaTODO(string? placeName)
+        {
+            if (placeName == null) return "";
+            var placeNameWithoutAccents = StringHelper.RemoveIrrelevantChars(StringHelper.RemoveDiacritics(placeName));
+
+            foreach (var dic in _AriaLabels)
+            {
+                var item = dic.Value;
+                var a = dic.Key;
+                if (a.StartsWith(placeName, StringComparison.InvariantCultureIgnoreCase)
+                    || placeName.StartsWith(a, StringComparison.InvariantCultureIgnoreCase)
+                    || StringHelper.RemoveIrrelevantChars(StringHelper.RemoveDiacritics(a)).StartsWith(placeNameWithoutAccents, StringComparison.InvariantCultureIgnoreCase)
+                    )
+                {
+                    return GetInnerHTML(item);
+                }
+            }
+            return "";
+        }
+
+
 
     }
 }

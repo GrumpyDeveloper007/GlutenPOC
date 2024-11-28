@@ -16,21 +16,69 @@ namespace Gluten.Core.DataProcessing.Service
 
         private readonly List<string> _addressFilters = [
             "( exact location not specified)",
-            "(No specific address mentioned)",
-            "(no address provided)",
-            "(no specific address given)",
-            "(no street address provided in the text)",
-            "<No specific address provided in the given text>",
-            "<no address provided in the original text>",
-            "<address not provided in original text>",
-            "<Not provided in original text>",
-            "<insert address here>",
-            "<insert address>",
+            "(no address ",
+            "(no street ",
+            "( in the text, but a  is given: ",
+            "(No specific ",
+            "(shop url not available, only address ",
+            "(no street ",
+            "<no address provided ",
+            "(no street address",
+            "(No address provided",
+            "(Frozen food section ",
+            "(factory location ",
+            "(unspecified",
+            "(multiple locations",
+            "(not ",
+            "()",
+            "(null)",
+            "(Centre location)",
+            "(street ",
+            "(address ",
+            "( in the given",
+            "(closed",
+            "(unknown,",
+            "(location within",
+            "(website link:",
+            "<No specific address ",
+            "<No street ",
+            "<No address",
+            "<unspecified",
+            "<address not provided ",
+            "<Not provided ",
+            "<insert ",
+            "<insert ",
             "<unknown>",
             "<not provided>",
+            "<address>",
             "no specific address provided",
+            "no specific location provided in the given text.",
             "Not specified",
             "Google Maps link",
+            "I do not have a specific",
+            "CBD location",
+            "http://",
+            "https:",
+            "Google Maps address:",
+            "not provided",
+            "Address not provided in given text",
+            "no address found in the snippet, only a google search result link",
+            "unknown (located",
+            "Available on Uber eats",
+            "not explicitly stated in the text,",
+            "no specific ",
+            "no address ",
+            "no explicit ",
+            "No street ",
+            "unspecified",
+            "Various locations ",
+            "unknown",
+            "Easy to search on Google",
+            "n/a (food truck)",
+            "I apologize,",
+            "www.",
+            "facebook.com",
+            "N/A"
         ];
 
         private readonly List<string> _nameFilters = [
@@ -59,7 +107,11 @@ namespace Gluten.Core.DataProcessing.Service
             "Backup restaurant name",
             "Conveyor belt sushi place",
             "GF pizza place",
-            "Other sushi restaurant"
+            "Other sushi restaurant",
+            "Gluten Free Bangkok",
+            "The place with no name",
+            "Food Court",
+            "Gluten-free restaurant"
              ];
 
         /// <summary>
@@ -73,7 +125,7 @@ namespace Gluten.Core.DataProcessing.Service
             && venue.Pin == null
                 && !string.IsNullOrWhiteSpace(venue.PlaceName))
             {
-                _mapPinService.GetMapUrl(venue.PlaceName + $", {fBGroupService.GetCountryName(groupId)}");
+                //_mapPinService.GetMapUrl(venue.PlaceName + $", {fBGroupService.GetCountryName(groupId)}");
                 var mapUrls = _mapPinService.GetMapUrls();
                 var placeNames = _mapPinService.GetMapPlaceNames();
 
@@ -99,8 +151,9 @@ namespace Gluten.Core.DataProcessing.Service
         /// <summary>
         /// Tries to generate a pin based on the venue place name 
         /// </summary>
-        public void GetMapPinForPlaceName(AiVenue venue, string groupId)
+        public void GetMapPinForPlaceName(AiVenue venue, string groupId, List<string> chainUrls)
         {
+            //var chainUrls = new List<string>();
             if (venue == null) return;
             // Don't process if it is in the skip list
             if (!IsInPlaceNameSkipList(venue.PlaceName)
@@ -112,18 +165,22 @@ namespace Gluten.Core.DataProcessing.Service
                 if (currentNewUrl != null)
                 {
                     var pin = _mapPinService.GetPinFromCurrentUrl(true, venue.PlaceName);
+
+                    // If we are unable to get a specific pin, generate chain urls, to add later
+                    if (pin == null)
+                    {
+                        Console.WriteLine($"Searching for a chain");
+                        if (IsPlaceNameAChain(venue, chainUrls, groupId))
+                        {
+                            venue.PlaceName = null;
+                            venue.Address = null;
+                        }
+                    }
+
+
                     if (pin != null)
                     {
-                        if (!_mapPinService.IsPermanentlyClosed(pin.Label, out string meta))
-                        {
-                            // Add pin to AiGenerated
-                            pin.MetaHtml = meta;
-                            venue.Pin = _mappingService.Map<TopicPin, TopicPinCache>(pin);
-                        }
-                        else
-                        {
-                            Console.WriteLine($"Permanently Closed");
-                        }
+                        venue.Pin = _mappingService.Map<TopicPin, TopicPinCache>(pin);
                     }
                     else
                     {
@@ -139,9 +196,8 @@ namespace Gluten.Core.DataProcessing.Service
                             if (pin != null)
                             {
                                 // Add pin to AiGenerated
-                                if (!_mapPinService.IsPermanentlyClosed(pin.Label, out string meta))
+                                if (!_mapPinService.IsPermanentlyClosed(pin.Label))
                                 {
-                                    pin.MetaHtml = meta;
                                     // Add pin to AiGenerated
                                     venue.Pin = _mappingService.Map<TopicPin, TopicPinCache>(pin);
                                 }
@@ -155,6 +211,10 @@ namespace Gluten.Core.DataProcessing.Service
                                 Console.WriteLine($"Still unable to process :{venue.PlaceName}");
                             }
                         }
+                        else
+                        {
+                            Console.WriteLine($"Still unable to process :{venue.PlaceName}");
+                        }
                     }
                 }
             }
@@ -162,12 +222,16 @@ namespace Gluten.Core.DataProcessing.Service
             return;
         }
 
-        private string? FilterAddress(string? address)
+        public string? FilterAddress(string? address)
         {
             if (address == null) return null;
             foreach (var filter in _addressFilters)
             {
-                address = address.ToLower().Replace(filter.ToLower(), "");
+                if (address.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    return "";
+                }
+                //address = address.ToLower().Replace(filter.ToLower(), "");
             }
             return address.Trim();
         }

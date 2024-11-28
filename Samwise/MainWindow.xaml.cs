@@ -93,7 +93,6 @@ namespace Samwise
         private void butCaptureInfo_Click(object sender, RoutedEventArgs e)
         {
             Mouse.OverrideCursor = Cursors.Wait;
-            var searchTerm = "gluten";
             var html = _seleniumMapsUrlProcessor.GetFirstLabelInnerHTML();
             var root = new LabelNode();
             PinCacheMeta? result = null;
@@ -111,7 +110,7 @@ namespace Samwise
                             {
                                 var placeName = item.Child[0].Name;
                                 var mapsUrl = item.Child[0].Href;
-                                var mapPin = _pinHelper.TryToGenerateMapPin(mapsUrl, true, placeName, item.InnerHtml);
+                                var mapPin = _pinHelper.TryToGenerateMapPin(mapsUrl, true, placeName);
                                 var comment = _mapsMetaExtractorService.GetComment(item.InnerHtml);
                                 var restaurantType = _mapsMetaExtractorService.GetRestaurantType(item.InnerHtml);
 

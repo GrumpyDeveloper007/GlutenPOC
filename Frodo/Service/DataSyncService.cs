@@ -1,12 +1,13 @@
 ﻿using Frodo.Helper;
 using Gluten.Core.DataProcessing.Service;
+using Gluten.Core.Helper;
 using Gluten.Core.LocationProcessing.Service;
 using Gluten.Core.Service;
 using Gluten.Data;
 using Gluten.Data.ClientModel;
 using Gluten.Data.PinCache;
-using Gluten.Data.PinDescription;
 using Gluten.Data.TopicModel;
+using StringHelper = Frodo.Helper.StringHelper;
 
 namespace Frodo.Service
 {
@@ -45,7 +46,6 @@ namespace Frodo.Service
             Console.WriteLine($"\r\nReading captured FB data");
             _topicLoaderService.ReadFileLineByLine("D:\\Coding\\Gluten\\Smeagol\\bin\\Debug\\net8.0\\Responses.txt", Topics);
 
-            //FixData();
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nProcessing topics, generating short titles");
             GenerateShortTitles();
@@ -93,6 +93,8 @@ namespace Frodo.Service
                     }
                 }
             }
+
+            _topicsHelper.SaveTopics(Topics);
             Console.WriteLine($"Added short title : {shortTitlesAdded}");
         }
 
@@ -188,11 +190,13 @@ namespace Frodo.Service
                     if (topic.UrlsV2[t].Pin == null || _regeneratePins)
                     {
                         var newUrl = _seleniumMapsUrlProcessor.CheckUrlForMapLinks(url);
-                        var meta = _seleniumMapsUrlProcessor.GetMeta(null);
                         topic.UrlsV2[t].Url = newUrl;
-                        var cachePin = _pinHelper.TryToGenerateMapPin(newUrl, false, url, meta);
+                        var cachePin = _pinHelper.TryToGenerateMapPin(newUrl, false, url);
                         if (cachePin != null)
                         {
+                            if (string.IsNullOrWhiteSpace(cachePin.MetaHtml))
+                                cachePin.MetaHtml = _seleniumMapsUrlProcessor.GetMeta(cachePin.Label);
+
                             var newPin = _mappingService.Map<TopicPin, TopicPinCache>(cachePin);
                             topic.UrlsV2[t].Pin = newPin;
                         }
@@ -224,11 +228,13 @@ namespace Frodo.Service
                             if (links[t].Pin == null || _regeneratePins)
                             {
                                 var newUrl = _seleniumMapsUrlProcessor.CheckUrlForMapLinks(url);
-                                var meta = _seleniumMapsUrlProcessor.GetMeta(null);
                                 links[t].Url = newUrl;
-                                var cachePin = _pinHelper.TryToGenerateMapPin(newUrl, false, url, meta);
+                                var cachePin = _pinHelper.TryToGenerateMapPin(newUrl, false, url);
                                 if (cachePin != null)
                                 {
+                                    if (string.IsNullOrWhiteSpace(cachePin.MetaHtml))
+                                        cachePin.MetaHtml = _seleniumMapsUrlProcessor.GetMeta(cachePin.Label);
+
                                     var newPin = _mappingService.Map<TopicPin, TopicPinCache>(cachePin);
                                     links[t].Pin = newPin;
                                 }
@@ -313,19 +319,9 @@ namespace Frodo.Service
 
                         if (ai.Pin == null || _regeneratePins)
                         {
-                            aiPin.GetMapPinForPlaceName(ai, groupId);
+                            aiPin.GetMapPinForPlaceName(ai, groupId, chainUrls);
                         }
 
-                        // If we are unable to get a specific pin, generate chain urls, to add later
-                        if (ai.Pin == null)//|| (_regeneratePins && currentUrl != null)
-                        {
-                            Console.WriteLine($"Searching for a chain");
-                            if (aiPin.IsPlaceNameAChain(ai, chainUrls, groupId))
-                            {
-                                ai.PlaceName = null;
-                                ai.Address = null;
-                            }
-                        }
                     }
                     ai.PinSearchDone = true;
                 }

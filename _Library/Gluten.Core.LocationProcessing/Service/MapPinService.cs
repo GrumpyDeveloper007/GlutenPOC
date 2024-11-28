@@ -1,4 +1,4 @@
-﻿using Gluten.Core.Service;
+﻿using Gluten.Core.Helper;
 using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
 using System.Web;
@@ -29,23 +29,13 @@ namespace Gluten.Core.LocationProcessing.Service
         /// <summary>
         /// Checks the currently shown page to see if 'permanently closed' is shown
         /// </summary>
-        public bool IsPermanentlyClosed(string? placeName, out string meta)
+        public bool IsPermanentlyClosed(string? placeName)
         {
-            meta = "";
             if (placeName == null) return true;
-            var r = _seleniumMapsUrlProcessor.GetSearchResults();
-            foreach (var item in r)
+            var innerHtml = _seleniumMapsUrlProcessor.GetFirstLabelInnerHTML();
+            if (innerHtml.Contains("permanently closed", StringComparison.CurrentCultureIgnoreCase))
             {
-                var innerText = item.Text;
-                var a = item.GetAttribute("aria-label");
-                if (placeName == a)
-                {
-                    meta = item.GetAttribute("innerHTML");
-                }
-                if (innerText.Contains("permanently closed", StringComparison.CurrentCultureIgnoreCase))
-                {
-                    return true;
-                }
+                return true;
             }
             return false;
         }
@@ -59,19 +49,16 @@ namespace Gluten.Core.LocationProcessing.Service
             var r = _seleniumMapsUrlProcessor.GetSearchResults();
             foreach (var item in r)
             {
-                var innerText = item.Text;
                 var b = item.GetAttribute("href");
-
-                if (!string.IsNullOrWhiteSpace(b)
-                    && !innerText.Contains("permanently closed", StringComparison.CurrentCultureIgnoreCase))
+                if (!string.IsNullOrWhiteSpace(b))
                 {
-                    //https://www.google.com/maps/contrib/117521353174744275953?hl=en-AU
-                    //https://www.google.com/maps/place/Rizlabo+Kitchen/@35.6685791,139.708229,17z/data=!4m6!3m5!1s0x60188ca21d3193d9:0x9127dcb2b56f681e!8m2!3d35.6685791!4d139.7108039!16s%2Fg%2F11c5xc_56p?entry=ttu&g_ep=EgoyMDI0MTExMy4xIKXMDSoASAFQAw%3D%3D
-                    //https://www.google.com/maps/place/Mister+Donut+Shinjuku+Yasukuni+Street/@35.69331,139.703677,17z/data=!3m1!4b1!4m6!3m5!1s0x60188cd981770317:0xd16725fecf632eb7!8m2!3d35.69331!4d139.703677!16s%2Fg%2F1td5x4gl!5m1!1e4?authuser=0&hl=en&entry=ttu&g_ep=EgoyMDI0MTExMy4xIKXMDSoASAFQAw%3D%3D
-                    if (b.StartsWith("https://www.google.com/maps/place"))
+                    var innerText = item.Text;
+                    if (!innerText.Contains("permanently closed", StringComparison.CurrentCultureIgnoreCase))
                     {
-                        //var a = item.GetAttribute("aria-label");
-                        results.Add(b);
+                        if (b.StartsWith("https://www.google.com/maps/place"))
+                        {
+                            results.Add(b);
+                        }
                     }
                 }
             }
@@ -87,15 +74,17 @@ namespace Gluten.Core.LocationProcessing.Service
             var r = _seleniumMapsUrlProcessor.GetSearchResults();
             foreach (var item in r)
             {
-                var innerText = item.Text;
                 var b = item.GetAttribute("href");
-                if (!string.IsNullOrWhiteSpace(b)
-                    && !innerText.Contains("permanently closed", StringComparison.CurrentCultureIgnoreCase))
+                if (!string.IsNullOrWhiteSpace(b))
                 {
-                    if (b.StartsWith("https://www.google.com/maps/place"))
+                    var innerText = item.Text;
+                    if (!innerText.Contains("permanently closed", StringComparison.CurrentCultureIgnoreCase))
                     {
-                        var a = item.GetAttribute("aria-label");
-                        results.Add(a);
+                        if (b.StartsWith("https://www.google.com/maps/place"))
+                        {
+                            var a = item.GetAttribute("aria-label");
+                            results.Add(a);
+                        }
                     }
                 }
             }
@@ -109,8 +98,11 @@ namespace Gluten.Core.LocationProcessing.Service
         public TopicPinCache? GetPinFromCurrentUrl(bool onlyFromData, string restaurantName)
         {
             var newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
-            var meta = _seleniumMapsUrlProcessor.GetMeta(restaurantName);
-            var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData, restaurantName, meta);
+            var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData, restaurantName);
+            if (pin != null && string.IsNullOrWhiteSpace(pin.MetaHtml))
+            {
+                pin.MetaHtml = _seleniumMapsUrlProcessor.GetMeta(pin.Label);
+            }
             return pin;
         }
 
@@ -119,8 +111,11 @@ namespace Gluten.Core.LocationProcessing.Service
         /// </summary>
         public TopicPinCache? GetPinFromCurrentUrl(string newUrl, bool onlyFromData, string restaurantName)
         {
-            var meta = _seleniumMapsUrlProcessor.GetMeta(restaurantName);
-            var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData, restaurantName, meta);
+            var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData, restaurantName);
+            if (pin != null)
+            {
+                pin.MetaHtml = _seleniumMapsUrlProcessor.GetMeta(pin.Label);
+            }
             return pin;
         }
     }

@@ -131,9 +131,21 @@ namespace Frodo.Service
                         seconds = trackingInfo.page_insights._1420852834795381.post_context.publish_time;
                     else if (trackingInfo.page_insights._1053129328213251 != null)
                         seconds = trackingInfo.page_insights._1053129328213251.post_context.publish_time;
+                    else if (trackingInfo.page_insights._182984958515029 != null)
+                        seconds = trackingInfo.page_insights._182984958515029.post_context.publish_time;
+                    else if (trackingInfo.page_insights._3087018218214300 != null)
+                        seconds = trackingInfo.page_insights._3087018218214300.post_context.publish_time;
+                    else if (trackingInfo.page_insights._769136475365475 != null)
+                        seconds = trackingInfo.page_insights._769136475365475.post_context.publish_time;
+                    else if (trackingInfo.page_insights._823200180025057 != null)
+                        seconds = trackingInfo.page_insights._823200180025057.post_context.publish_time;
+                    else if (trackingInfo.page_insights._100058326253164 != null)
+                        seconds = trackingInfo.page_insights._100058326253164.post_context.publish_time;
+                    //1189303823
+
                     else
                     {
-                        Console.WriteLine("Unknown message structure");
+                        Console.WriteLine($"Unknown message structure {b}");
                     }
                     currentTopic.PostCreated = DateTimeOffset.FromUnixTimeSeconds(seconds);
                 }

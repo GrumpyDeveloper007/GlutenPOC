@@ -1,6 +1,6 @@
 ﻿using Frodo.Helper;
 using Gluten.Core.DataProcessing.Service;
-using Gluten.Core.Service;
+using Gluten.Core.Helper;
 using Gluten.Data.ClientModel;
 using Gluten.Data.MapsModel;
 using Gluten.Data.PinDescription;
@@ -124,7 +124,8 @@ namespace Frodo.Service
             {
                 var newT = mapper.Map<PinLinkInfo, DetailedTopic>(topic);
 
-                if (topic.GroupId != FBGroupService.DefaultGroupId) continue;
+                // TODO: Uncomment to limit data selection
+                //if (topic.GroupId != FBGroupService.DefaultGroupId) continue;
 
                 if (topic.AiVenues != null)
                 {

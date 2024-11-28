@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 
-namespace Gluten.Core.Service
+namespace Gluten.Core.Helper
 {
     /// <summary>
     /// Some helper function for pin generation
@@ -25,9 +25,9 @@ namespace Gluten.Core.Service
             foreach (var item in _pinCache.Values)
             {
                 if (
-                    (item.PlaceName != null && item.PlaceName.StartsWith(placeName, StringComparison.CurrentCultureIgnoreCase))
+                    item.PlaceName != null && item.PlaceName.StartsWith(placeName, StringComparison.CurrentCultureIgnoreCase)
                     ||
-                    (item.Label != null && item.Label.StartsWith(placeName, StringComparison.CurrentCultureIgnoreCase))
+                    item.Label != null && item.Label.StartsWith(placeName, StringComparison.CurrentCultureIgnoreCase)
                     )
                 {
                     return item;
@@ -59,16 +59,13 @@ namespace Gluten.Core.Service
         /// Tries to extract a map location from the geo fields in the url for the centre of the map then tries to location 
         /// the actual location from the data= section
         /// </summary>
-        public TopicPinCache? TryToGenerateMapPin(string url, bool onlyFromData, string searchString, string meta)
+        public TopicPinCache? TryToGenerateMapPin(string url, bool onlyFromData, string searchString)
         {
             if (url == null) return null;
             TopicPinCache? oldPin = TryGetPinByUrl(url);
             url = HttpUtility.UrlDecode(url);
-            if (oldPin == null) oldPin = TryGetPinByUrl(url);
             if (oldPin != null) return oldPin;
             var mapsUrl = url;
-            //"https://www.google.com/maps/place/7-Eleven Asakusa Kokusaidori Store/data=!4m7!3m6!1s0x60188ebf9036d3b3:0x98f8048bde38bac0!8m2!3d35.713365!4d139.7925459!16s/g/1tgpsmb6!19sChIJs9M2kL-OGGARwLo43osE-Jg?authuser=0&hl=en&rclk=1"
-            //https://www.google.com/maps/place/Mister+Donut+Shinjuku+Yasukuni+Street/@37.8507876,125.2890788,5z/data=!3m1!5s0x60188cd981749325:0x7e473d8fd918f3b5!4m10!1m2!2m1!1sMister+Donut,+Japan!3m6!1s0x60188cd981770317:0xd16725fecf632eb7!8m2!3d35.69331!4d139.703677!15sChNNaXN0ZXIgRG9udXQsIEphcGFuIgOIAQFaFCISbWlzdGVyIGRvbnV0IGphcGFukgEKZG9udXRfc2hvcOABAA!16s%2Fg%2F1td5x4gl!5m1!1e4?entry=ttu&g_ep=EgoyMDI0MTExMy4xIKXMDSoASAFQAw%3D%3D
 
             string lat = "";
             string lon = "";
@@ -112,7 +109,7 @@ namespace Gluten.Core.Service
                 GeoLongitude = lon,
                 MapsUrl = mapsUrl,
                 PlaceName = searchString,
-                MetaHtml = meta
+                MetaHtml = ""
             };
             if (!_pinCache.TryGetValue(label, out var existingPin))
             {

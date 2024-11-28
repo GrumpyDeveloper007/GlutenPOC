@@ -86,6 +86,7 @@ namespace Frodo.Service
             var response = _lmAgent.SendAsync(question + $"{message}").Result;
             if (response == null) return null;
             var responseContent = response.GetContent();
+            responseContent = responseContent.Replace("Yes, I can summarize that text in under 15 English characters:", "");
             if (responseContent == null
                 || responseContent.StartsWith("no ", StringComparison.InvariantCultureIgnoreCase)
                 || responseContent.StartsWith("yes", StringComparison.InvariantCultureIgnoreCase)
