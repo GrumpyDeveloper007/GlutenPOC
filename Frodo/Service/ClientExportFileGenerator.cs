@@ -1,10 +1,13 @@
 ﻿using Frodo.Helper;
 using Gluten.Core.DataProcessing.Service;
 using Gluten.Core.Helper;
+using Gluten.Core.LocationProcessing.Service;
 using Gluten.Data.ClientModel;
 using Gluten.Data.MapsModel;
 using Gluten.Data.PinDescription;
 using Gluten.Data.TopicModel;
+using Newtonsoft.Json.Converters;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,9 +18,49 @@ namespace Frodo.Service
 {
     internal class ClientExportFileGenerator(DatabaseLoaderService _databaseLoaderService,
         MappingService _mappingService,
-        PinHelper _pinHelper)
+        PinHelper _pinHelper,
+        MapPinCache _mapPinCache)
     {
         private readonly LocalAiInterfaceService _analyzeDocumentService = new();
+        private const string ExportFolder = @"D:\Coding\Gluten\Export\";
+
+        private static void SaveDb<typeToSave>(string fileName, typeToSave topics)
+        {
+            var json = JsonConvert.SerializeObject(topics, Formatting.None,
+                [new StringEnumConverter()]);
+            File.WriteAllText(fileName, json);
+        }
+
+        private void CreateExportFolderData(List<PinTopic> pins, List<DetailedTopic> topics)
+        {
+            Dictionary<string, List<PinTopic>> files = new();
+            var fbGroupService = new FBGroupService();
+
+            foreach (var item in pins)
+            {
+                string groupId = "";
+                foreach (var topic in item.Topics)
+                {
+                    var selectedTopic = topics.First(o => o.NodeID == topic.NodeID);
+                    groupId = selectedTopic.GroupId;
+                    break;
+                }
+
+                var groupCountry = fbGroupService.GetCountryName(groupId);
+
+                if (!files.ContainsKey(groupCountry))
+                {
+                    files.Add(groupCountry, new List<PinTopic>());
+                }
+
+                files[groupCountry].Add(item);
+            }
+
+            foreach (var file in files)
+            {
+                SaveDb(ExportFolder + file.Key + ".json", file.Value);
+            }
+        }
 
 
         /// <summary>
@@ -85,6 +128,7 @@ namespace Frodo.Service
             _databaseLoaderService.SavePinTopics(pins);
 
             GenerateGMPinExport(pins);
+            CreateExportFolderData(pins, topics);
             Console.WriteLine($"Unknown restaurant types : {unknownRestaurantType}");
         }
 
@@ -137,7 +181,7 @@ namespace Frodo.Service
                             && FBGroupService.IsPinWithinExpectedRange(topic.GroupId, double.Parse(aiVenue.Pin.GeoLatitude), double.Parse(aiVenue.Pin.GeoLongitude)))
                         {
                             var existingPin = DataHelper.IsPinInList(aiVenue.Pin, pins);
-                            var cachePin = _pinHelper.TryGetPin(aiVenue.Pin.Label);
+                            var cachePin = _mapPinCache.TryGetPin(aiVenue.Pin.Label);
                             DataHelper.AddIfNotExists(pins, existingPin, newT, aiVenue.Pin, cachePin);
                         }
                     }
@@ -154,7 +198,7 @@ namespace Frodo.Service
                             && FBGroupService.IsPinWithinExpectedRange(topic.GroupId, double.Parse(url.Pin.GeoLatitude), double.Parse(url.Pin.GeoLongitude)))
                         {
                             var existingPin = DataHelper.IsPinInList(url.Pin, pins);
-                            var cachePin = _pinHelper.TryGetPin(url.Pin.Label);
+                            var cachePin = _mapPinCache.TryGetPin(url.Pin.Label);
                             DataHelper.AddIfNotExists(pins, existingPin, newT, url.Pin, cachePin);
                         }
                     }

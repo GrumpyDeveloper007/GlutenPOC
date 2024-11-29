@@ -36,9 +36,13 @@ namespace Samwise
             InitializeComponent();
 
             _dbLoader = new DatabaseLoaderService();
-            _pinHelper = _dbLoader.GetPinHelper();
+            _pinHelper = new PinHelper();
             _pins = _dbLoader.LoadGMPins();
-            _mapPinService = new MapPinService(new SeleniumMapsUrlProcessor(), _pinHelper);
+            var pinCache = _dbLoader.GetPinCache();
+            var selenium = new SeleniumMapsUrlProcessor();
+            var geoService = new GeoService();
+
+            _mapPinService = new MapPinService(selenium, _pinHelper, pinCache, geoService);
 
             IConfigurationRoot config = new ConfigurationBuilder()
                 .AddJsonFile("local.settings.json")
@@ -104,7 +108,7 @@ namespace Samwise
                             {
                                 var placeName = item.Child[0].Name;
                                 var mapsUrl = item.Child[0].Href;
-                                var mapPin = _pinHelper.TryToGenerateMapPin(mapsUrl, true, placeName);
+                                var mapPin = _mapPinService.TryToGenerateMapPin(mapsUrl, placeName, "");
                                 var comment = _mapsMetaExtractorService.GetComment(item.InnerHtml);
                                 var restaurantType = _mapsMetaExtractorService.GetRestaurantType(item.InnerHtml);
 

@@ -20,11 +20,11 @@ namespace Gluten.Core.DataProcessing.Service
             {"1025248344200757","Australia" },
             {"361337232353766","Vietnam" },
             {"806902313439614","Thailand" },
-            {"3087018218214300","Bail" },
+            {"3087018218214300","Indonesia" },
             {"1420852834795381","South Korea" },
             {"1015752345220391","Thailand" },//Gluten Free Chiang Mai
             {"852980778556330","Fiji" },
-            {"353439621914938","Taipei" },
+            {"353439621914938","Taiwan" },
             {"319517678837045","Vietnam" },//Gluten Free Hanoi
             {"660915839470807","Vietnam" },//Gluten Free Saigon (Ho Chi Minh City)
             {"823200180025057","Vietnam" },//Gluten-free Hội An Community
@@ -32,6 +32,7 @@ namespace Gluten.Core.DataProcessing.Service
             {"302515126584130","Philippines" },
             {"1053129328213251","Thailand" },//Gluten Free Thailand
             {"182984958515029","Singapore" },//Gluten Free Singapore - Support Group
+            { "769136475365475","N/A" }
 //            {"","" },
         };
 

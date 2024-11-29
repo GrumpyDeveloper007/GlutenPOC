@@ -17,7 +17,7 @@ namespace Gluten.Core.Helper
         /// </summary>
         public static string RemoveIrrelevantChars(string text)
         {
-            return text.Replace(" ", "").Replace("-", "");
+            return text.Replace(" ", "").Replace("-", "").Replace("’", "").Replace("'", "");
         }
 
         /// <summary>

@@ -65,14 +65,14 @@ namespace Gluten.Core.DataProcessing.Service
 
                 if (currentNewUrl != null)
                 {
-                    var pin = _mapPinService.GetPinFromCurrentUrl(true, venue.PlaceName);
+                    var pin = _mapPinService.GetPinFromCurrentUrl(venue.PlaceName);
 
                     // If we are unable to get a specific pin, generate chain urls, to add later
                     if (pin == null)
                     {
-                        Console.WriteLine($"Searching for a chain");
                         if (IsPlaceNameAChain(venue, chainUrls, groupId))
                         {
+                            Console.WriteLine($"Removing chain pin");
                             venue.PlaceName = null;
                             venue.Address = null;
                         }
@@ -90,10 +90,10 @@ namespace Gluten.Core.DataProcessing.Service
                         venue.Address = address;
                         if (!string.IsNullOrWhiteSpace(address))
                         {
-                            restaurantName = venue.PlaceName + " " + address;
+                            restaurantName = venue.PlaceName + " " + address + $", {fBGroupService.GetCountryName(groupId)}";
                             _mapPinService.GetMapUrl(restaurantName);
 
-                            pin = _mapPinService.GetPinFromCurrentUrl(true, venue.PlaceName);
+                            pin = _mapPinService.GetPinFromCurrentUrl(venue.PlaceName);
                             if (pin != null)
                             {
                                 // Add pin to AiGenerated

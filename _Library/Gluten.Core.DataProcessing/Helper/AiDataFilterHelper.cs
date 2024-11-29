@@ -108,7 +108,11 @@ namespace Gluten.Core.DataProcessing.Helper
             "Gluten Free Bangkok",
             "The place with no name",
             "Food Court",
-            "Gluten-free restaurant"
+            "Gluten-free restaurant",
+            "Pardeep kumar",
+            "Gourmet Shop",
+            "Gourmet Cafe",
+            "TreeHouse"
              ];
 
 

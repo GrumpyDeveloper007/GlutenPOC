@@ -1,6 +1,8 @@
 ﻿using Gluten.Core.Helper;
 using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
+using System.Diagnostics.Metrics;
+using System;
 using System.Web;
 using System.Xml.Linq;
 
@@ -10,7 +12,10 @@ namespace Gluten.Core.LocationProcessing.Service
     /// Google map pin handling service, generates pins from place names, gathers meta data
     /// </summary>
     public class MapPinService(
-        SeleniumMapsUrlProcessor seleniumMapsUrlProcessor, PinHelper pinHelper)
+        SeleniumMapsUrlProcessor seleniumMapsUrlProcessor, PinHelper pinHelper,
+        MapPinCache _mapPinCache,
+        GeoService _geoService,
+        MapsMetaExtractorService _mapsMetaExtractorService)
     {
         private readonly PinHelper _pinHelper = pinHelper;
         private readonly SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor = seleniumMapsUrlProcessor;
@@ -48,6 +53,11 @@ namespace Gluten.Core.LocationProcessing.Service
                 }
             }
             return "";
+        }
+
+        public string GetCurrentUrl()
+        {
+            return _seleniumMapsUrlProcessor.GetCurrentUrl();
         }
 
         private bool IsMapsUrl(string url)
@@ -156,6 +166,8 @@ namespace Gluten.Core.LocationProcessing.Service
         public List<string> GetMapPlaceNames()
         {
             var results = new List<string>();
+            Thread.Sleep(2000); // TODO: Hack, page still loading
+            _seleniumMapsUrlProcessor.PreLoadSearchResults();
             var r = _seleniumMapsUrlProcessor.GetSearchResults();
             foreach (var item in r)
             {
@@ -180,28 +192,35 @@ namespace Gluten.Core.LocationProcessing.Service
         /// <summary>
         /// Tries to get a pin from the currently displayed page
         /// </summary>
-        public TopicPinCache? GetPinFromCurrentUrl(bool onlyFromData, string restaurantName)
+        public TopicPinCache? GetPinFromCurrentUrl(string restaurantName)
         {
             var newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
-            var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData, restaurantName);
+            return TryToGenerateMapPin(newUrl, restaurantName, "");
+        }
+
+        public TopicPinCache? TryToGenerateMapPin(string url, string searchString, string country)
+        {
+            var pin = _mapPinCache.TryToGenerateMapPin(url, searchString, "");
+
+            if (pin != null)
+            {
+                double longitude = double.Parse(pin.GeoLongitude);
+                double latitude = double.Parse(pin.GeoLatitude);
+                country = _geoService.GetCounty(longitude, latitude);
+                pin.Country = _geoService.GetCounty(longitude, latitude);
+            }
+
             if (pin != null && string.IsNullOrWhiteSpace(pin.MetaHtml))
             {
                 pin.MetaHtml = GetMeta(pin.Label);
+                if (string.IsNullOrWhiteSpace(pin.MetaHtml))
+                {
+                    pin.MetaData = _mapsMetaExtractorService.ExtractMeta(pin.MetaHtml);
+                }
             }
-            return pin;
-        }
 
-        /// <summary>
-        /// Tries to get a pin from the currently displayed page
-        /// </summary>
-        public TopicPinCache? GetPinFromCurrentUrl(string newUrl, bool onlyFromData, string restaurantName)
-        {
-            var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData, restaurantName);
-            if (pin != null)
-            {
-                pin.MetaHtml = GetMeta(pin.Label);
-            }
             return pin;
+
         }
     }
 }

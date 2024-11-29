@@ -11,87 +11,18 @@ namespace Gluten.Core.Helper
     /// <summary>
     /// Some helper function for pin generation
     /// </summary>
-    public class PinHelper(Dictionary<string, TopicPinCache> pinCache)
+    public class PinHelper()
     {
-        private readonly Dictionary<string, TopicPinCache> _pinCache = pinCache;
-
-        public TopicPinCache? TryGetPin(string? placeName)
-        {
-            if (placeName == null) return null;
-            if (_pinCache == null) return null;
-            if (_pinCache.TryGetValue(placeName, out var value))
-                return value;
-
-            foreach (var item in _pinCache.Values)
-            {
-                if (
-                    item.PlaceName != null && item.PlaceName.StartsWith(placeName, StringComparison.CurrentCultureIgnoreCase)
-                    ||
-                    item.Label != null && item.Label.StartsWith(placeName, StringComparison.CurrentCultureIgnoreCase)
-                    )
-                {
-                    return item;
-                }
-            }
-            return null;
-        }
-
-        public TopicPinCache? TryGetPinByUrl(string url)
-        {
-            if (_pinCache == null) return null;
-
-            foreach (var item in _pinCache.Values)
-            {
-                if (item.MapsUrl != null && item.MapsUrl.StartsWith(url, StringComparison.CurrentCultureIgnoreCase))
-                {
-                    return item;
-                }
-            }
-            return null;
-        }
-
-        public Dictionary<string, TopicPinCache> GetCache()
-        {
-            return _pinCache;
-        }
-
-        /// <summary>
-        /// Tries to extract a map location from the geo fields in the url for the centre of the map then tries to location 
-        /// the actual location from the data= section
-        /// </summary>
-        public TopicPinCache? TryToGenerateMapPin(string url, bool onlyFromData, string searchString)
+        public TopicPinCache? GenerateMapPin(string url, string searchString, string country)
         {
             if (url == null) return null;
-            TopicPinCache? oldPin = TryGetPinByUrl(url);
-            url = HttpUtility.UrlDecode(url);
-            if (oldPin != null) return oldPin;
             var mapsUrl = url;
 
             string lat = "";
             string lon = "";
 
             var foundInData = TryGetLocationFromDataParameter(url, ref lat, ref lon);
-            if (onlyFromData && !foundInData) return null;
-
-            if (url.Contains("/@"))
-            {
-                var left = url.IndexOf("/@") + 2;
-                var latEnd = url.IndexOf(',', left);
-                var longEnd = url.IndexOf(',', latEnd + 1);
-
-                if (latEnd > 0)
-                {
-                    if (!foundInData)
-                    {
-                        lat = url.Substring(left, latEnd - left);
-                        lon = url.Substring(latEnd + 1, longEnd - latEnd - 1);
-                    }
-                }
-            }
-            else if (!foundInData)
-            {
-                return null;
-            }
+            if (!foundInData) return null;
 
             var placeStart = url.IndexOf("/place/") + "/place/".Length;
             var placeEnd = url.IndexOf('/', placeStart);
@@ -99,7 +30,6 @@ namespace Gluten.Core.Helper
             //"https://www.google.com/maps/preview/place/Japan,+%E3%80%92630-8123+Nara,+Sanjoomiyacho,+3%E2%88%9223+onwa/@34.6785478,135.8161308,3281a,13.1y/data\\\\u003d!4m2!3m1!1s0x60013a30562e78d3:0xd712400d34ea1a7b\\"
             //                                          "Japan,+%E3%80%92630-8123+Nara,+Sanjoomiyac"
             var label = url.Substring(placeStart, placeEnd - placeStart);
-            label = HttpUtility.UrlDecode(label);
 
             var newPin = new TopicPinCache()
             {
@@ -109,18 +39,13 @@ namespace Gluten.Core.Helper
                 GeoLongitude = lon,
                 MapsUrl = mapsUrl,
                 PlaceName = searchString,
-                MetaHtml = ""
+                MetaHtml = "",
+                Country = country,
             };
-            if (!_pinCache.TryGetValue(label, out var existingPin))
-            {
-                _pinCache.Add(label, newPin);
-            }
-            else
-            {
-                existingPin.MapsUrl = newPin.MapsUrl;
-            }
+            newPin.SearchStrings.Add(searchString);
             return newPin;
         }
+
 
         /// <summary>
         /// Extracts the data= part of a google maps url and looks for the longitude and latitude
@@ -132,6 +57,27 @@ namespace Gluten.Core.Helper
             {
                 data = data.Substring(0, data.IndexOf('?'));
             }
+            var tokens = data.Split('!');
+            var found = false;
+            if (tokens.Length > 4)
+            {
+                foreach (var item in tokens)
+                {
+                    if (item.StartsWith("3d"))
+                    {
+                        geoLat = item.Substring(2);
+                    }
+                    if (item.StartsWith("4d"))
+                    {
+                        geoLong = item.Substring(2);
+                        found = true;
+                    }
+                }
+            }
+            return found;
+
+            // E.G.
+
             //!4m6
             //!3m5
             //!1s0x60188dbbed184005:0x88ffa854362ddcfd
@@ -164,24 +110,6 @@ namespace Gluten.Core.Helper
             //!3d35.5262059
             //!4d137.5673175
             //!16s/g/1tvtbf0y?entry=ttu&g_ep=EgoyMDI0MTAxMy4wIKXMDSoASAFQAw==
-            var tokens = data.Split('!');
-            var found = false;
-            if (tokens.Length > 4)
-            {
-                foreach (var item in tokens)
-                {
-                    if (item.StartsWith("3d"))
-                    {
-                        geoLat = item.Substring(2);
-                    }
-                    if (item.StartsWith("4d"))
-                    {
-                        geoLong = item.Substring(2);
-                        found = true;
-                    }
-                }
-            }
-            return found;
         }
     }
 }

@@ -3,10 +3,9 @@ using Gluten.Core.DataProcessing.Service;
 using Gluten.Core.Helper;
 using Gluten.Core.LocationProcessing.Service;
 using Gluten.Core.Service;
-using Gluten.Data;
-using Gluten.Data.ClientModel;
 using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
+using System.Web;
 using StringHelper = Frodo.Helper.StringHelper;
 
 namespace Frodo.Service
@@ -19,7 +18,10 @@ namespace Frodo.Service
         PinHelper _pinHelper,
         DatabaseLoaderService _databaseLoaderService,
         MappingService _mappingService,
-        ClientExportFileGenerator _clientExportFileGenerator
+        ClientExportFileGenerator _clientExportFileGenerator,
+        GeoService _geoService,
+        FBGroupService _fBGroupService,
+        MapPinCache _mapPinCache
         )
     {
         private readonly TopicsHelper _topicsHelper = new();
@@ -30,6 +32,7 @@ namespace Frodo.Service
 
         public List<DetailedTopic> Topics = [];
         private readonly bool _regeneratePins = false;
+        private int _invalidGeo = 0;
 
         /// <summary>
         /// Processes the file generated from FB, run through many processing stages finally generating an export file for the client app
@@ -44,7 +47,7 @@ namespace Frodo.Service
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nReading captured FB data");
-            _topicLoaderService.ReadFileLineByLine("D:\\Coding\\Gluten\\Smeagol\\bin\\Debug\\net8.0\\Responses.txt", Topics);
+            //_topicLoaderService.ReadFileLineByLine("D:\\Coding\\Gluten\\Smeagol\\bin\\Debug\\net8.0\\Responses.txt", Topics);
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nProcessing topics, generating short titles");
@@ -60,6 +63,7 @@ namespace Frodo.Service
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nUpdating pin information for Ai Venues");
+            RemoveAiPinsInBadLocations();
             UpdatePinsForAiVenues();
             _topicsHelper.SaveTopics(Topics);
 
@@ -101,18 +105,86 @@ namespace Frodo.Service
         private void ExtractMetaInfoFromPinCache()
         {
             int i = 0;
-            var cache = _pinHelper.GetCache();
+            var cache = _mapPinCache.GetCache();
+            //var newCache = new Dictionary<string, TopicPinCache>();
             _mapsMetaExtractorService.ClearRestaurantType();
             foreach (var item in cache)
             {
-                Console.WriteLine($"Processing pin meta {i} or {cache.Count}");
+                if (string.IsNullOrWhiteSpace(item.Value.Country))
+                {
+                    double longitude = double.Parse(item.Value.GeoLongitude);
+                    double latitude = double.Parse(item.Value.GeoLatitude);
+                    item.Value.Country = _geoService.GetCounty(longitude, latitude);
+                }
+
                 //if (!item.Value.MetaProcessed)
                 {
                     if (string.IsNullOrWhiteSpace(item.Value.MetaHtml) && item.Value.MapsUrl != null)
                     {
+                        Console.WriteLine($"Processing pin meta {i} of {cache.Count}");
                         // load meta if missing
-                        _mapPinService.GoAndWaitForUrlChange(item.Value.MapsUrl);
+                        var url2 = _mapPinService.GoAndWaitForUrlChange(item.Value.MapsUrl);
+                        url2 = _mapPinService.GetCurrentUrl();
+                        url2 = HttpUtility.UrlDecode(url2);
+
+                        var newPin = _pinHelper.GenerateMapPin(url2, item.Value.Label, "");
+                        if (newPin != null)
+                            item.Value.Label = newPin.Label;
+
                         item.Value.MetaHtml = _mapPinService.GetMeta(item.Value.Label);
+                        if (string.IsNullOrWhiteSpace(item.Value.MetaHtml))
+                        {
+                            var placeNames = _mapPinService.GetMapPlaceNames();
+                            if (placeNames.Count > 0)
+                            {
+                                cache.Remove(item.Key);
+                                Console.WriteLine($"Cache pin returns multiple results {item.Value.Label}");
+                                continue;
+                            }
+                            else
+                            {
+                                //newCache.Add(item.Key, item.Value);
+                            }
+                            if (placeNames.Count == 0)
+                            {
+                                cache.Remove(item.Key);
+                                Console.WriteLine($"0 results {item.Value.Label}");
+                            }
+
+                        }
+
+                        if (string.IsNullOrWhiteSpace(item.Value.MetaHtml))
+                        {
+                            var url = _mapPinService.GetMapUrl(item.Value.Label);
+                            var placeNames = _mapPinService.GetMapPlaceNames();
+                            if (placeNames.Count > 0)
+                            {
+                                cache.Remove(item.Key);
+                                Console.WriteLine($"Multiple results {item.Value.Label}");
+                            }
+                            if (placeNames.Count == 0)
+                            {
+                                //cache.Remove(item.Key);
+                                Console.WriteLine($"0 results {item.Value.Label}");
+                            }
+
+                            item.Value.MapsUrl = url;
+                            var pin = _pinHelper.GenerateMapPin(url, "", "");
+                            item.Value.MetaHtml = _mapPinService.GetMeta(item.Value.Label);
+                            if (pin != null && string.IsNullOrWhiteSpace(item.Value.MetaHtml))
+                            {
+                                item.Value.MetaHtml = _mapPinService.GetMeta(pin.Label);
+                            }
+                            if (string.IsNullOrWhiteSpace(item.Value.MetaHtml))
+                            {
+                                Console.WriteLine($"Unable to get meta for {item.Value.Label}");
+                            }
+                        }
+
+                    }
+                    else
+                    {
+                        //newCache.Add(item.Key, item.Value);
                     }
 
                     if (item.Value.MetaData == null || string.IsNullOrWhiteSpace(item.Value.MetaData.RestaurantType))
@@ -131,7 +203,9 @@ namespace Frodo.Service
                 }
                 i++;
             }
+
             var restaurants = _mapsMetaExtractorService.GetRestaurantTypes();
+            //_pinHelper.SetCache(newCache);
             _databaseLoaderService.SaveRestaurantList(restaurants);
             _databaseLoaderService.SavePinDB();
         }
@@ -169,6 +243,7 @@ namespace Frodo.Service
             {
                 Console.WriteLine($"Processing {i} of {Topics.Count}");
                 var topic = Topics[i];
+                var groupCountry = _fBGroupService.GetCountryName(topic.GroupId);
                 // Update url list from title
                 topic.HashTags = StringHelper.ExtractHashtags(topic.Title);
                 var newUrls = StringHelper.ExtractUrls(topic.Title);
@@ -191,12 +266,9 @@ namespace Frodo.Service
                     {
                         var newUrl = _mapPinService.CheckUrlForMapLinks(url);
                         topic.UrlsV2[t].Url = newUrl;
-                        var cachePin = _pinHelper.TryToGenerateMapPin(newUrl, false, url);
+                        var cachePin = _mapPinService.TryToGenerateMapPin(newUrl, url, groupCountry);
                         if (cachePin != null)
                         {
-                            if (string.IsNullOrWhiteSpace(cachePin.MetaHtml))
-                                cachePin.MetaHtml = _mapPinService.GetMeta(cachePin.Label);
-
                             var newPin = _mappingService.Map<TopicPin, TopicPinCache>(cachePin);
                             topic.UrlsV2[t].Pin = newPin;
                         }
@@ -229,12 +301,9 @@ namespace Frodo.Service
                             {
                                 var newUrl = _mapPinService.CheckUrlForMapLinks(url);
                                 links[t].Url = newUrl;
-                                var cachePin = _pinHelper.TryToGenerateMapPin(newUrl, false, url);
+                                var cachePin = _mapPinService.TryToGenerateMapPin(newUrl, url, groupCountry);
                                 if (cachePin != null)
                                 {
-                                    if (string.IsNullOrWhiteSpace(cachePin.MetaHtml))
-                                        cachePin.MetaHtml = _mapPinService.GetMeta(cachePin.Label);
-
                                     var newPin = _mappingService.Map<TopicPin, TopicPinCache>(cachePin);
                                     links[t].Pin = newPin;
                                 }
@@ -256,16 +325,84 @@ namespace Frodo.Service
             Console.WriteLine($"Has Response Maps Links : {responseMapsLinkCount}");
         }
 
+        private void RemoveAiPinsInBadLocations()
+        {
+            _invalidGeo = 0;
+            for (int i = 0; i < Topics.Count; i++)
+            {
+                DetailedTopic? topic = Topics[i];
+                if (i % 100 == 0)
+                    Console.WriteLine($"Processing AI pins {i} of {Topics.Count}");
+
+                // Remove any duplicated pins
+                if (topic.AiVenues != null)
+                {
+                    for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
+                    {
+                        var venue = topic.AiVenues[t];
+                        var pin = topic.AiVenues[t].Pin;
+
+                        if (!IsPinInGroupCountry(pin, topic))
+                        {
+                            Console.WriteLine($"Removing pin {t} in topic {i}");
+                            topic.AiVenues.RemoveAt(t);
+                        }
+                    }
+                }
+            }
+
+            Console.WriteLine($"Invalid pins {_invalidGeo}");
+
+
+            _topicsHelper.SaveTopics(Topics);
+        }
+
+        private bool IsPinInGroupCountry(TopicPin? pin, DetailedTopic topic)
+        {
+            if (pin != null)
+            {
+                double longitude = double.Parse(pin.GeoLongitude);
+                double latitude = double.Parse(pin.GeoLatitude);
+                var groupCountry = _fBGroupService.GetCountryName(topic.GroupId);
+                var country = _geoService.GetCounty(longitude, latitude);
+                if (!string.IsNullOrWhiteSpace(country))
+                {
+                    if (groupCountry != country
+                        && !(groupCountry == "Hong Kong" && country == "China"))
+                    {
+                        Console.WriteLine($"country mismatch, group: {groupCountry} pin: {country}, {latitude}, {longitude}");
+                        return false;
+                    }
+                }
+                else
+                {
+                    _invalidGeo++;
+                }
+            }
+            return true;
+        }
+
+        private static string? Truncate(string? value, int maxLength, string truncationSuffix = "…")
+        {
+            return value?.Length > maxLength
+                ? value.Substring(0, maxLength) + truncationSuffix
+                : value;
+        }
+
         /// <summary>
         /// Scan generated Ai Venues and try to generate any missing pins
         /// </summary>
         private void UpdatePinsForAiVenues()
         {
             var aiPin = new AiVenueProcessorService(_mapPinService, _mappingService, _fbGroupService);
+
             for (int i = 0; i < Topics.Count; i++)
             {
                 DetailedTopic? topic = Topics[i];
-                Console.WriteLine($"Processing AI pins {i} of {Topics.Count}");
+                var groupCountry = _fBGroupService.GetCountryName(topic.GroupId);
+                if (topic.AiVenues == null || topic.AiVenues.Count == 0) continue;
+
+                Console.WriteLine($"Update Pins For AI Venues {i} of {Topics.Count} : {Truncate(topic.Title, 75).Replace("\n", "")}");
 
                 // Remove any duplicated pins
                 if (topic.AiVenues != null)
@@ -279,14 +416,13 @@ namespace Frodo.Service
                     }
                 }
 
-                if (topic.AiVenues == null) continue;
                 var chainUrls = new List<string>();
-                for (int t = 0; t < topic.AiVenues.Count; t++)
+                for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
                 {
                     AiVenue? ai = topic.AiVenues[t];
                     // Only process unprocessed pins
 
-                    var cachedPin = _pinHelper.TryGetPin(ai.PlaceName);
+                    var cachedPin = _mapPinCache.TryGetPin(ai.PlaceName);
                     if (cachedPin != null)
                     {
                         ai.Pin = _mappingService.Map<TopicPin, TopicPinCache>(cachedPin);
@@ -296,7 +432,7 @@ namespace Frodo.Service
                     // alternate search
                     if (ai.Pin != null)
                     {
-                        cachedPin = _pinHelper.TryGetPin(ai.Pin.Label);
+                        cachedPin = _mapPinCache.TryGetPin(ai.Pin.Label);
                         if (cachedPin != null)
                         {
                             ai.Pin = _mappingService.Map<TopicPin, TopicPinCache>(cachedPin);
@@ -304,24 +440,34 @@ namespace Frodo.Service
                         }
                     }
 
-                    if (ai.Pin == null && !ai.PinSearchDone)//|| _regeneratePins
+                    if (ai.Pin == null && !ai.PinSearchDone || _regeneratePins)
                     {
                         var groupId = FBGroupService.DefaultGroupId;
-                        if (string.IsNullOrWhiteSpace(topic.GroupId))
-                        {
-                            Console.WriteLine($"Unknown group Id {i}, using default");
-                            //continue;
-                        }
-                        else
-                        {
-                            groupId = topic.GroupId;
-                        }
 
                         if (ai.Pin == null || _regeneratePins)
                         {
                             aiPin.GetMapPinForPlaceName(ai, groupId, chainUrls);
                         }
+                        if (ai.Pin == null)
+                        {
+                            // drop pin
+                            Console.WriteLine($"Removing pin : {topic.AiVenues[t].PlaceName}");
+                            topic.AiVenues[t].PlaceName = "";
+                        }
+                        else
+                        {
+                            Console.WriteLine($"Adding pin : {topic.AiVenues[t].PlaceName}");
 
+                        }
+                    }
+
+                    if (ai.Pin != null)
+                    {
+                        if (!IsPinInGroupCountry(ai.Pin, topic))
+                        {
+                            Console.WriteLine($"Removing pin due to country : {topic.AiVenues[t].PlaceName}");
+                            topic.AiVenues.RemoveAt(t);
+                        }
                     }
                     ai.PinSearchDone = true;
                 }
@@ -336,9 +482,9 @@ namespace Frodo.Service
                 }
 
                 // Add any chain urls detected earlier (searches that have multiple results)
-                foreach (var item in chainUrls)
+                foreach (var url in chainUrls)
                 {
-                    var pin = _mapPinService.GetPinFromCurrentUrl(item, true, "");
+                    var pin = _pinHelper.GenerateMapPin(url, "", groupCountry);
                     if (pin != null)
                     {
                         // Add pin to AiGenerated
@@ -358,8 +504,6 @@ namespace Frodo.Service
             }
             _topicsHelper.SaveTopics(Topics);
             _databaseLoaderService.SavePinDB();
-
-
         }
 
     }

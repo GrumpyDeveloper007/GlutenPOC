@@ -37,7 +37,7 @@ namespace Gluten.Core.LocationProcessing.Service
                         return _driver.Url;
                     }
                 }
-                _currentSearchResults = PreLoadSearchResults();
+                PreLoadSearchResults();
             }
             catch (Exception ex)
             {
@@ -74,6 +74,7 @@ namespace Gluten.Core.LocationProcessing.Service
         /// </summary>
         public ReadOnlyCollection<IWebElement> GetSearchResults()
         {
+            PreLoadSearchResults();
             return _currentSearchResults;
         }
 
@@ -94,10 +95,10 @@ namespace Gluten.Core.LocationProcessing.Service
             return "";
         }
 
-        private ReadOnlyCollection<IWebElement> PreLoadSearchResults()
+        public void PreLoadSearchResults()
         {
             var elements = _driver.FindElements(By.CssSelector("[aria-label]"));
-            return elements;
+            _currentSearchResults = elements;
         }
     }
 }

@@ -2,6 +2,7 @@
 using Frodo;
 using Frodo.Service;
 using Gluten.Core.DataProcessing.Service;
+using Gluten.Core.Helper;
 using Gluten.Core.LocationProcessing.Service;
 using Gluten.Core.Service;
 using Microsoft.Extensions.Configuration;
@@ -24,13 +25,16 @@ if (settings == null)
 var dbLoader = new DatabaseLoaderService();
 
 //var nlp = new NaturalLanguageProcessor(settings.AIEndPoint, settings.AIApiKey);
-var pinHelper = dbLoader.GetPinHelper();
+var geoService = new GeoService();
+var pinHelper = new PinHelper();
 var selenium = new SeleniumMapsUrlProcessor();
 var mapper = new MappingService();
+var fbGroupService = new FBGroupService();
+var pinCache = dbLoader.GetPinCache();
 
-var ai = new MapPinService(selenium, pinHelper);
-var clientExportFileGenerator = new ClientExportFileGenerator(dbLoader, mapper, pinHelper);
-var service = new DataSyncService(ai, pinHelper, dbLoader, mapper, clientExportFileGenerator);
+var ai = new MapPinService(selenium, pinHelper, pinCache, geoService, new MapsMetaExtractorService());
+var clientExportFileGenerator = new ClientExportFileGenerator(dbLoader, mapper, pinCache);
+var service = new DataSyncService(ai, pinHelper, dbLoader, mapper, clientExportFileGenerator, geoService, fbGroupService, pinCache);
 service.ProcessFile();
 
 selenium.Stop();

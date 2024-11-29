@@ -1,4 +1,5 @@
 ﻿using Gluten.Core.Helper;
+using Gluten.Core.LocationProcessing.Service;
 using Gluten.Data.ClientModel;
 using Gluten.Data.MapsModel;
 using Gluten.Data.PinCache;
@@ -25,8 +26,8 @@ namespace Gluten.Core.DataProcessing.Service
         private readonly string PinDescriptionCacheFileName = "D:\\Coding\\Gluten\\PinDescriptionCache.json";
         private readonly string GMPinFileName = "D:\\Coding\\Gluten\\GMPin.json";
 
-        private readonly PinHelper _pinHelper;
         private readonly List<PinDescriptionCache> _pinDescriptionsCache;
+        MapPinCache _mapPinCache;
 
         /// <summary>
         /// Constructor
@@ -38,11 +39,11 @@ namespace Gluten.Core.DataProcessing.Service
             var pins = JsonConvert.DeserializeObject<Dictionary<string, TopicPinCache>>(json);
             if (pins != null)
             {
-                _pinHelper = new PinHelper(pins);
+                _mapPinCache = new MapPinCache(pins);
             }
             else
             {
-                _pinHelper = new PinHelper([]);
+                _mapPinCache = new MapPinCache([]);
             }
             if (File.Exists(PinDescriptionCacheFileName))
             {
@@ -136,9 +137,9 @@ namespace Gluten.Core.DataProcessing.Service
         /// <summary>
         /// Gets the PinHelper
         /// </summary>
-        public PinHelper GetPinHelper()
+        public MapPinCache GetPinCache()
         {
-            return _pinHelper;
+            return _mapPinCache;
         }
 
         /// <summary>
@@ -146,7 +147,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public void SavePinDB()
         {
-            var pinCache = _pinHelper.GetCache();
+            var pinCache = _mapPinCache.GetCache();
             SaveDb(PinCacheDBFileName, pinCache);
         }
 
