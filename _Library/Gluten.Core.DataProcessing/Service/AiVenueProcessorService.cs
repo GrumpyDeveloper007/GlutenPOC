@@ -1,4 +1,5 @@
-﻿using Gluten.Core.Helper;
+﻿using Gluten.Core.DataProcessing.Helper;
+using Gluten.Core.Helper;
 using Gluten.Core.LocationProcessing.Service;
 using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
@@ -8,111 +9,11 @@ namespace Gluten.Core.DataProcessing.Service
     /// <summary>
     /// Processes the AIVenue data type
     /// </summary>
-    public class AiVenueProcessorService(MapPinService aIProcessingService, MappingService mappingService,
+    public class AiVenueProcessorService(MapPinService mapPinService, MappingService mappingService,
         FBGroupService fBGroupService)
     {
-        private readonly MapPinService _mapPinService = aIProcessingService;
+        private readonly MapPinService _mapPinService = mapPinService;
         private readonly MappingService _mappingService = mappingService;
-
-        private readonly List<string> _addressFilters = [
-            "( exact location not specified)",
-            "(no address ",
-            "(no street ",
-            "( in the text, but a  is given: ",
-            "(No specific ",
-            "(shop url not available, only address ",
-            "(no street ",
-            "<no address provided ",
-            "(no street address",
-            "(No address provided",
-            "(Frozen food section ",
-            "(factory location ",
-            "(unspecified",
-            "(multiple locations",
-            "(not ",
-            "()",
-            "(null)",
-            "(Centre location)",
-            "(street ",
-            "(address ",
-            "( in the given",
-            "(closed",
-            "(unknown,",
-            "(location within",
-            "(website link:",
-            "<No specific address ",
-            "<No street ",
-            "<No address",
-            "<unspecified",
-            "<address not provided ",
-            "<Not provided ",
-            "<insert ",
-            "<insert ",
-            "<unknown>",
-            "<not provided>",
-            "<address>",
-            "no specific address provided",
-            "no specific location provided in the given text.",
-            "Not specified",
-            "Google Maps link",
-            "I do not have a specific",
-            "CBD location",
-            "http://",
-            "https:",
-            "Google Maps address:",
-            "not provided",
-            "Address not provided in given text",
-            "no address found in the snippet, only a google search result link",
-            "unknown (located",
-            "Available on Uber eats",
-            "not explicitly stated in the text,",
-            "no specific ",
-            "no address ",
-            "no explicit ",
-            "No street ",
-            "unspecified",
-            "Various locations ",
-            "unknown",
-            "Easy to search on Google",
-            "n/a (food truck)",
-            "I apologize,",
-            "www.",
-            "facebook.com",
-            "N/A"
-        ];
-
-        private readonly List<string> _nameFilters = [
-            "Groceries",
-            "Train Station",
-            "Tokyo Station",
-            "Supermarket",
-            "Unknown Restaurant",
-            "Tokyo shops",
-            "Google Drive",
-            "Christmas Cafe",
-            "<insert place name>",
-            "Domino’s",
-            "GFTs",
-            "Aomi",
-            "Find Me Gluten Free",
-            "Their website",
-            "Sheraton",
-            "Disney hotels",
-            "Universal Studios",
-            "Gate Building",
-            "Volcano",
-            "mochi place",
-            "sumo wrestling",
-            "Kyoto Tower GF treats store",
-            "Backup restaurant name",
-            "Conveyor belt sushi place",
-            "GF pizza place",
-            "Other sushi restaurant",
-            "Gluten Free Bangkok",
-            "The place with no name",
-            "Food Court",
-            "Gluten-free restaurant"
-             ];
 
         /// <summary>
         /// Returns a list of urls if the placename search results in multiple results,
@@ -121,7 +22,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public bool IsPlaceNameAChain(AiVenue venue, List<string> chainUrls, string groupId)
         {
-            if (!IsInPlaceNameSkipList(venue.PlaceName)
+            if (!AiDataFilterHelper.IsInPlaceNameSkipList(venue.PlaceName)
             && venue.Pin == null
                 && !string.IsNullOrWhiteSpace(venue.PlaceName))
             {
@@ -156,7 +57,7 @@ namespace Gluten.Core.DataProcessing.Service
             //var chainUrls = new List<string>();
             if (venue == null) return;
             // Don't process if it is in the skip list
-            if (!IsInPlaceNameSkipList(venue.PlaceName)
+            if (!AiDataFilterHelper.IsInPlaceNameSkipList(venue.PlaceName)
                 && !string.IsNullOrWhiteSpace(venue.PlaceName))
             {
                 string? restaurantName = venue.PlaceName + $", {fBGroupService.GetCountryName(groupId)}";
@@ -185,7 +86,7 @@ namespace Gluten.Core.DataProcessing.Service
                     else
                     {
                         // pin not found - try with address string
-                        var address = FilterAddress(venue.Address);
+                        var address = AiDataFilterHelper.FilterAddress(venue.Address);
                         venue.Address = address;
                         if (!string.IsNullOrWhiteSpace(address))
                         {
@@ -220,33 +121,6 @@ namespace Gluten.Core.DataProcessing.Service
             }
 
             return;
-        }
-
-        public string? FilterAddress(string? address)
-        {
-            if (address == null) return null;
-            foreach (var filter in _addressFilters)
-            {
-                if (address.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    return "";
-                }
-                //address = address.ToLower().Replace(filter.ToLower(), "");
-            }
-            return address.Trim();
-        }
-
-        private bool IsInPlaceNameSkipList(string? placeName)
-        {
-            if (placeName == null) return false;
-            foreach (var nameFilter in _nameFilters)
-            {
-                if (placeName.Contains(nameFilter, StringComparison.CurrentCultureIgnoreCase))
-                {
-                    return true;
-                }
-            }
-            return false;
         }
     }
 }

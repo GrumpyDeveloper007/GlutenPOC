@@ -15,12 +15,12 @@ namespace Frodo.Service
     /// Scan response information collected from FB, do some basic processing
     /// All the magic happens here
     /// </summary>
-    internal class DataSyncService(MapPinService _aIProcessingService,
-        SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor,
+    internal class DataSyncService(MapPinService _mapPinService,
         PinHelper _pinHelper,
         DatabaseLoaderService _databaseLoaderService,
         MappingService _mappingService,
-        ClientExportFileGenerator _clientExportFileGenerator)
+        ClientExportFileGenerator _clientExportFileGenerator
+        )
     {
         private readonly TopicsHelper _topicsHelper = new();
         private readonly LocalAiInterfaceService _analyzeDocumentService = new();
@@ -106,13 +106,13 @@ namespace Frodo.Service
             foreach (var item in cache)
             {
                 Console.WriteLine($"Processing pin meta {i} or {cache.Count}");
-                if (!item.Value.MetaProcessed)
+                //if (!item.Value.MetaProcessed)
                 {
                     if (string.IsNullOrWhiteSpace(item.Value.MetaHtml) && item.Value.MapsUrl != null)
                     {
                         // load meta if missing
-                        _seleniumMapsUrlProcessor.GoAndWaitForUrlChange(item.Value.MapsUrl);
-                        item.Value.MetaHtml = _seleniumMapsUrlProcessor.GetMeta(item.Value.Label);
+                        _mapPinService.GoAndWaitForUrlChange(item.Value.MapsUrl);
+                        item.Value.MetaHtml = _mapPinService.GetMeta(item.Value.Label);
                     }
 
                     if (item.Value.MetaData == null || string.IsNullOrWhiteSpace(item.Value.MetaData.RestaurantType))
@@ -189,13 +189,13 @@ namespace Frodo.Service
 
                     if (topic.UrlsV2[t].Pin == null || _regeneratePins)
                     {
-                        var newUrl = _seleniumMapsUrlProcessor.CheckUrlForMapLinks(url);
+                        var newUrl = _mapPinService.CheckUrlForMapLinks(url);
                         topic.UrlsV2[t].Url = newUrl;
                         var cachePin = _pinHelper.TryToGenerateMapPin(newUrl, false, url);
                         if (cachePin != null)
                         {
                             if (string.IsNullOrWhiteSpace(cachePin.MetaHtml))
-                                cachePin.MetaHtml = _seleniumMapsUrlProcessor.GetMeta(cachePin.Label);
+                                cachePin.MetaHtml = _mapPinService.GetMeta(cachePin.Label);
 
                             var newPin = _mappingService.Map<TopicPin, TopicPinCache>(cachePin);
                             topic.UrlsV2[t].Pin = newPin;
@@ -227,13 +227,13 @@ namespace Frodo.Service
 
                             if (links[t].Pin == null || _regeneratePins)
                             {
-                                var newUrl = _seleniumMapsUrlProcessor.CheckUrlForMapLinks(url);
+                                var newUrl = _mapPinService.CheckUrlForMapLinks(url);
                                 links[t].Url = newUrl;
                                 var cachePin = _pinHelper.TryToGenerateMapPin(newUrl, false, url);
                                 if (cachePin != null)
                                 {
                                     if (string.IsNullOrWhiteSpace(cachePin.MetaHtml))
-                                        cachePin.MetaHtml = _seleniumMapsUrlProcessor.GetMeta(cachePin.Label);
+                                        cachePin.MetaHtml = _mapPinService.GetMeta(cachePin.Label);
 
                                     var newPin = _mappingService.Map<TopicPin, TopicPinCache>(cachePin);
                                     links[t].Pin = newPin;
@@ -261,7 +261,7 @@ namespace Frodo.Service
         /// </summary>
         private void UpdatePinsForAiVenues()
         {
-            var aiPin = new AiVenueProcessorService(_aIProcessingService, _mappingService, _fbGroupService);
+            var aiPin = new AiVenueProcessorService(_mapPinService, _mappingService, _fbGroupService);
             for (int i = 0; i < Topics.Count; i++)
             {
                 DetailedTopic? topic = Topics[i];
@@ -338,7 +338,7 @@ namespace Frodo.Service
                 // Add any chain urls detected earlier (searches that have multiple results)
                 foreach (var item in chainUrls)
                 {
-                    var pin = _aIProcessingService.GetPinFromCurrentUrl(item, true, "");
+                    var pin = _mapPinService.GetPinFromCurrentUrl(item, true, "");
                     if (pin != null)
                     {
                         // Add pin to AiGenerated

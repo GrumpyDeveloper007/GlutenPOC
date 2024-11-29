@@ -81,7 +81,7 @@ namespace Frodo.Helper
             if (pinToAdd == null) return;
             if (string.IsNullOrWhiteSpace(pinToAdd.GeoLatitude)) return;
             if (string.IsNullOrWhiteSpace(pinToAdd.GeoLongitude)) return;
-            if (cachePin.MetaData.PermanentlyClosed) return;
+            if (cachePin?.MetaData?.PermanentlyClosed == true) return;
 
             // if pin not found, add it to the list
             if (matchingPinTopic == null)

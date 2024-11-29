@@ -22,8 +22,93 @@ namespace Gluten.Core.LocationProcessing.Service
         {
             var searchParameter = HttpUtility.UrlEncode(searchString);
             var mapsLink = $"http://maps.google.com/?q={searchParameter}";
-            var newUrl = _seleniumMapsUrlProcessor.CheckUrlForMapLinks(mapsLink);
+            var newUrl = CheckUrlForMapLinks(mapsLink);
             return newUrl;
+        }
+
+        public string GoAndWaitForUrlChange(string url)
+        {
+            return _seleniumMapsUrlProcessor.GoAndWaitForUrlChange(url);
+        }
+
+        public string GetMeta(string? placeName)
+        {
+            if (placeName == null) return "";
+            var placeNameWithoutAccents = StringHelper.RemoveIrrelevantChars(StringHelper.RemoveDiacritics(placeName));
+            var r = _seleniumMapsUrlProcessor.GetSearchResults();
+            foreach (var item in r)
+            {
+                var a = item.GetAttribute("aria-label");
+                if (a.StartsWith(placeName, StringComparison.InvariantCultureIgnoreCase)
+                    || placeName.StartsWith(a, StringComparison.InvariantCultureIgnoreCase)
+                    || StringHelper.RemoveIrrelevantChars(StringHelper.RemoveDiacritics(a)).StartsWith(placeNameWithoutAccents, StringComparison.InvariantCultureIgnoreCase)
+                    )
+                {
+                    return item.GetAttribute("innerHTML");
+                }
+            }
+            return "";
+        }
+
+        private bool IsMapsUrl(string url)
+        {
+            // Link to street view
+            //https://maps.google.com/maps/api/staticmap?center=34.6845322%2C135.1840363&amp;zoom=-1&amp;size=900x900&amp;language=en&amp;sensor=false&amp;client=google-maps-frontend&amp;signature=yGPXtu3-Vjroz_DtJZLPyDkVVC8\
+            // Collection of pins 
+            //https://www.google.com/maps/d/viewer?mid=16xtxMz-iijlDOEl-dlQKEa2-A19nxzND&ll=35.67714795882308,139.72588715&z=12
+            if (!url.Contains("https://www.google.com/maps/d/viewer")
+                && (url.Contains("www.google.com/maps/")
+                || url.Contains("maps.app.goo.gl")
+                || url.Contains("maps.google.com")
+                || url.Contains("https://goo.gl/maps/"))
+                )
+            {
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Checks if a url is a valid google maps link, waits for the url to be updated to include the location
+        /// </summary>
+        public string CheckUrlForMapLinks(string url)
+        {
+            if (IsMapsUrl(url))
+            {
+                if (!url.Contains("/@"))
+                {
+                    GoAndWaitForUrlChange(url);
+                    var newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
+                    newUrl = HttpUtility.UrlDecode(newUrl);
+                    int timeout = 10;
+                    while (!newUrl.Contains("/@") && timeout > 0)
+                    {
+                        timeout--;
+                        Thread.Sleep(500);
+                        newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
+                        newUrl = HttpUtility.UrlDecode(newUrl);
+                    }
+                    if (timeout == 0 && !newUrl.Contains("/@"))
+                    {
+                        Console.WriteLine("Timeout waiting for url");
+                        newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
+                        newUrl = HttpUtility.UrlDecode(newUrl);
+                    }
+
+                    return newUrl;
+                }
+            }
+            return url;
+        }
+
+        public string GetFirstLabelInnerHTML()
+        {
+            return _seleniumMapsUrlProcessor.GetFirstLabelInnerHTML();
+        }
+
+        public void GoToUrl(string url)
+        {
+            _seleniumMapsUrlProcessor.GoToUrl(url);
         }
 
         /// <summary>
@@ -101,7 +186,7 @@ namespace Gluten.Core.LocationProcessing.Service
             var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData, restaurantName);
             if (pin != null && string.IsNullOrWhiteSpace(pin.MetaHtml))
             {
-                pin.MetaHtml = _seleniumMapsUrlProcessor.GetMeta(pin.Label);
+                pin.MetaHtml = GetMeta(pin.Label);
             }
             return pin;
         }
@@ -114,7 +199,7 @@ namespace Gluten.Core.LocationProcessing.Service
             var pin = _pinHelper.TryToGenerateMapPin(newUrl, onlyFromData, restaurantName);
             if (pin != null)
             {
-                pin.MetaHtml = _seleniumMapsUrlProcessor.GetMeta(pin.Label);
+                pin.MetaHtml = GetMeta(pin.Label);
             }
             return pin;
         }

@@ -10,7 +10,6 @@ using Samwise.Service;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Windows;
 using System.Windows.Input;
 using static Gluten.Core.LocationProcessing.Service.MapsMetaExtractorService;
@@ -23,15 +22,14 @@ namespace Samwise
     /// </summary>
     public partial class MainWindow : Window
     {
-        private readonly SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor;
-        private readonly TopicsHelper _topicsHelper = new TopicsHelper();
+        private readonly TopicsHelper _topicsHelper = new();
         private readonly MapsMetaExtractorService _mapsMetaExtractorService = new();
         private readonly MapPinService _mapPinService;
         private readonly PinHelper _pinHelper;
         private readonly DatabaseLoaderService _dbLoader;
 
         private int _index;
-        private List<GMapsPin> _pins;
+        private readonly List<GMapsPin> _pins;
 
         public MainWindow()
         {
@@ -39,11 +37,8 @@ namespace Samwise
 
             _dbLoader = new DatabaseLoaderService();
             _pinHelper = _dbLoader.GetPinHelper();
-
             _pins = _dbLoader.LoadGMPins();
-
-            _seleniumMapsUrlProcessor = new SeleniumMapsUrlProcessor();
-            _mapPinService = new MapPinService(_seleniumMapsUrlProcessor, _pinHelper);
+            _mapPinService = new MapPinService(new SeleniumMapsUrlProcessor(), _pinHelper);
 
             IConfigurationRoot config = new ConfigurationBuilder()
                 .AddJsonFile("local.settings.json")
@@ -51,10 +46,10 @@ namespace Samwise
 
             var settings = config.GetRequiredSection("Values").Get<SettingValues>();
 
-            _seleniumMapsUrlProcessor.GoToUrl("https://www.google.com/maps/search/gluten/@34.3975011,132.4539367,2422m/data=!3m1!1e3!4m2!2m1!6e5?entry=ttu&g_ep=EgoyMDI0MTExOS4yIKXMDSoASAFQAw%3D%3D");
+            _mapPinService.GoToUrl("https://www.google.com/maps/search/gluten/@34.3975011,132.4539367,2422m/data=!3m1!1e3!4m2!2m1!6e5?entry=ttu&g_ep=EgoyMDI0MTExOS4yIKXMDSoASAFQAw%3D%3D");
         }
 
-        private void butStart_Click(object sender, RoutedEventArgs e)
+        private void ButStart_Click(object sender, RoutedEventArgs e)
         {
             _index = 0;
         }
@@ -66,13 +61,13 @@ namespace Samwise
             txtCounter.Text = $"{_index}/{_pins.Count}";
         }
 
-        private void butFacebook_Click(object sender, RoutedEventArgs e)
+        private void ButFacebook_Click(object sender, RoutedEventArgs e)
         {
             var url = "";
             BrowserHelper.OpenUrl(url);
         }
 
-        private void butLeft_Click(object sender, RoutedEventArgs e)
+        private void ButLeft_Click(object sender, RoutedEventArgs e)
         {
             if (_index > 0)
             {
@@ -81,7 +76,7 @@ namespace Samwise
             }
         }
 
-        private void butRight_Click(object sender, RoutedEventArgs e)
+        private void ButRight_Click(object sender, RoutedEventArgs e)
         {
             if (_index < _pins.Count)
             {
@@ -90,12 +85,11 @@ namespace Samwise
             }
         }
 
-        private void butCaptureInfo_Click(object sender, RoutedEventArgs e)
+        private void ButCaptureInfo_Click(object sender, RoutedEventArgs e)
         {
             Mouse.OverrideCursor = Cursors.Wait;
-            var html = _seleniumMapsUrlProcessor.GetFirstLabelInnerHTML();
+            var html = _mapPinService.GetFirstLabelInnerHTML();
             var root = new LabelNode();
-            PinCacheMeta? result = null;
             if (!string.IsNullOrWhiteSpace(html))
             {
                 _mapsMetaExtractorService.TraverseHtml(html, root);
@@ -157,7 +151,7 @@ namespace Samwise
                     }
                 }
 
-                var placeNames = _mapPinService.GetMapPlaceNames();
+                //var placeNames = _mapPinService.GetMapPlaceNames();
 
                 _dbLoader.SaveGMPins(_pins);
             }
