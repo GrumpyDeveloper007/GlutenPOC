@@ -13,13 +13,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NetTopologySuite.Index.HPRtree;
 
 namespace Frodo.Service
 {
     internal class ClientExportFileGenerator(DatabaseLoaderService _databaseLoaderService,
         MappingService _mappingService,
         MapPinCache _mapPinCache,
-        FBGroupService _fBGroupService
+        FBGroupService _fBGroupService,
+        GeoService _geoService
         )
     {
         private readonly LocalAiInterfaceService _analyzeDocumentService = new();
@@ -66,6 +68,35 @@ namespace Frodo.Service
             }
         }
 
+        private void CreateExportFolderDataGM(List<GMapsPin> pins)
+        {
+            Dictionary<string, List<GMapsPin>> files = new();
+            var fbGroupService = new FBGroupService();
+
+            foreach (var item in pins)
+            {
+                double longitude = double.Parse(item.GeoLongitude);
+                double latitude = double.Parse(item.GeoLatitude);
+
+                var pinCountry = _geoService.GetCountry(longitude, latitude);
+
+                if (!string.IsNullOrWhiteSpace(pinCountry))
+                {
+                    if (!files.ContainsKey(pinCountry))
+                    {
+                        files.Add(pinCountry, new List<GMapsPin>());
+                    }
+
+                    files[pinCountry].Add(item);
+                }
+            }
+
+            foreach (var file in files)
+            {
+                SaveDb(ExportFolder + file.Key + "GM.json", file.Value);
+            }
+        }
+
 
         /// <summary>
         /// Group data by pin (venue), export to json
@@ -73,7 +104,9 @@ namespace Frodo.Service
         public void GenerateTopicExport(List<DetailedTopic> topics)
         {
             List<PinTopic>? pins = _databaseLoaderService.LoadPinTopics();
+            var pinCache = _databaseLoaderService.GetPinCache();
             pins ??= [];
+            var gmPins = _databaseLoaderService.LoadGMPins();
 
             DataHelper.CleanTopics(pins);
             pins = ExtractPinExport(pins, topics, _mappingService);
@@ -130,9 +163,10 @@ namespace Frodo.Service
 
 
             _databaseLoaderService.SavePinTopics(pins);
-
+            //_databaseLoaderService.SaveGMPins(gmPins);
             GenerateGMPinExport(pins);
             CreateExportFolderData(pins, topics);
+            CreateExportFolderDataGM(gmPins);
             Console.WriteLine($"Unknown restaurant types : {unknownRestaurantType}");
         }
 
@@ -177,14 +211,27 @@ namespace Frodo.Service
                 {
                     foreach (var aiVenue in topic.AiVenues)
                     {
-                        if (aiVenue.Pin != null
-                            && !string.IsNullOrWhiteSpace(aiVenue.Pin.GeoLatitude)
-                            && !string.IsNullOrWhiteSpace(aiVenue.Pin.GeoLongitude)
-                            && FBGroupService.IsPinWithinExpectedRange(topic.GroupId, double.Parse(aiVenue.Pin.GeoLatitude), double.Parse(aiVenue.Pin.GeoLongitude)))
+                        if (aiVenue.Pin != null)
                         {
-                            var existingPin = DataHelper.IsPinInList(aiVenue.Pin, pins);
+
                             var cachePin = _mapPinCache.TryGetPin(aiVenue.Pin.Label, groupCountry);
-                            DataHelper.AddIfNotExists(pins, existingPin, newT, aiVenue.Pin, cachePin);
+                            var pinCountry = _geoService.GetCountryPin(cachePin);
+
+                            if (groupCountry != pinCountry && !string.IsNullOrWhiteSpace(pinCountry))
+                            {
+                                Console.WriteLine($"Rejecting pin for {groupCountry}, pin country : {pinCountry}");
+                                continue;
+                            }
+
+                            if (aiVenue.Pin != null
+                                && !string.IsNullOrWhiteSpace(aiVenue.Pin.GeoLatitude)
+                                && !string.IsNullOrWhiteSpace(aiVenue.Pin.GeoLongitude)
+                                //&& FBGroupService.IsPinWithinExpectedRange(topic.GroupId, double.Parse(aiVenue.Pin.GeoLatitude), double.Parse(aiVenue.Pin.GeoLongitude))
+                                )
+                            {
+                                var existingPin = DataHelper.IsPinInList(aiVenue.Pin, pins);
+                                DataHelper.AddIfNotExists(pins, existingPin, newT, aiVenue.Pin, cachePin);
+                            }
                         }
                     }
                 }
@@ -193,15 +240,26 @@ namespace Frodo.Service
                 {
                     foreach (var url in topic.UrlsV2)
                     {
-
-                        if (url.Pin != null
-                            && !string.IsNullOrWhiteSpace(url.Pin.GeoLatitude)
-                            && !string.IsNullOrWhiteSpace(url.Pin.GeoLongitude)
-                            && FBGroupService.IsPinWithinExpectedRange(topic.GroupId, double.Parse(url.Pin.GeoLatitude), double.Parse(url.Pin.GeoLongitude)))
+                        if (url.Pin != null)
                         {
-                            var existingPin = DataHelper.IsPinInList(url.Pin, pins);
                             var cachePin = _mapPinCache.TryGetPin(url.Pin.Label, groupCountry);
-                            DataHelper.AddIfNotExists(pins, existingPin, newT, url.Pin, cachePin);
+                            var pinCountry = _geoService.GetCountryPin(cachePin);
+
+                            if (groupCountry != pinCountry && !string.IsNullOrWhiteSpace(pinCountry))
+                            {
+                                Console.WriteLine($"Rejecting pin for {groupCountry}, pin country : {pinCountry}");
+                                continue;
+                            }
+
+                            if (url.Pin != null
+                                && !string.IsNullOrWhiteSpace(url.Pin.GeoLatitude)
+                                && !string.IsNullOrWhiteSpace(url.Pin.GeoLongitude)
+                                //&& FBGroupService.IsPinWithinExpectedRange(topic.GroupId, double.Parse(url.Pin.GeoLatitude), double.Parse(url.Pin.GeoLongitude))
+                                )
+                            {
+                                var existingPin = DataHelper.IsPinInList(url.Pin, pins);
+                                DataHelper.AddIfNotExists(pins, existingPin, newT, url.Pin, cachePin);
+                            }
                         }
                     }
                 }

@@ -211,8 +211,7 @@ namespace Gluten.Core.LocationProcessing.Service
             {
                 double longitude = double.Parse(pin.GeoLongitude);
                 double latitude = double.Parse(pin.GeoLatitude);
-                country = _geoService.GetCounty(longitude, latitude);
-                pin.Country = _geoService.GetCounty(longitude, latitude);
+                pin.Country = country = _geoService.GetCountry(longitude, latitude);
             }
 
             if (pin != null && string.IsNullOrWhiteSpace(pin.MetaHtml))

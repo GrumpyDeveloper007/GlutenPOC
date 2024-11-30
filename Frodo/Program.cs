@@ -33,7 +33,7 @@ var fbGroupService = new FBGroupService();
 var pinCache = dbLoader.GetPinCache();
 
 var ai = new MapPinService(selenium, pinHelper, pinCache, geoService, new MapsMetaExtractorService());
-var clientExportFileGenerator = new ClientExportFileGenerator(dbLoader, mapper, pinCache, fbGroupService);
+var clientExportFileGenerator = new ClientExportFileGenerator(dbLoader, mapper, pinCache, fbGroupService, geoService);
 var service = new DataSyncService(ai, pinHelper, dbLoader, mapper, clientExportFileGenerator, geoService, fbGroupService, pinCache);
 service.ProcessFile();
 

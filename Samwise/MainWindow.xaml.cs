@@ -42,7 +42,7 @@ namespace Samwise
             var selenium = new SeleniumMapsUrlProcessor();
             var geoService = new GeoService();
 
-            _mapPinService = new MapPinService(selenium, _pinHelper, pinCache, geoService);
+            _mapPinService = new MapPinService(selenium, _pinHelper, pinCache, geoService, new MapsMetaExtractorService());
 
             IConfigurationRoot config = new ConfigurationBuilder()
                 .AddJsonFile("local.settings.json")

@@ -34,6 +34,7 @@ namespace Frodo.Service
         private readonly bool _regeneratePins = true;
         private int _invalidGeo = 0;
         private List<AiVenue> _placeNameSkipList = [];
+        private int _lastImportedIndex = 20000;
 
         /// <summary>
         /// Processes the file generated from FB, run through many processing stages finally generating an export file for the client app
@@ -70,7 +71,7 @@ namespace Frodo.Service
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nExtracting meta info for pins");
-            ExtractMetaInfoFromPinCache();
+            //ExtractMetaInfoFromPinCache();
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nFiltering AI pins");
@@ -117,9 +118,7 @@ namespace Frodo.Service
             {
                 if (string.IsNullOrWhiteSpace(item.Value.Country))
                 {
-                    double longitude = double.Parse(item.Value.GeoLongitude);
-                    double latitude = double.Parse(item.Value.GeoLatitude);
-                    item.Value.Country = _geoService.GetCounty(longitude, latitude);
+                    item.Value.Country = _geoService.GetCountryPin(item.Value);
                 }
                 Console.WriteLine($"Processing pin meta {i} of {cache.Count}");
 
@@ -238,6 +237,7 @@ namespace Frodo.Service
             int mapsCallCount = 0;
             for (int i = 0; i < Topics.Count; i++)
             {
+                if (i < _lastImportedIndex) continue;
                 Console.WriteLine($"Processing {i} of {Topics.Count}");
                 var topic = Topics[i];
                 var groupCountry = _fBGroupService.GetCountryName(topic.GroupId);
@@ -390,7 +390,7 @@ namespace Frodo.Service
                 double longitude = double.Parse(pin.GeoLongitude);
                 double latitude = double.Parse(pin.GeoLatitude);
                 var groupCountry = _fBGroupService.GetCountryName(topic.GroupId);
-                var country = _geoService.GetCounty(longitude, latitude);
+                var country = _geoService.GetCountry(longitude, latitude);
                 if (!string.IsNullOrWhiteSpace(country))
                 {
                     if (groupCountry != country

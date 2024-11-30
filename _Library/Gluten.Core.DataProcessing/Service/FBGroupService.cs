@@ -28,11 +28,11 @@ namespace Gluten.Core.DataProcessing.Service
             {"319517678837045","Vietnam" },//Gluten Free Hanoi
             {"660915839470807","Vietnam" },//Gluten Free Saigon (Ho Chi Minh City)
             {"823200180025057","Vietnam" },//Gluten-free Hội An Community
-            {"422262581142441","Hong Kong" },//Gluten Free in Hong Kong
+            {"422262581142441","China" },//Gluten Free in Hong Kong
             {"302515126584130","Philippines" },
             {"1053129328213251","Thailand" },//Gluten Free Thailand
             {"182984958515029","Singapore" },//Gluten Free Singapore - Support Group
-            { "769136475365475","N/A" }
+            { "769136475365475","" }
 //            {"","" },
         };
 

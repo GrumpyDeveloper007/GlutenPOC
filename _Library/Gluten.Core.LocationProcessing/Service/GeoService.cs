@@ -38,11 +38,11 @@ namespace Gluten.Core.LocationProcessing.Service
             if (pin == null) return "";
             double longitude = double.Parse(pin.GeoLongitude);
             double latitude = double.Parse(pin.GeoLatitude);
-            return GetCounty(longitude, latitude);
+            return GetCountry(longitude, latitude);
         }
 
         //longitude: 12.4924, latitude: 41.8902
-        public string GetCounty(double longitude, double latitude)
+        public string GetCountry(double longitude, double latitude)
         {
             // Define the point (latitude, longitude)
             var factory = new GeometryFactory();
