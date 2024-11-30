@@ -4,6 +4,7 @@ using Gluten.Data.ClientModel;
 using Gluten.Data.MapsModel;
 using Gluten.Data.PinCache;
 using Gluten.Data.PinDescription;
+using Gluten.Data.TopicModel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System;
@@ -25,6 +26,7 @@ namespace Gluten.Core.DataProcessing.Service
         private readonly string RestaurantsFileName = "D:\\Coding\\Gluten\\Restaurant.txt";
         private readonly string PinDescriptionCacheFileName = "D:\\Coding\\Gluten\\PinDescriptionCache.json";
         private readonly string GMPinFileName = "D:\\Coding\\Gluten\\GMPin.json";
+        private const string PlacenameSkipListFileName = "D:\\Coding\\Gluten\\PlaceNameSkipList.json";
 
         private readonly List<PinDescriptionCache> _pinDescriptionsCache;
         MapPinCache _mapPinCache;
@@ -35,8 +37,12 @@ namespace Gluten.Core.DataProcessing.Service
         public DatabaseLoaderService()
         {
             string json;
-            json = File.ReadAllText(PinCacheDBFileName);
-            var pins = JsonConvert.DeserializeObject<Dictionary<string, TopicPinCache>>(json);
+            Dictionary<string, TopicPinCache>? pins = null;
+            if (File.Exists(PinCacheDBFileName))
+            {
+                json = File.ReadAllText(PinCacheDBFileName);
+                pins = JsonConvert.DeserializeObject<Dictionary<string, TopicPinCache>>(json);
+            }
             if (pins != null)
             {
                 _mapPinCache = new MapPinCache(pins);
@@ -121,7 +127,22 @@ namespace Gluten.Core.DataProcessing.Service
                 fileText += $"'{item}',\r\n";
             }
             File.WriteAllText(RestaurantsFileName, fileText);
+            File.WriteAllText(RestaurantsFileName + ".txt", fileText.Replace("'", "\""));
         }
+
+
+        public void SavePlaceSkipList(List<AiVenue> data)
+        {
+            SaveDb(PlacenameSkipListFileName, data);
+        }
+
+        public List<AiVenue> LoadPlaceSkipList()
+        {
+            var data = TryLoadJson<AiVenue>(PlacenameSkipListFileName);
+            if (data == null) return new List<AiVenue>();
+            return data;
+        }
+
 
         public void SaveGMPins(List<GMapsPin> data)
         {

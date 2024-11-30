@@ -18,8 +18,9 @@ namespace Frodo.Service
 {
     internal class ClientExportFileGenerator(DatabaseLoaderService _databaseLoaderService,
         MappingService _mappingService,
-        PinHelper _pinHelper,
-        MapPinCache _mapPinCache)
+        MapPinCache _mapPinCache,
+        FBGroupService _fBGroupService
+        )
     {
         private readonly LocalAiInterfaceService _analyzeDocumentService = new();
         private const string ExportFolder = @"D:\Coding\Gluten\Export\";
@@ -39,11 +40,14 @@ namespace Frodo.Service
             foreach (var item in pins)
             {
                 string groupId = "";
-                foreach (var topic in item.Topics)
+                if (item.Topics != null)
                 {
-                    var selectedTopic = topics.First(o => o.NodeID == topic.NodeID);
-                    groupId = selectedTopic.GroupId;
-                    break;
+                    foreach (var topic in item.Topics)
+                    {
+                        var selectedTopic = topics.First(o => o.NodeID == topic.NodeID);
+                        groupId = selectedTopic.GroupId;
+                        break;
+                    }
                 }
 
                 var groupCountry = fbGroupService.GetCountryName(groupId);
@@ -81,6 +85,7 @@ namespace Frodo.Service
             {
                 if (string.IsNullOrEmpty(pin.Description))
                 {
+                    Console.WriteLine($"Updating descriptions - {ii} of {pins.Count}");
                     var message = "";
                     if (pin.Topics != null)
                     {
@@ -119,7 +124,6 @@ namespace Frodo.Service
                     unknownRestaurantType++;
                 }
 
-                Console.WriteLine($"Updating descriptions - {ii} of {pins.Count}");
                 ii++;
             }
             DataHelper.RemoveTopicTitles(pins);
@@ -167,9 +171,7 @@ namespace Frodo.Service
             foreach (var topic in topics)
             {
                 var newT = mapper.Map<PinLinkInfo, DetailedTopic>(topic);
-
-                // TODO: Uncomment to limit data selection
-                //if (topic.GroupId != FBGroupService.DefaultGroupId) continue;
+                var groupCountry = _fBGroupService.GetCountryName(topic.GroupId);
 
                 if (topic.AiVenues != null)
                 {
@@ -181,7 +183,7 @@ namespace Frodo.Service
                             && FBGroupService.IsPinWithinExpectedRange(topic.GroupId, double.Parse(aiVenue.Pin.GeoLatitude), double.Parse(aiVenue.Pin.GeoLongitude)))
                         {
                             var existingPin = DataHelper.IsPinInList(aiVenue.Pin, pins);
-                            var cachePin = _mapPinCache.TryGetPin(aiVenue.Pin.Label);
+                            var cachePin = _mapPinCache.TryGetPin(aiVenue.Pin.Label, groupCountry);
                             DataHelper.AddIfNotExists(pins, existingPin, newT, aiVenue.Pin, cachePin);
                         }
                     }
@@ -198,7 +200,7 @@ namespace Frodo.Service
                             && FBGroupService.IsPinWithinExpectedRange(topic.GroupId, double.Parse(url.Pin.GeoLatitude), double.Parse(url.Pin.GeoLongitude)))
                         {
                             var existingPin = DataHelper.IsPinInList(url.Pin, pins);
-                            var cachePin = _mapPinCache.TryGetPin(url.Pin.Label);
+                            var cachePin = _mapPinCache.TryGetPin(url.Pin.Label, groupCountry);
                             DataHelper.AddIfNotExists(pins, existingPin, newT, url.Pin, cachePin);
                         }
                     }

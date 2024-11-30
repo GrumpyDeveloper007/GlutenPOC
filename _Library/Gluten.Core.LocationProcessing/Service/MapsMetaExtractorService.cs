@@ -1,4 +1,5 @@
-﻿using Gluten.Data.PinCache;
+﻿using Gluten.Core.LocationProcessing.Helper;
+using Gluten.Data.PinCache;
 using HtmlAgilityPack;
 using System;
 
@@ -87,6 +88,10 @@ namespace Gluten.Core.LocationProcessing.Service
 
             public List<string> Buttons { get; set; } = [];
 
+            public List<string> Spans { get; set; } = [];
+
+            public List<string> AriaHidden { get; set; } = [];
+
             public bool ResultsNode { get; set; }
 
             public string InnerHtml { get; set; }
@@ -170,9 +175,36 @@ namespace Gluten.Core.LocationProcessing.Service
                     {
                         result.Price = "";
                     }
+                    if (result.Price == "")
+                    {
+                        if (root.Spans.Count >= 7)
+                        {
+                            result.Price = root.Spans[6];
+                            if (result.Price.StartsWith("("))
+                            {
+                                result.Price = root.Spans[7];
+                            }
+                        }
+
+                        if (!CurrencyHelper.IsCurrencySymbol(result.Price))
+                        {
+                            if (result.RestaurantType != result.Price && result.Price != "Permanently closed"
+                                && !string.IsNullOrWhiteSpace(result.Price))
+                            {
+                                Console.WriteLine($"IsCurrencySymbol problem");
+                            }
+                            result.Price = "";
+                        }
+                    }
+                    if (result.RestaurantType == "Photos" && root.Spans.Count > 5)
+                    {
+                        result.RestaurantType = root.Spans[5];
+                    }
+
                     if (result.RestaurantType.Contains("review", StringComparison.InvariantCultureIgnoreCase))
                     {
                         Console.WriteLine($"Unknown restaurant type : {result.RestaurantType}");
+                        result.RestaurantType = "";
                     }
                     if (result.RestaurantType.Contains("review", StringComparison.InvariantCultureIgnoreCase)
                         || result.RestaurantType == "."
@@ -183,7 +215,7 @@ namespace Gluten.Core.LocationProcessing.Service
 
                     if (!result.Stars.Contains("stars"))
                     {
-                        result.Stars = "";
+                        result.Stars = root.Spans[2].Replace(",", ".") + " stars";
                     }
                 }
                 if (html.Contains("permanently closed", StringComparison.CurrentCultureIgnoreCase))
@@ -277,7 +309,6 @@ namespace Gluten.Core.LocationProcessing.Service
             //			</div>
             //		</div>
             //	</div>
-            return "";
         }
 
 
@@ -320,8 +351,18 @@ namespace Gluten.Core.LocationProcessing.Service
                         parent.Child.Add(currentParent);
                     }
 
+                    if (attribute.Name == "aria-hidden")
+                    {
+                        currentParent.AriaHidden.Add(node.InnerHtml);
+                    }
                 }
             }
+
+            if (node.Name == "span" && !string.IsNullOrWhiteSpace(node.InnerText))
+            {
+                currentParent.Spans.Add(node.InnerText);
+            }
+
 
             if (node.Name == "button" && !string.IsNullOrWhiteSpace(node.InnerText))
             {

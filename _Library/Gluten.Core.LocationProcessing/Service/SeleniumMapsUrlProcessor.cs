@@ -31,7 +31,7 @@ namespace Gluten.Core.LocationProcessing.Service
                 _driver.Navigate().GoToUrl(url);
                 while (existingUrl == _driver.Url)
                 {
-                    Thread.Sleep(500);
+                    Thread.Sleep(200);
                     if (_driver.PageSource.Contains("Invalid Dynamic Link"))
                     {
                         return _driver.Url;

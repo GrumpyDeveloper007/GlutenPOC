@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -33,6 +34,7 @@ namespace Gluten.Core.DataProcessing.Helper
             "(street ",
             "(address ",
             "( in the given",
+            "( in given",
             "(closed",
             "(unknown,",
             "(location within",
@@ -44,10 +46,10 @@ namespace Gluten.Core.DataProcessing.Helper
             "<address not provided ",
             "<Not provided ",
             "<insert ",
-            "<insert ",
             "<unknown>",
             "<not provided>",
             "<address>",
+            "<address not ",
             "no specific address provided",
             "no specific location provided in the given text.",
             "Not specified",
@@ -75,7 +77,9 @@ namespace Gluten.Core.DataProcessing.Helper
             "I apologize,",
             "www.",
             "facebook.com",
-            "N/A"
+            "N/A",
+            "in the given text",
+            "123 Main St"
 ];
 
         private static readonly List<string> _nameFilters = [
@@ -112,7 +116,12 @@ namespace Gluten.Core.DataProcessing.Helper
             "Pardeep kumar",
             "Gourmet Shop",
             "Gourmet Cafe",
-            "TreeHouse"
+            "TreeHouse",
+            "Norwegian crackers",
+            "Chocolate crisp",
+            "BAGUETTE STAND",
+            "Gluten free crepe shop",
+            "Plants"
              ];
 
 

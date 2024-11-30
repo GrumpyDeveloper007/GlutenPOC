@@ -27,8 +27,8 @@ namespace Gluten.Core.DataProcessing.Service
                 && !string.IsNullOrWhiteSpace(venue.PlaceName))
             {
                 //_mapPinService.GetMapUrl(venue.PlaceName + $", {fBGroupService.GetCountryName(groupId)}");
-                var mapUrls = _mapPinService.GetMapUrls();
                 var placeNames = _mapPinService.GetMapPlaceNames();
+                var mapUrls = _mapPinService.GetMapUrls();
 
                 // Try to filter general searches
                 var matchingPlaces = new List<string>();
@@ -60,7 +60,9 @@ namespace Gluten.Core.DataProcessing.Service
             if (!AiDataFilterHelper.IsInPlaceNameSkipList(venue.PlaceName)
                 && !string.IsNullOrWhiteSpace(venue.PlaceName))
             {
+
                 string? restaurantName = venue.PlaceName + $", {fBGroupService.GetCountryName(groupId)}";
+                Console.WriteLine($"Searching for {restaurantName}");
                 var currentNewUrl = _mapPinService.GetMapUrl(restaurantName);
 
                 if (currentNewUrl != null)
@@ -75,6 +77,7 @@ namespace Gluten.Core.DataProcessing.Service
                             Console.WriteLine($"Removing chain pin");
                             venue.PlaceName = null;
                             venue.Address = null;
+                            return;
                         }
                     }
 
@@ -91,6 +94,7 @@ namespace Gluten.Core.DataProcessing.Service
                         if (!string.IsNullOrWhiteSpace(address))
                         {
                             restaurantName = venue.PlaceName + " " + address + $", {fBGroupService.GetCountryName(groupId)}";
+                            Console.WriteLine($"Searching for (with address) {restaurantName}");
                             _mapPinService.GetMapUrl(restaurantName);
 
                             pin = _mapPinService.GetPinFromCurrentUrl(venue.PlaceName);
@@ -114,7 +118,7 @@ namespace Gluten.Core.DataProcessing.Service
                         }
                         else
                         {
-                            Console.WriteLine($"Still unable to process :{venue.PlaceName}");
+                            Console.WriteLine($"Still unable to process, no address :{venue.PlaceName}, address : {venue.Address}");
                         }
                     }
                 }

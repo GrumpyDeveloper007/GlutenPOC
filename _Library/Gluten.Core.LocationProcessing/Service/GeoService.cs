@@ -1,4 +1,6 @@
-﻿using NetTopologySuite.Geometries;
+﻿using Gluten.Data.PinCache;
+using Gluten.Data.TopicModel;
+using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
 using System;
 using System.Collections.Generic;
@@ -29,6 +31,14 @@ namespace Gluten.Core.LocationProcessing.Service
             using var stream = new StreamReader(geoJsonFilePath);
             var geoJson = stream.ReadToEnd();
             _features = reader.Read<NetTopologySuite.Features.FeatureCollection>(geoJson);
+        }
+
+        public string GetCountryPin(TopicPinCache? pin)
+        {
+            if (pin == null) return "";
+            double longitude = double.Parse(pin.GeoLongitude);
+            double latitude = double.Parse(pin.GeoLatitude);
+            return GetCounty(longitude, latitude);
         }
 
         //longitude: 12.4924, latitude: 41.8902

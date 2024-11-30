@@ -90,11 +90,11 @@ namespace Gluten.Core.LocationProcessing.Service
                     GoAndWaitForUrlChange(url);
                     var newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
                     newUrl = HttpUtility.UrlDecode(newUrl);
-                    int timeout = 10;
+                    int timeout = 50;
                     while (!newUrl.Contains("/@") && timeout > 0)
                     {
                         timeout--;
-                        Thread.Sleep(500);
+                        Thread.Sleep(200);
                         newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
                         newUrl = HttpUtility.UrlDecode(newUrl);
                     }
@@ -166,9 +166,14 @@ namespace Gluten.Core.LocationProcessing.Service
         public List<string> GetMapPlaceNames()
         {
             var results = new List<string>();
-            Thread.Sleep(2000); // TODO: Hack, page still loading
-            _seleniumMapsUrlProcessor.PreLoadSearchResults();
             var r = _seleniumMapsUrlProcessor.GetSearchResults();
+            int i = 0;
+            while (r.Count == 0 && i < 20)
+            {
+                Thread.Sleep(100); // TODO: Hack, page still loading
+                r = _seleniumMapsUrlProcessor.GetSearchResults();
+                i++;
+            }
             foreach (var item in r)
             {
                 var b = item.GetAttribute("href");
@@ -212,7 +217,10 @@ namespace Gluten.Core.LocationProcessing.Service
 
             if (pin != null && string.IsNullOrWhiteSpace(pin.MetaHtml))
             {
-                pin.MetaHtml = GetMeta(pin.Label);
+                if (string.IsNullOrWhiteSpace(pin.MetaHtml))
+                {
+                    pin.MetaHtml = GetMeta(pin.Label);
+                }
                 if (string.IsNullOrWhiteSpace(pin.MetaHtml))
                 {
                     pin.MetaData = _mapsMetaExtractorService.ExtractMeta(pin.MetaHtml);

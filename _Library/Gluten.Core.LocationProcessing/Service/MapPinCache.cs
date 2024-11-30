@@ -18,7 +18,7 @@ namespace Gluten.Core.LocationProcessing.Service
         private Dictionary<string, TopicPinCache> _pinCache = pinCache;
         private PinHelper _pinHelper = new();
 
-        public TopicPinCache? TryGetPin(string? placeName)
+        public TopicPinCache? TryGetPin(string? placeName, string country)
         {
             if (placeName == null) return null;
             if (_pinCache == null) return null;
@@ -43,6 +43,27 @@ namespace Gluten.Core.LocationProcessing.Service
                     || itemLabel != null && itemLabel.StartsWith(searchPlace, StringComparison.CurrentCultureIgnoreCase)
                     || item.Label != null && itemLabel.StartsWith(placeName, StringComparison.CurrentCultureIgnoreCase)
                     )
+                {
+                    if (item.Country == country || item.Country == "" || country == "")
+                    {
+                        return item;
+                    }
+                }
+            }
+            return null;
+        }
+
+        public TopicPinCache? TryGetPinLatLong(string latitude, string longitude)
+        {
+            if (latitude == null) return null;
+            if (longitude == null) return null;
+            if (_pinCache == null) return null;
+
+            foreach (var item in _pinCache.Values)
+            {
+
+                if (item.GeoLatitude == latitude
+                     && item.GeoLongitude == longitude)
                 {
                     return item;
                 }
@@ -88,11 +109,17 @@ namespace Gluten.Core.LocationProcessing.Service
 
             if (newPin != null)
             {
-                var existingPin = TryGetPin(newPin.Label);
+                var existingPin = TryGetPin(newPin.Label, country);
+
+                if (existingPin == null)
+                {
+                    existingPin = TryGetPinLatLong(newPin.GeoLatitude, newPin.GeoLongitude);
+                }
                 if (existingPin == null)
                 {
                     //newPin.Country = country;
                     _pinCache.Add(newPin.Label, newPin);
+                    Console.WriteLine($"Adding cache pin :'{newPin.Label}");
                 }
                 else
                 {
