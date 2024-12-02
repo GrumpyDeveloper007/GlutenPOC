@@ -33,6 +33,7 @@
     <ProjectReference Include="..\_Library\Gluten.Core.DataProcessing\Gluten.Core.DataProcessing.csproj" />
     <ProjectReference Include="..\_Library\Gluten.Core.LocationProcessing\Gluten.Core.LocationProcessing.csproj" />
     <ProjectReference Include="..\_Library\Gluten.Core\Gluten.Core.csproj" />
+    <ProjectReference Include="..\_Library\Gluten.Data.Access\Gluten.Data.Access.csproj" />
     <ProjectReference Include="..\_Library\Gluten.Data\Gluten.Data.csproj" />
     <ProjectReference Include="..\_Library\Gluten.FBModel\Gluten.FBModel.csproj" />
   </ItemGroup>

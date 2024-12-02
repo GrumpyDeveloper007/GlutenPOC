@@ -1,19 +1,10 @@
-﻿using Gluten.Data.ClientModel;
+﻿using Gluten.Data.MapsModel;
 using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Gluten.Data.Access.DatabaseModel
 {
-
-    /// <summary>
-    /// Data structure used in the client application, represents a pin on the map
-    /// </summary>
-    public class PinTopicDb : PinTopic, IDbModel
+    public class GMapsPinDb : GMapsPin, IDbModel
     {
         public string Country { get; set; }
 

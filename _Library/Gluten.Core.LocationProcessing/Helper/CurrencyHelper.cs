@@ -11,8 +11,8 @@ namespace Gluten.Core.LocationProcessing.Helper
     {
         public static bool IsCurrencySymbol(string text)
         {
-            if (text.Contains("¥")
-                || text.Contains("￥")
+            if (text.Contains('¥')
+                || text.Contains('￥')
                 || text.Contains("₫1")
                 || text.Contains("TWD")
                 || text.Contains("SGD")
@@ -22,15 +22,15 @@ namespace Gluten.Core.LocationProcessing.Helper
                 || text.Contains("RM")
                 || text.Contains("Rp")
                 || text.Contains("Rs")
-                || text.Contains("฿")
-                || text.Contains("₱")
-                || text.Contains("₩")
-                || text.Contains("₫")
-                || text.Contains("€")
-                || text.Contains("£")
-                || text.Contains("៛")
-                || text.Contains("₹")
-                || text.Contains("$"))
+                || text.Contains('฿')
+                || text.Contains('₱')
+                || text.Contains('₩')
+                || text.Contains('₫')
+                || text.Contains('€')
+                || text.Contains('£')
+                || text.Contains('៛')
+                || text.Contains('₹')
+                || text.Contains('$'))
             {
                 return true;
             }
@@ -56,7 +56,7 @@ namespace Gluten.Core.LocationProcessing.Helper
             // Check if the input contains any of the currency symbols
             foreach (var symbol in currencySymbols)
             {
-                if (text.Contains(symbol))
+                if (symbol != null && text.Contains(symbol))
                 {
                     return true;
                 }

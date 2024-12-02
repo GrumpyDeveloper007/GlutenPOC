@@ -7,14 +7,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Gluten.Core.Service
+namespace Gluten.Core.DataProcessing.Service
 {
     /// <summary>
     /// Some text (json) based database functions
     /// </summary>
-    public class TopicsHelper
+    public class TopicsDataLoaderService
     {
-        private readonly string DBFileName = "D:\\Coding\\Gluten\\Topics.json";
+        private const string DBFileName = "D:\\Coding\\Gluten\\Topics.json";
 
         /// <summary>
         /// Loads the specified file
@@ -38,7 +38,7 @@ namespace Gluten.Core.Service
         public void SaveTopics(List<DetailedTopic> topics)
         {
             var json = JsonConvert.SerializeObject(topics, Formatting.Indented,
-                new JsonConverter[] { new StringEnumConverter() });
+                [new StringEnumConverter()]);
             File.WriteAllText(DBFileName, json);
         }
     }

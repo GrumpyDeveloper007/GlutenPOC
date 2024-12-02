@@ -12,31 +12,35 @@ using System.Net;
 
 namespace TheShire
 {
-    public class PinTopicFunction(ILogger<PinTopicFunction> _logger, DataStore _dataStore)
+    public class PinTopicFunction(ILogger<PinTopicFunction> _logger, CloudDataStore _dataStore)
     {
         [Function("PinTopic")]
         [OpenApiOperation(operationId: "PinTopic")]
         [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
         [OpenApiResponseWithBody(HttpStatusCode.OK, contentType: "multipart/form-data", bodyType: typeof(List<PinTopic>), Description = "Pin Topic array")]
-        public IActionResult Run([HttpTrigger(AuthorizationLevel.Anonymous, "get")] HttpRequest request, [FromQuery] string region)
+        public async Task<IActionResult> Run([HttpTrigger(AuthorizationLevel.Anonymous, "get")]
+            HttpRequest request,
+            [FromQuery] string country)
         {
+            List<PinTopic> responseData = [];
             _logger.LogInformation("PinTopic.Get");
 
-            var responseData = _dataStore.GetData();
+            if (!string.IsNullOrWhiteSpace(country))
+                responseData = await _dataStore.GetData<PinTopicDb, PinTopic>($"WHERE c.Country=\"{country}\"");
 
             return new OkObjectResult(responseData);
         }
 
-        [Function("PinTopic")]
-        [OpenApiOperation(operationId: "PinTopic")]
-        [OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
-        public IActionResult Post([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest request, PinTopicDb topic)
-        {
-            _logger.LogInformation("PinTopic.Post");
+        //[Function("PinTopic")]
+        //[OpenApiOperation(operationId: "PinTopic")]
+        //[OpenApiSecurity("function_key", SecuritySchemeType.ApiKey, Name = "code", In = OpenApiSecurityLocationType.Query)]
+        //public IActionResult Post([HttpTrigger(AuthorizationLevel.Anonymous, "post")] HttpRequest request, PinTopicDb topic)
+        //{
+        //    _logger.LogInformation("PinTopic.Post");
 
-            var responseData = _dataStore.ReplacePinTopicDbItemAsync(topic);
+        //    var responseData = _dataStore.ReplacePinTopicDbItemAsync(topic);
 
-            return new OkObjectResult(responseData);
-        }
+        //    return new OkObjectResult(responseData);
+        //}
     }
 }

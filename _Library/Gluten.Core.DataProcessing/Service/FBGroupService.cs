@@ -1,4 +1,6 @@
-﻿using System;
+﻿// Ignore Spelling: geo
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,8 +14,6 @@ namespace Gluten.Core.DataProcessing.Service
     /// </summary>
     public class FBGroupService
     {
-        public static string DefaultGroupId = "379994195544478";
-
         private readonly Dictionary<string, string> _knownGroupIds = new()
         {
             {"379994195544478","Japan" },//Gluten-Free in Japan!

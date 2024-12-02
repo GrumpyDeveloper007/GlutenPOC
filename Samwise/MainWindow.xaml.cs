@@ -1,10 +1,7 @@
-﻿using AutoMapper;
-using Gluten.Core.DataProcessing.Service;
+﻿using Gluten.Core.DataProcessing.Service;
 using Gluten.Core.Helper;
 using Gluten.Core.LocationProcessing.Service;
-using Gluten.Core.Service;
 using Gluten.Data.MapsModel;
-using Gluten.Data.PinCache;
 using Microsoft.Extensions.Configuration;
 using Samwise.Service;
 using System;
@@ -22,10 +19,8 @@ namespace Samwise
     /// </summary>
     public partial class MainWindow : Window
     {
-        private readonly TopicsHelper _topicsHelper = new();
         private readonly MapsMetaExtractorService _mapsMetaExtractorService = new();
         private readonly MapPinService _mapPinService;
-        private readonly PinHelper _pinHelper;
         private readonly DatabaseLoaderService _dbLoader;
 
         private int _index;
@@ -36,13 +31,12 @@ namespace Samwise
             InitializeComponent();
 
             _dbLoader = new DatabaseLoaderService();
-            _pinHelper = new PinHelper();
             _pins = _dbLoader.LoadGMPins();
             var pinCache = _dbLoader.GetPinCache();
             var selenium = new SeleniumMapsUrlProcessor();
             var geoService = new GeoService();
 
-            _mapPinService = new MapPinService(selenium, _pinHelper, pinCache, geoService, new MapsMetaExtractorService());
+            _mapPinService = new MapPinService(selenium, pinCache, geoService, new MapsMetaExtractorService());
 
             IConfigurationRoot config = new ConfigurationBuilder()
                 .AddJsonFile("local.settings.json")

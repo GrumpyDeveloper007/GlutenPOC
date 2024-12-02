@@ -1,4 +1,8 @@
-﻿using Gluten.Data.PinCache;
+﻿// Ignore Spelling: Geo
+
+using Gluten.Data.ClientModel;
+using Gluten.Data.MapsModel;
+using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
@@ -13,29 +17,54 @@ namespace Gluten.Core.LocationProcessing.Service
 {
     public class GeoService
     {
-        private NetTopologySuite.Features.FeatureCollection _features;
+        private readonly NetTopologySuite.Features.FeatureCollection _features;
 
         // GeoJSON file path
         //string geoJsonFilePath = "Resource\\ne_10m_admin_0_countries.geojson"; //1066
         //string geoJsonFilePath = "Resource\\world-administrative-boundaries.geojson";
-        //string geoJsonFilePath = "Resource\\countries.geojson";
-        string geoJsonFilePath = "Resource\\World-EEZ.geojson";
+        //string geoJsonFilePath = "Resource\\countries.geojson
 
-
-
+        // This seems to be the best fitting database obtainable online
+        private const string GeoJsonFilePath = "Resource\\World-EEZ.geojson";
 
         public GeoService()
         {
             // Load GeoJSON
             var reader = new GeoJsonReader();
-            using var stream = new StreamReader(geoJsonFilePath);
+            using var stream = new StreamReader(GeoJsonFilePath);
             var geoJson = stream.ReadToEnd();
             _features = reader.Read<NetTopologySuite.Features.FeatureCollection>(geoJson);
         }
 
+        public string GetCountryPin(GMapsPin? pin)
+        {
+            if (pin == null) return "";
+            if (pin.GeoLongitude == null || pin.GeoLatitude == null) return "";
+            double longitude = double.Parse(pin.GeoLongitude);
+            double latitude = double.Parse(pin.GeoLatitude);
+            return GetCountry(longitude, latitude);
+        }
+
+        public string GetCountryPin(TopicPin? pin)
+        {
+            if (pin == null) return "";
+            if (pin.GeoLongitude == null || pin.GeoLatitude == null) return "";
+            double longitude = double.Parse(pin.GeoLongitude);
+            double latitude = double.Parse(pin.GeoLatitude);
+            return GetCountry(longitude, latitude);
+        }
+
+        public string GetCountryPin(PinTopic? pin)
+        {
+            if (pin == null) return "";
+            return GetCountry(pin.GeoLongitude, pin.GeoLatitude);
+        }
+
+
         public string GetCountryPin(TopicPinCache? pin)
         {
             if (pin == null) return "";
+            if (pin.GeoLongitude == null || pin.GeoLatitude == null) return "";
             double longitude = double.Parse(pin.GeoLongitude);
             double latitude = double.Parse(pin.GeoLatitude);
             return GetCountry(longitude, latitude);
@@ -51,18 +80,22 @@ namespace Gluten.Core.LocationProcessing.Service
             // Find which country contains the point
             foreach (var feature in _features)
             {
-                //try
+                try
                 {
                     if (feature.Geometry.Contains(point))
                     {
                         //return feature.Attributes["ADMIN"].ToString();
                         //return feature.Attributes["name"].ToString();
-                        return feature.Attributes["Country"].ToString();
+                        if (feature.Attributes != null)
+                        {
+                            var attribute = feature.Attributes["Country"];
+                            return attribute.ToString() ?? "";
+                        }
                     }
                 }
-                //catch (Exception ex)
+                catch (Exception ex)
                 {
-
+                    Console.WriteLine(ex.ToString());
                 }
             }
             //Console.WriteLine($" {latitude}, {longitude}");

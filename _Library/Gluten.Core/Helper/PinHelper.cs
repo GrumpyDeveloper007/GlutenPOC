@@ -1,10 +1,7 @@
-﻿using Gluten.Data.PinCache;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Web;
+﻿// Ignore Spelling: geo
+
+using Gluten.Data.ClientModel;
+using Gluten.Data.PinCache;
 
 namespace Gluten.Core.Helper
 {
@@ -13,7 +10,16 @@ namespace Gluten.Core.Helper
     /// </summary>
     public class PinHelper()
     {
-        public TopicPinCache? GenerateMapPin(string url, string searchString, string country)
+        public static bool IsInList(List<PinTopic> pins, double geoLatitude, double geoLongitude)
+        {
+            foreach (var pin in pins)
+            {
+                if (pin.GeoLatitude == geoLatitude && pin.GeoLongitude == geoLongitude) { return true; }
+            }
+            return false;
+        }
+
+        public static TopicPinCache? GenerateMapPin(string url, string? searchString, string country)
         {
             if (url == null) return null;
             var mapsUrl = url;
@@ -42,7 +48,10 @@ namespace Gluten.Core.Helper
                 MetaHtml = "",
                 Country = country,
             };
-            newPin.SearchStrings.Add(searchString);
+            if (searchString != null)
+            {
+                newPin.SearchStrings.Add(searchString);
+            }
             return newPin;
         }
 
@@ -50,7 +59,7 @@ namespace Gluten.Core.Helper
         /// <summary>
         /// Extracts the data= part of a google maps url and looks for the longitude and latitude
         /// </summary>
-        public static bool TryGetLocationFromDataParameter(string url, ref string geoLat, ref string geoLong)
+        public static bool TryGetLocationFromDataParameter(string url, ref string geoLatitude, ref string geoLongitude)
         {
             var data = url.Substring(url.IndexOf("data=") + 5);
             if (data.IndexOf('?') > 0)
@@ -65,11 +74,11 @@ namespace Gluten.Core.Helper
                 {
                     if (item.StartsWith("3d"))
                     {
-                        geoLat = item.Substring(2);
+                        geoLatitude = item.Substring(2);
                     }
                     if (item.StartsWith("4d"))
                     {
-                        geoLong = item.Substring(2);
+                        geoLongitude = item.Substring(2);
                         found = true;
                     }
                 }

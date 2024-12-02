@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TheShire", "TheShire.csproj
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gluten.Data", "..\_Library\Gluten.Data\Gluten.Data.csproj", "{D51F1B42-1B83-4803-AF44-C5E6139B605A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gluten.Data.Access", "..\_Library\Gluten.Data.Access\Gluten.Data.Access.csproj", "{F6374FC1-7F90-4F4A-A6BB-AB9347399628}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gluten.Data.Access", "..\_Library\Gluten.Data.Access\Gluten.Data.Access.csproj", "{F6374FC1-7F90-4F4A-A6BB-AB9347399628}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

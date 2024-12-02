@@ -1,30 +1,29 @@
 ﻿using AutoMapper;
 using Gluten.Data.Access.DatabaseModel;
 using Gluten.Data.ClientModel;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Gluten.Data.MapsModel;
 
 namespace Gluten.Data.Access.Service
 {
     /// <summary>
     /// Auto mapper helper service
     /// </summary>
-    public class MappingService
+    public class DbMapper
     {
         private readonly IMapper _mapper;
 
         /// <summary>
         /// Constructor
         /// </summary>
-        public MappingService()
+        public DbMapper()
         {
             var config = new MapperConfiguration(cfg =>
             {
                 cfg.CreateMap<PinTopic, PinTopicDb>();
                 cfg.CreateMap<PinTopicDb, PinTopic>();
+                cfg.CreateMap<GMapsPin, GMapsPinDb>();
+                cfg.CreateMap<GMapsPinDb, GMapsPin>();
+
             });
 
             _mapper = config.CreateMapper();

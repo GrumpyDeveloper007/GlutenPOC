@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 #pragma warning disable CS8618
 #pragma warning disable IDE1006
+#pragma warning disable VSSpell001 // Spell Check
 
 namespace Gluten.FBModel
 {

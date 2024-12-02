@@ -4,7 +4,7 @@ using Frodo.Service;
 using Gluten.Core.DataProcessing.Service;
 using Gluten.Core.Helper;
 using Gluten.Core.LocationProcessing.Service;
-using Gluten.Core.Service;
+using Gluten.Data.Access.Service;
 using Microsoft.Extensions.Configuration;
 
 Console.WriteLine("Hello, World!");
@@ -24,17 +24,17 @@ if (settings == null)
 
 var dbLoader = new DatabaseLoaderService();
 
-//var nlp = new NaturalLanguageProcessor(settings.AIEndPoint, settings.AIApiKey);
 var geoService = new GeoService();
-var pinHelper = new PinHelper();
 var selenium = new SeleniumMapsUrlProcessor();
 var mapper = new MappingService();
 var fbGroupService = new FBGroupService();
 var pinCache = dbLoader.GetPinCache();
+var dataStore = new CloudDataStore(settings.DbEndpointUri, settings.DbPrimaryKey);
 
-var ai = new MapPinService(selenium, pinHelper, pinCache, geoService, new MapsMetaExtractorService());
-var clientExportFileGenerator = new ClientExportFileGenerator(dbLoader, mapper, pinCache, fbGroupService, geoService);
-var service = new DataSyncService(ai, pinHelper, dbLoader, mapper, clientExportFileGenerator, geoService, fbGroupService, pinCache);
+var ai = new MapPinService(selenium, pinCache, geoService, new MapsMetaExtractorService());
+var clientExportFileGenerator = new ClientExportFileGenerator(dbLoader, mapper, pinCache, fbGroupService, geoService, dataStore);
+var pinCacheSync = new PinCacheSyncService(ai, dbLoader, geoService, pinCache);
+var service = new DataSyncService(ai, dbLoader, mapper, clientExportFileGenerator, geoService, fbGroupService, pinCache, pinCacheSync);
 service.ProcessFile();
 
 selenium.Stop();

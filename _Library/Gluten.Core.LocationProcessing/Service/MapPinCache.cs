@@ -1,4 +1,6 @@
-﻿using Gluten.Core.Helper;
+﻿// Ignore Spelling: Lat
+
+using Gluten.Core.Helper;
 using Gluten.Data.PinCache;
 using System;
 using System.Collections.Generic;
@@ -16,7 +18,6 @@ namespace Gluten.Core.LocationProcessing.Service
         Dictionary<string, TopicPinCache> pinCache)
     {
         private Dictionary<string, TopicPinCache> _pinCache = pinCache;
-        private PinHelper _pinHelper = new();
 
         public TopicPinCache? TryGetPin(string? placeName, string country)
         {
@@ -38,10 +39,10 @@ namespace Gluten.Core.LocationProcessing.Service
                 }
 
                 if (
-                    itemPlace != null && itemPlace.StartsWith(searchPlace, StringComparison.CurrentCultureIgnoreCase)
+                    itemPlace != null && (itemPlace.StartsWith(searchPlace, StringComparison.CurrentCultureIgnoreCase)
                     || item.PlaceName != null && itemPlace.StartsWith(placeName, StringComparison.CurrentCultureIgnoreCase)
                     || itemLabel != null && itemLabel.StartsWith(searchPlace, StringComparison.CurrentCultureIgnoreCase)
-                    || item.Label != null && itemLabel.StartsWith(placeName, StringComparison.CurrentCultureIgnoreCase)
+                    || itemLabel != null && item.Label != null && itemLabel.StartsWith(placeName, StringComparison.CurrentCultureIgnoreCase))
                     )
                 {
                     if (item.Country == country || item.Country == "" || country == "")
@@ -53,7 +54,7 @@ namespace Gluten.Core.LocationProcessing.Service
             return null;
         }
 
-        public TopicPinCache? TryGetPinLatLong(string latitude, string longitude)
+        public TopicPinCache? TryGetPinLatLong(string? latitude, string? longitude)
         {
             if (latitude == null) return null;
             if (longitude == null) return null;
@@ -105,21 +106,21 @@ namespace Gluten.Core.LocationProcessing.Service
             TopicPinCache? oldPin = TryGetPinByUrl(url);
             url = HttpUtility.UrlDecode(url);
             if (oldPin != null) return oldPin;
-            var newPin = _pinHelper.GenerateMapPin(url, searchString, country);
+            var newPin = PinHelper.GenerateMapPin(url, searchString, country);
 
             if (newPin != null)
             {
                 var existingPin = TryGetPin(newPin.Label, country);
 
-                if (existingPin == null)
-                {
-                    existingPin = TryGetPinLatLong(newPin.GeoLatitude, newPin.GeoLongitude);
-                }
+                existingPin ??= TryGetPinLatLong(newPin.GeoLatitude, newPin.GeoLongitude);
                 if (existingPin == null)
                 {
                     //newPin.Country = country;
-                    _pinCache.Add(newPin.Label, newPin);
-                    Console.WriteLine($"Adding cache pin :'{newPin.Label}");
+                    if (newPin.Label != null)
+                    {
+                        _pinCache.Add(newPin.Label, newPin);
+                        Console.WriteLine($"Adding cache pin :'{newPin.Label}");
+                    }
                 }
                 else
                 {

@@ -8,7 +8,14 @@ namespace Frodo.Helper
     /// </summary>
     internal class StringHelper
     {
-        public static List<string> ExtractHashtags(string text)
+        public static string Truncate(string? value, int maxLength, string truncationSuffix = "…")
+        {
+            return (value?.Length > maxLength
+                ? string.Concat(value.AsSpan(0, maxLength), truncationSuffix)
+                : value) ?? "";
+        }
+
+        public static List<string> ExtractHashTags(string text)
         {
             // Define a regular expression to match hashtags
             string pattern = @"#\w+";

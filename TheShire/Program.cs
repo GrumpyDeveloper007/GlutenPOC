@@ -34,7 +34,7 @@ var host = new HostBuilder()
     .ConfigureFunctionsWebApplication()
     .ConfigureServices(services =>
     {
-        services.AddSingleton<DataStore>(new DataStore(dbEndpoint, dbPrimaryKey));
+        services.AddSingleton<CloudDataStore>(new CloudDataStore(dbEndpoint, dbPrimaryKey));
 
         services.AddApplicationInsightsTelemetryWorkerService();
         services.ConfigureFunctionsApplicationInsights();

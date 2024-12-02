@@ -6,6 +6,7 @@ using Gluten.Data.TopicModel;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using Humanizer;
+using System.ClientModel;
 
 namespace Frodo.Service
 {
@@ -41,10 +42,11 @@ namespace Frodo.Service
         /// <summary>
         /// Opens the connection to our local AI
         /// </summary>
-        public void OpenAgent()
+        private void OpenAgent()
         {
             var endpoint = "http://localhost:1234";
-            var openaiClient = new OpenAIClient("api-key", new OpenAIClientOptions
+            var credential = new ApiKeyCredential("api-key");
+            var openaiClient = new OpenAIClient(credential, new OpenAIClientOptions
             {
                 Endpoint = new Uri(endpoint),
                 NetworkTimeout = new TimeSpan(0, 2, 0)
@@ -55,6 +57,40 @@ namespace Frodo.Service
                 name: "assistant")
                 .RegisterMessageConnector()
                 .RegisterPrintMessage();
+        }
+
+        private List<AiVenue> PostProcessAiVenue(List<AiVenue> item)
+        {
+            var output = new List<AiVenue>();
+            foreach (var aiVenue in item)
+            {
+                var newItem = PostProcessAiVenue(aiVenue);
+                if (newItem != null)
+                {
+                    output.Add(newItem);
+                }
+            }
+            return output;
+        }
+
+        private AiVenue? PostProcessAiVenue(AiVenue item)
+        {
+            if (item.PlaceName == null) return item;
+            foreach (var nameFilter in _nameFilters)
+            {
+                if (item.PlaceName.Contains(nameFilter, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    return null;
+                }
+            }
+
+            foreach (var filter in _addressFilters)
+            {
+                item.Address = item.Address?.Replace(filter, "");
+            }
+            item.Address = item.Address?.Trim();
+
+            return item;
         }
 
         /// <summary>
@@ -86,7 +122,7 @@ namespace Frodo.Service
             var response = _lmAgent.SendAsync(question + $"{message}").Result;
             if (response == null) return null;
             var responseContent = response.GetContent();
-            responseContent = responseContent.Replace("Yes, I can summarize that text in under 15 English characters:", "");
+            responseContent = (responseContent ?? "").Replace("Yes, I can summarize that text in under 15 English characters:", "");
             if (responseContent == null
                 || responseContent.StartsWith("no ", StringComparison.InvariantCultureIgnoreCase)
                 || responseContent.StartsWith("yes", StringComparison.InvariantCultureIgnoreCase)
@@ -178,39 +214,6 @@ namespace Frodo.Service
             return null;
         }
 
-        private List<AiVenue> PostProcessAiVenue(List<AiVenue> item)
-        {
-            var output = new List<AiVenue>();
-            foreach (var aiVenue in item)
-            {
-                var newItem = PostProcessAiVenue(aiVenue);
-                if (newItem != null)
-                {
-                    output.Add(newItem);
-                }
-            }
-            return output;
-        }
 
-
-        private AiVenue? PostProcessAiVenue(AiVenue item)
-        {
-            if (item.PlaceName == null) return item;
-            foreach (var nameFilter in _nameFilters)
-            {
-                if (item.PlaceName.Contains(nameFilter, StringComparison.CurrentCultureIgnoreCase))
-                {
-                    return null;
-                }
-            }
-
-            foreach (var filter in _addressFilters)
-            {
-                item.Address = item.Address?.Replace(filter, "");
-            }
-            item.Address = item.Address?.Trim();
-
-            return item;
-        }
     }
 }

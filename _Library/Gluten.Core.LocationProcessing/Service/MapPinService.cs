@@ -5,6 +5,7 @@ using System.Diagnostics.Metrics;
 using System;
 using System.Web;
 using System.Xml.Linq;
+using Gluten.Core.LocationProcessing.Helper;
 
 namespace Gluten.Core.LocationProcessing.Service
 {
@@ -12,13 +13,11 @@ namespace Gluten.Core.LocationProcessing.Service
     /// Google map pin handling service, generates pins from place names, gathers meta data
     /// </summary>
     public class MapPinService(
-        SeleniumMapsUrlProcessor seleniumMapsUrlProcessor, PinHelper pinHelper,
+        SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor,
         MapPinCache _mapPinCache,
         GeoService _geoService,
         MapsMetaExtractorService _mapsMetaExtractorService)
     {
-        private readonly PinHelper _pinHelper = pinHelper;
-        private readonly SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor = seleniumMapsUrlProcessor;
 
         /// <summary>
         /// Uses google maps to search for a place name
@@ -60,30 +59,12 @@ namespace Gluten.Core.LocationProcessing.Service
             return _seleniumMapsUrlProcessor.GetCurrentUrl();
         }
 
-        private bool IsMapsUrl(string url)
-        {
-            // Link to street view
-            //https://maps.google.com/maps/api/staticmap?center=34.6845322%2C135.1840363&amp;zoom=-1&amp;size=900x900&amp;language=en&amp;sensor=false&amp;client=google-maps-frontend&amp;signature=yGPXtu3-Vjroz_DtJZLPyDkVVC8\
-            // Collection of pins 
-            //https://www.google.com/maps/d/viewer?mid=16xtxMz-iijlDOEl-dlQKEa2-A19nxzND&ll=35.67714795882308,139.72588715&z=12
-            if (!url.Contains("https://www.google.com/maps/d/viewer")
-                && (url.Contains("www.google.com/maps/")
-                || url.Contains("maps.app.goo.gl")
-                || url.Contains("maps.google.com")
-                || url.Contains("https://goo.gl/maps/"))
-                )
-            {
-                return true;
-            }
-            return false;
-        }
-
         /// <summary>
         /// Checks if a url is a valid google maps link, waits for the url to be updated to include the location
         /// </summary>
         public string CheckUrlForMapLinks(string url)
         {
-            if (IsMapsUrl(url))
+            if (MapPinHelper.IsMapsUrl(url))
             {
                 if (!url.Contains("/@"))
                 {
@@ -205,13 +186,11 @@ namespace Gluten.Core.LocationProcessing.Service
 
         public TopicPinCache? TryToGenerateMapPin(string url, string searchString, string country)
         {
-            var pin = _mapPinCache.TryToGenerateMapPin(url, searchString, "");
+            var pin = _mapPinCache.TryToGenerateMapPin(url, searchString, country);
 
             if (pin != null)
             {
-                double longitude = double.Parse(pin.GeoLongitude);
-                double latitude = double.Parse(pin.GeoLatitude);
-                pin.Country = country = _geoService.GetCountry(longitude, latitude);
+                pin.Country = _geoService.GetCountryPin(pin);
             }
 
             if (pin != null && string.IsNullOrWhiteSpace(pin.MetaHtml))

@@ -1,4 +1,6 @@
-﻿using Gluten.Core.LocationProcessing.Helper;
+﻿// Ignore Spelling: Href
+
+using Gluten.Core.LocationProcessing.Helper;
 using Gluten.Data.PinCache;
 using HtmlAgilityPack;
 using System;
@@ -94,8 +96,8 @@ namespace Gluten.Core.LocationProcessing.Service
 
             public bool ResultsNode { get; set; }
 
-            public string InnerHtml { get; set; }
-            public string Href { get; set; }
+            public string InnerHtml { get; set; } = "";
+            public string Href { get; set; } = "";
         }
 
         public List<string> GetRestaurantTypes()
@@ -180,7 +182,7 @@ namespace Gluten.Core.LocationProcessing.Service
                         if (root.Spans.Count >= 7)
                         {
                             result.Price = root.Spans[6];
-                            if (result.Price.StartsWith("("))
+                            if (result.Price.StartsWith('('))
                             {
                                 result.Price = root.Spans[7];
                             }
@@ -266,13 +268,12 @@ namespace Gluten.Core.LocationProcessing.Service
 
             var spanNodes = document.DocumentNode.SelectNodes("//span[last()]");
 
-            var comment = spanNodes.Last().ParentNode.InnerHtml;
-            var comment2 = spanNodes.Last().ParentNode.InnerText;
-            if (!comment2.Contains("gluten", StringComparison.InvariantCultureIgnoreCase))
+            var comment = spanNodes.Last().ParentNode.InnerText;
+            if (!comment.Contains("gluten", StringComparison.InvariantCultureIgnoreCase))
             {
                 return "";
             }
-            return comment2;
+            return comment;
 
             // example - 
             //<div class="Nv2PK THOPZb CpccDe " jsaction="mouseover:pane.wfvdle11;mouseout:pane.wfvdle11">

@@ -5,8 +5,6 @@ VisualStudioVersion = 17.11.35303.130
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Frodo", "Frodo.csproj", "{43DB5817-79C6-488F-B1A4-730B2F51896E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataAccess", "..\_Library\DataAccess\DataAccess.csproj", "{16AE363A-5F76-4E39-B2F7-B927A75D4325}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gluten.Data", "..\_Library\Gluten.Data\Gluten.Data.csproj", "{F69DEFB1-9BFE-4328-88F1-3AAD368C32A4}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4EE943BB-8D20-4781-9533-8C072E32EE51}"
@@ -22,7 +20,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Library", "Library", "{C6A3
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gluten.FBModel", "..\_Library\Gluten.FBModel\Gluten.FBModel.csproj", "{74FA49B4-2B8B-4A0F-8BDA-BCBE84653A6F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Gluten.Core.LocationProcessing", "..\_Library\Gluten.Core.LocationProcessing\Gluten.Core.LocationProcessing.csproj", "{312130D7-6029-475F-B0BF-79400C71EB12}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gluten.Core.LocationProcessing", "..\_Library\Gluten.Core.LocationProcessing\Gluten.Core.LocationProcessing.csproj", "{312130D7-6029-475F-B0BF-79400C71EB12}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Gluten.Data.Access", "..\_Library\Gluten.Data.Access\Gluten.Data.Access.csproj", "{0F9FC293-2850-4DA4-81D2-7E2CC98F2A17}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -34,10 +34,6 @@ Global
 		{43DB5817-79C6-488F-B1A4-730B2F51896E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{43DB5817-79C6-488F-B1A4-730B2F51896E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{43DB5817-79C6-488F-B1A4-730B2F51896E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{16AE363A-5F76-4E39-B2F7-B927A75D4325}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{16AE363A-5F76-4E39-B2F7-B927A75D4325}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{16AE363A-5F76-4E39-B2F7-B927A75D4325}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{16AE363A-5F76-4E39-B2F7-B927A75D4325}.Release|Any CPU.Build.0 = Release|Any CPU
 		{F69DEFB1-9BFE-4328-88F1-3AAD368C32A4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{F69DEFB1-9BFE-4328-88F1-3AAD368C32A4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F69DEFB1-9BFE-4328-88F1-3AAD368C32A4}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -58,17 +54,21 @@ Global
 		{312130D7-6029-475F-B0BF-79400C71EB12}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{312130D7-6029-475F-B0BF-79400C71EB12}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{312130D7-6029-475F-B0BF-79400C71EB12}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0F9FC293-2850-4DA4-81D2-7E2CC98F2A17}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0F9FC293-2850-4DA4-81D2-7E2CC98F2A17}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0F9FC293-2850-4DA4-81D2-7E2CC98F2A17}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0F9FC293-2850-4DA4-81D2-7E2CC98F2A17}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{16AE363A-5F76-4E39-B2F7-B927A75D4325} = {C6A34CDF-ECF0-47A4-8156-48FDDDB63B86}
 		{F69DEFB1-9BFE-4328-88F1-3AAD368C32A4} = {C6A34CDF-ECF0-47A4-8156-48FDDDB63B86}
 		{B817FA6E-7E2B-41EE-817B-58719CA91C0B} = {C6A34CDF-ECF0-47A4-8156-48FDDDB63B86}
 		{4AB2068B-8569-45D9-BE0A-C789368DE305} = {C6A34CDF-ECF0-47A4-8156-48FDDDB63B86}
 		{74FA49B4-2B8B-4A0F-8BDA-BCBE84653A6F} = {C6A34CDF-ECF0-47A4-8156-48FDDDB63B86}
 		{312130D7-6029-475F-B0BF-79400C71EB12} = {C6A34CDF-ECF0-47A4-8156-48FDDDB63B86}
+		{0F9FC293-2850-4DA4-81D2-7E2CC98F2A17} = {C6A34CDF-ECF0-47A4-8156-48FDDDB63B86}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {24D9E986-3B48-4FDB-B633-8FF279C38A92}
