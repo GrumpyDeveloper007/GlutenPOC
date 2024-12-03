@@ -14,7 +14,7 @@ namespace Gluten.Core.DataProcessing.Service
     /// </summary>
     public class TopicsDataLoaderService
     {
-        private const string DBFileName = "D:\\Coding\\Gluten\\Topics.json";
+        private const string DBFileName = "D:\\Coding\\Gluten\\Database\\Topics.json";
 
         /// <summary>
         /// Loads the specified file

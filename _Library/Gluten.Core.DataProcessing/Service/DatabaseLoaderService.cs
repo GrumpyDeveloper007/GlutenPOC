@@ -20,13 +20,13 @@ namespace Gluten.Core.DataProcessing.Service
     /// </summary>
     public class DatabaseLoaderService
     {
-        private readonly string PinCacheDBFileName = "D:\\Coding\\Gluten\\pinCache.json";
-        private readonly string ExportDBFileName = "D:\\Coding\\Gluten\\TopicsExport.json";
-        private readonly string GMPinExportDBFileName = "D:\\Coding\\Gluten\\GMPinExport.json";
-        private readonly string RestaurantsFileName = "D:\\Coding\\Gluten\\Restaurant.txt";
-        private readonly string PinDescriptionCacheFileName = "D:\\Coding\\Gluten\\PinDescriptionCache.json";
-        private readonly string GMPinFileName = "D:\\Coding\\Gluten\\GMPin.json";
-        private const string PlacenameSkipListFileName = "D:\\Coding\\Gluten\\PlaceNameSkipList.json";
+        private readonly string PinCacheDBFileName = "D:\\Coding\\Gluten\\Database\\pinCache.json";
+        private readonly string ExportDBFileName = "D:\\Coding\\Gluten\\Database\\TopicsExport.json";
+        private readonly string GMPinExportDBFileName = "D:\\Coding\\Gluten\\Database\\GMPinExport.json";
+        private readonly string RestaurantsFileName = "D:\\Coding\\Gluten\\Database\\Restaurant.txt";
+        private readonly string PinDescriptionCacheFileName = "D:\\Coding\\Gluten\\Database\\PinDescriptionCache.json";
+        private readonly string GMPinFileName = "D:\\Coding\\Gluten\\Database\\GMPin.json";
+        private const string PlacenameSkipListFileName = "D:\\Coding\\Gluten\\Database\\PlaceNameSkipList.json";
 
         private readonly List<PinDescriptionCache> _pinDescriptionsCache;
         MapPinCache _mapPinCache;
