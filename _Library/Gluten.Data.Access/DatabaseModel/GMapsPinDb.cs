@@ -19,7 +19,7 @@ namespace Gluten.Data.Access.DatabaseModel
         public string PartitionKey
         {
             get
-            { return GetPartitionKey().ToString(); }
+            { return Country; }
         }
 
         public string GetContainerId()

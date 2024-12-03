@@ -59,10 +59,6 @@ namespace Gluten.Data.Access.Service
         {
             var container = await GetContainer<dbObject>(new dbObject());
             var sqlQueryText = $"SELECT * FROM c {whereClause}";
-            //e.g. "SELECT * FROM c WHERE c.PartitionKey = 'Andersen'";
-
-
-            Console.WriteLine("Running query: {0}\n", sqlQueryText);
 
             var queryDefinition = new QueryDefinition(sqlQueryText);
             var queryResultSetIterator = container.GetItemQueryIterator<dbObject>(queryDefinition);
@@ -80,6 +76,28 @@ namespace Gluten.Data.Access.Service
             }
             return results;
         }
+
+        public async Task<List<dbObject>> GetData<dbObject>(string whereClause) where dbObject : IDbModel, new()
+        {
+            var container = await GetContainer<dbObject>(new dbObject());
+            var sqlQueryText = $"SELECT * FROM c {whereClause}";
+
+            var queryDefinition = new QueryDefinition(sqlQueryText);
+            var queryResultSetIterator = container.GetItemQueryIterator<dbObject>(queryDefinition);
+
+            var results = new List<dbObject>();
+
+            while (queryResultSetIterator.HasMoreResults)
+            {
+                var currentResultSet = await queryResultSetIterator.ReadNextAsync();
+                foreach (var dbItem in currentResultSet)
+                {
+                    results.Add(dbItem);
+                }
+            }
+            return results;
+        }
+
 
         public async Task DeleteItemAsync<dbObject>(dbObject newDbItem) where dbObject : IDbModel, new()
         {

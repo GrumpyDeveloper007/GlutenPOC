@@ -39,21 +39,21 @@ namespace Frodo.Service
             //_dataStore.DeleteContainer<GMapsPinDb>().Wait();
 
             // delete 
-            var itemsGm = _dataStore.GetData<GMapsPinDb, GMapsPinDb>().Result;
-            for (int i = 0; i < itemsGm.Count; i++)
-            {
-                var item = itemsGm[i];
-                Console.WriteLine($"Delete item {i}");
-                _dataStore.DeleteItemAsync(item).Wait();
-            }
+            //var itemsGm = _dataStore.GetData<GMapsPinDb>("").Result;
+            //for (int i = 0; i < itemsGm.Count; i++)
+            //{
+            //    var item = itemsGm[i];
+            //    Console.WriteLine($"Delete item {i}");
+            //    _dataStore.DeleteItemAsync(item).Wait();
+            //}
 
-            var items = _dataStore.GetData<PinTopicDb, PinTopicDb>().Result;
-            for (int i = 0; i < items.Count; i++)
-            {
-                var item = items[i];
-                Console.WriteLine($"Delete item {i}");
-                _dataStore.DeleteItemAsync(item).Wait();
-            }
+            //var items = _dataStore.GetData<PinTopicDb>("").Result;
+            //for (int i = 0; i < items.Count; i++)
+            //{
+            //    var item = items[i];
+            //    Console.WriteLine($"Delete item {i}");
+            //    _dataStore.DeleteItemAsync(item).Wait();
+            //}
 
             for (int i = 0; i < gmPins.Count; i++)
             {
