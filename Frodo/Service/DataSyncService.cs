@@ -256,17 +256,17 @@ namespace Frodo.Service
                             var groupCountry = _fBGroupService.GetCountryName(topic.GroupId);
                             var country = _geoService.GetCountryPin(cachePin);
 
-                            if (cachePin != null)
+                            if (!IsPinInGroupCountry(pin, topic))
+                            {
+                                invalidGeo++;
+                                Console.WriteLine($"Removing pin {t} in topic {i} - country mismatch {groupCountry}, {country}");
+                                topic.AiVenues.RemoveAt(t);
+                            }
+                            else if (cachePin != null)
                             {
                                 if (cachePin.MetaData != null && cachePin.MetaData.PermanentlyClosed)
                                 {
                                     Console.WriteLine($"Removing pin {t} in topic {i} - PermanentlyClosed");
-                                    topic.AiVenues.RemoveAt(t);
-                                }
-                                else if (!IsPinInGroupCountry(pin, topic))
-                                {
-                                    invalidGeo++;
-                                    Console.WriteLine($"Removing pin {t} in topic {i} - country mismatch {groupCountry}, {country}");
                                     topic.AiVenues.RemoveAt(t);
                                 }
                                 else if (restaurantService.IsRejectedRestaurantType(cachePin.MetaData?.RestaurantType))

@@ -38,22 +38,28 @@ namespace Frodo.Service
             //_dataStore.DeleteContainer<PinTopicDb>().Wait();
             //_dataStore.DeleteContainer<GMapsPinDb>().Wait();
 
-            // delete 
-            //var itemsGm = _dataStore.GetData<GMapsPinDb>("").Result;
-            //for (int i = 0; i < itemsGm.Count; i++)
-            //{
-            //    var item = itemsGm[i];
-            //    Console.WriteLine($"Delete item {i}");
-            //    _dataStore.DeleteItemAsync(item).Wait();
-            //}
+            // delete locally removed
+            var itemsGm = _dataStore.GetData<GMapsPinDb>("").Result;
+            for (int i = 0; i < itemsGm.Count; i++)
+            {
+                var item = itemsGm[i];
+                if (!gmPins.Exists(o => o.GeoLatitude == item.GeoLatitude && o.GeoLongitude == item.GeoLongitude))
+                {
+                    Console.WriteLine($"Delete item {i}");
+                    _dataStore.DeleteItemAsync(item).Wait();
+                }
+            }
 
-            //var items = _dataStore.GetData<PinTopicDb>("").Result;
-            //for (int i = 0; i < items.Count; i++)
-            //{
-            //    var item = items[i];
-            //    Console.WriteLine($"Delete item {i}");
-            //    _dataStore.DeleteItemAsync(item).Wait();
-            //}
+            var items = _dataStore.GetData<PinTopicDb>("").Result;
+            for (int i = 0; i < items.Count; i++)
+            {
+                var item = items[i];
+                if (!pins.Exists(o => o.GeoLatitude == item.GeoLatitude && o.GeoLongitude == item.GeoLongitude))
+                {
+                    Console.WriteLine($"Delete item {i}");
+                    _dataStore.DeleteItemAsync(item).Wait();
+                }
+            }
 
             for (int i = 0; i < gmPins.Count; i++)
             {
