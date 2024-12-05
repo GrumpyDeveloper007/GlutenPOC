@@ -43,6 +43,10 @@ namespace Gluten.FBModel
         public ProfilePicture profile_picture { get; set; }
         public bool is_additional_profile_plus { get; set; }
         public object delegate_page { get; set; }
+        public string __isProfile { get; set; }
+        public string __isGroupMember { get; set; }
+        public GroupMembership group_membership { get; set; }
+        public string short_name { get; set; }
     }
 
     public class Actor3
@@ -91,6 +95,8 @@ namespace Gluten.FBModel
     {
         public string context_actor_hovercard { get; set; }
         public string id { get; set; }
+        public object answer_agent_id { get; set; }
+        public LeadersEngagementLoggingSettings leaders_engagement_logging_settings { get; set; }
     }
 
     public class Attachment
@@ -1000,6 +1006,14 @@ namespace Gluten.FBModel
     {
         public Node node { get; set; }
         public string cursor { get; set; }
+        public PageInfo? page_info { get; set; }
+        public Group group { get; set; }
+    }
+
+    public class PageInfo
+    {
+        public string end_cursor { get; set; }
+        public bool has_next_page { get; set; }
     }
 
     public class Ddd
@@ -1031,6 +1045,7 @@ namespace Gluten.FBModel
         public Node node { get; set; }
         public string i18n_reaction_count { get; set; }
         public int reaction_count { get; set; }
+        public string cursor { get; set; }
     }
 
     public class Extensions
@@ -1038,6 +1053,7 @@ namespace Gluten.FBModel
         public List<PrefetchUrisV2> prefetch_uris_v2 { get; set; }
         public bool is_final { get; set; }
         //public SrPayload sr_payload { get; set; }
+        public List<FulfilledPayload> fulfilled_payloads { get; set; }
     }
 
     public class Feedback
@@ -1154,6 +1170,48 @@ namespace Gluten.FBModel
     {
         public string id { get; set; }
         public object answer_agent_id { get; set; }
+
+        public IfViewerCanSeeExpandedColor if_viewer_can_see_expanded_color { get; set; }
+        public object if_viewer_cannot_see_expanded_color { get; set; }
+        public TopLevelEligiblePromotions top_level_eligible_promotions { get; set; }
+        public GroupFeed group_feed { get; set; }
+        public OffPlatCometCrawlabilityGk off_plat_comet_crawlability_gk { get; set; }
+        public string group_address { get; set; }
+        public string vanity { get; set; }
+        public bool render_directory_link { get; set; }
+        public string name { get; set; }
+        public string context_actor_hovercard { get; set; }
+        public object if_viewer_can_see_streamer_videos { get; set; }
+        public IfViewerCanSeeHighlightUnits if_viewer_can_see_highlight_units { get; set; }
+        public object if_viewer_can_see_announcements_unit { get; set; }
+        public object if_viewer_can_see_announcements_unit_for_count { get; set; }
+        public object if_viewer_can_see_community_profile_announcements_unit { get; set; }
+        public bool is_group_mall_seo_heading_optimized { get; set; }
+        public object card { get; set; }
+        public object group_moment { get; set; }
+        public object if_viewer_can_see_pending_post_in_mall { get; set; }
+        public CometInlineComposerRenderer comet_inline_composer_renderer { get; set; }
+        public int viewer_last_visited_time { get; set; }
+        public IfViewerCanSeeContent if_viewer_can_see_content { get; set; }
+        public object if_viewer_can_see_composer_on_community_profile_tab { get; set; }
+        public object if_viewer_can_see_pending_content_card { get; set; }
+        public object if_viewer_can_see_participation_questionnaire { get; set; }
+        public IfViewerCanSeeChatHostRole if_viewer_can_see_chat_host_role { get; set; }
+        public object if_viewer_can_see_new_member_consumption { get; set; }
+        public object if_viewer_can_see_key_groups_max_test_upsell_in_mall { get; set; }
+        public object if_viewer_can_request_to_participate_in_forum { get; set; }
+        public object if_viewer_can_see_pending_forum_participant_experience { get; set; }
+        public Community community { get; set; }
+        public GroupMallNuxProvider group_mall_nux_provider { get; set; }
+        public ConvoStarterInfoBottomsheet convo_starter_info_bottomsheet { get; set; }
+        public object if_viewer_can_see_public_group_hint_text_in_composer { get; set; }
+        public IfViewerCanSeeGroupComposer if_viewer_can_see_group_composer { get; set; }
+        public GroupCometComposerNoParams group_comet_composer_no_params { get; set; }
+        public object if_viewer_can_create_reels { get; set; }
+        public AvailableActors available_actors { get; set; }
+        public object if_viewer_can_see_anonymous_post_toggle_button { get; set; }
+        public object if_viewer_can_participate_with_group_level_anonymous_voice { get; set; }
+        public IfViewerCanSeeCustomizedDefaultPostTypeComposer if_viewer_can_see_customized_default_post_type_composer { get; set; }
     }
 
     public class GroupCommentInfo
@@ -1212,6 +1270,8 @@ namespace Gluten.FBModel
     public class Jsmods
     {
         //public List<List<object>> require { get; set; }
+        //public List<List<object>> define { get; set; }
+
     }
 
     public class Layout
@@ -1636,6 +1696,10 @@ namespace Gluten.FBModel
         public ClientViewConfig client_view_config { get; set; }
         public string __isNode { get; set; }
         public string localized_name { get; set; }
+
+        public Title title { get; set; }
+        public TargetGroup target_group { get; set; }
+        public StoryHeader story_header { get; set; }
     }
 
     public class Node2
@@ -2202,6 +2266,9 @@ namespace Gluten.FBModel
         public string id { get; set; }
         public string visibility { get; set; }
         public PrivacyInfo privacy_info { get; set; }
+        public bool can_viewer_see_sorting_switcher { get; set; }
+        public IfViewerCanSeeExpandedColor if_viewer_can_see_expanded_color { get; set; }
+        public object if_viewer_cannot_see_expanded_color { get; set; }
     }
 
     public class ThreadingConfig
@@ -2290,6 +2357,507 @@ namespace Gluten.FBModel
         public int width { get; set; }
         public string uri { get; set; }
     }
+
+
+    public class AvailableActors
+    {
+        public List<object> edges { get; set; }
+    }
+
+    public class CometComposerMediaAttachmentAreaReact
+    {
+        public List<string> r { get; set; }
+
+        public int be { get; set; }
+    }
+
+    public class CometHovercardLinkPreviewSettingsDialogReact
+    {
+        public List<string> r { get; set; }
+        public Rdfds rdfds { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class CometHovercardQueryRendererReact
+    {
+        public List<string> r { get; set; }
+        public int be { get; set; }
+    }
+
+    public class CometInlineComposerRenderer
+    {
+        public string __typename { get; set; }
+        public Group group { get; set; }
+        public Viewer viewer { get; set; }
+        public object override_hint_text { get; set; }
+        public ModuleOperationGroupsCometInlineComposerRendererGroup __module_operation_GroupsCometInlineComposerRenderer_group { get; set; }
+        public ModuleComponentGroupsCometInlineComposerRendererGroup __module_component_GroupsCometInlineComposerRenderer_group { get; set; }
+    }
+
+    public class CometNewsRegulationDialogReact
+    {
+        public List<string> r { get; set; }
+        public Rdfds rdfds { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class CometSurfaceMapping
+    {
+        public string __typename { get; set; }
+        public string surface { get; set; }
+        public string trace_policy { get; set; }
+        public List<string> prefixes { get; set; }
+    }
+
+    public class CometTooltipDEPRECATEDReact
+    {
+        public List<string> r { get; set; }
+        public Rdfds rdfds { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class Community
+    {
+        public object if_viewer_can_see_admod_chat { get; set; }
+        public object if_viewer_can_use_chat_templates { get; set; }
+        public object if_viewer_can_create_chat_as_admod { get; set; }
+        public string id { get; set; }
+    }
+
+    public class CompMap
+    {
+        [JsonProperty("CometTooltip_DEPRECATED.react")]
+        public CometTooltipDEPRECATEDReact CometTooltip_DEPRECATEDreact { get; set; }
+
+        [JsonProperty("FDSProfileVideoSection.react")]
+        public FDSProfileVideoSectionReact FDSProfileVideoSectionreact { get; set; }
+
+        [JsonProperty("GroupsCometAnswerAgentEducationModal.react")]
+        public GroupsCometAnswerAgentEducationModalReact GroupsCometAnswerAgentEducationModalreact { get; set; }
+
+        [JsonProperty("CometHovercardQueryRenderer.react")]
+        public CometHovercardQueryRendererReact CometHovercardQueryRendererreact { get; set; }
+
+        [JsonProperty("GroupsCometHighlightsSectionInfoCard.react")]
+        public GroupsCometHighlightsSectionInfoCardReact GroupsCometHighlightsSectionInfoCardreact { get; set; }
+
+        [JsonProperty("GroupsCometHighlightUnitMenu.react")]
+        public GroupsCometHighlightUnitMenuReact GroupsCometHighlightUnitMenureact { get; set; }
+
+        [JsonProperty("CometComposerMediaAttachmentArea.react")]
+        public CometComposerMediaAttachmentAreaReact CometComposerMediaAttachmentAreareact { get; set; }
+        public MissingNavigationErrorHandler missingNavigationErrorHandler { get; set; }
+
+        [JsonProperty("GroupsCometAnonProfilePopover.react")]
+        public GroupsCometAnonProfilePopoverReact GroupsCometAnonProfilePopoverreact { get; set; }
+
+        [JsonProperty("CometNewsRegulationDialog.react")]
+        public CometNewsRegulationDialogReact CometNewsRegulationDialogreact { get; set; }
+
+        [JsonProperty("SecuredActionBlockDialog.react")]
+        public SecuredActionBlockDialogReact SecuredActionBlockDialogreact { get; set; }
+
+        [JsonProperty("SecuredActionChallengePasswordDialog.react")]
+        public SecuredActionChallengePasswordDialogReact SecuredActionChallengePasswordDialogreact { get; set; }
+
+        [JsonProperty("SecuredActionChallengeCDSPasswordDialog.react")]
+        public SecuredActionChallengeCDSPasswordDialogReact SecuredActionChallengeCDSPasswordDialogreact { get; set; }
+
+        [JsonProperty("SecuredActionNoChallengeAvailableCDSDialog.react")]
+        public SecuredActionNoChallengeAvailableCDSDialogReact SecuredActionNoChallengeAvailableCDSDialogreact { get; set; }
+
+        [JsonProperty("TwoStepVerificationRoot.react")]
+        public TwoStepVerificationRootReact TwoStepVerificationRootreact { get; set; }
+
+        [JsonProperty("GroupCometComposerCreateDialog.react")]
+        public GroupCometComposerCreateDialogReact GroupCometComposerCreateDialogreact { get; set; }
+
+        [JsonProperty("CometHovercardLinkPreviewSettingsDialog.react")]
+        public CometHovercardLinkPreviewSettingsDialogReact CometHovercardLinkPreviewSettingsDialogreact { get; set; }
+
+        [JsonProperty("GroupsCometSaleComposerDialog.react")]
+        public GroupsCometSaleComposerDialogReact GroupsCometSaleComposerDialogreact { get; set; }
+    }
+
+    public class ComposerRenderer
+    {
+        public string __typename { get; set; }
+        public PlaceholderText placeholder_text { get; set; }
+        public string default_post_type { get; set; }
+    }
+
+    public class ConvoStarterInfoBottomsheet
+    {
+        public bool can_see_bottomsheet_view { get; set; }
+    }
+    public class FDSProfileVideoSectionReact
+    {
+        public List<string> r { get; set; }
+        public int be { get; set; }
+    }
+
+
+    public class FollowJoinModel
+    {
+        public string empty_feature_section_header { get; set; }
+    }
+
+    public class FulfilledPayload
+    {
+        public string label { get; set; }
+        public List<string> path { get; set; }
+    }
+
+    public class GroupCometComposerCreateDialogReact
+    {
+        public List<string> r { get; set; }
+        public Rdfds rdfds { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class GroupCometComposerNoParams
+    {
+        public List<InlineSprout> inline_sprouts { get; set; }
+    }
+
+    public class GroupMallNuxProvider
+    {
+        public object nux { get; set; }
+    }
+
+    public class GroupMembership
+    {
+        public bool has_member_feed { get; set; }
+        public AssociatedGroup associated_group { get; set; }
+        public string id { get; set; }
+    }
+
+    public class GroupsCometAnonProfilePopoverReact
+    {
+        public List<string> r { get; set; }
+        public Rdfds rdfds { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class GroupsCometAnswerAgentEducationModalReact
+    {
+        public List<string> r { get; set; }
+        public Rdfds rdfds { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class GroupsCometHighlightsSectionInfoCardReact
+    {
+        public List<string> r { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class GroupsCometHighlightUnitMenuReact
+    {
+        public List<string> r { get; set; }
+        public Rdfds rdfds { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class GroupsCometSaleComposerDialogReact
+    {
+        public List<string> r { get; set; }
+        public Rdfds rdfds { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class GroupSecondaryThemeColor
+    {
+        public string hexcolor { get; set; }
+    }
+
+    public class GroupThemeColor
+    {
+        public string hexcolor { get; set; }
+    }
+
+
+
+
+    public class HighlightSectionName
+    {
+        public string text { get; set; }
+    }
+
+    public class HighlightUnits
+    {
+        public List<object> edges { get; set; }
+        public PageInfo page_info { get; set; }
+        public int count { get; set; }
+    }
+
+
+    public class Icon
+    {
+        public string uri { get; set; }
+    }
+
+    public class IfViewerCannotEditHighlightUnitsSettings
+    {
+        public object if_viewer_is_admin { get; set; }
+        public string group_type_name_for_content { get; set; }
+        public HighlightSectionName highlight_section_name { get; set; }
+        public object highlight_section_subtitle { get; set; }
+        public bool highlight_section_collapse_by_default { get; set; }
+        public bool enable_collapsible_highlight_section { get; set; }
+        public ModuleOperationGroupsCometHighlightsSectionGroupHeader __module_operation_GroupsCometHighlightsSection_group_header { get; set; }
+        public ModuleComponentGroupsCometHighlightsSectionGroupHeader __module_component_GroupsCometHighlightsSection_group_header { get; set; }
+        public string id { get; set; }
+    }
+
+    public class IfViewerCanSeeChatHostRole
+    {
+        public string __typename { get; set; }
+        public string id { get; set; }
+    }
+
+    public class IfViewerCanSeeContent
+    {
+        public string __typename { get; set; }
+        public string id { get; set; }
+    }
+
+    public class IfViewerCanSeeCustomizedDefaultPostTypeComposer
+    {
+        public string id { get; set; }
+        public ComposerRenderer composer_renderer { get; set; }
+        public ModuleOperationGroupsCometDefaultGroupInlineComposerGroupIfViewerCanSeeCustomizedDefaultPostTypeComposer __module_operation_GroupsCometDefaultGroupInlineComposer_group_if_viewer_can_see_customized_default_post_type_composer { get; set; }
+        public ModuleComponentGroupsCometDefaultGroupInlineComposerGroupIfViewerCanSeeCustomizedDefaultPostTypeComposer __module_component_GroupsCometDefaultGroupInlineComposer_group_if_viewer_can_see_customized_default_post_type_composer { get; set; }
+    }
+
+    public class IfViewerCanSeeExpandedColor
+    {
+        public GroupThemeColor group_theme_color { get; set; }
+        public GroupSecondaryThemeColor group_secondary_theme_color { get; set; }
+        public object group_wash_theme_color { get; set; }
+        public ModuleOperationGroupsCometColorWrapperGroupCanSeeExpandedColor __module_operation_GroupsCometColorWrapper_group_canSeeExpandedColor { get; set; }
+        public ModuleComponentGroupsCometColorWrapperGroupCanSeeExpandedColor __module_component_GroupsCometColorWrapper_group_canSeeExpandedColor { get; set; }
+        public string id { get; set; }
+    }
+
+    public class IfViewerCanSeeGroupComposer
+    {
+        public string __typename { get; set; }
+        public string id { get; set; }
+    }
+
+    public class IfViewerCanSeeHighlightUnits
+    {
+        public string id { get; set; }
+        public HighlightUnits highlight_units { get; set; }
+        public IfViewerCanSeeExpandedColor if_viewer_can_see_expanded_color { get; set; }
+        public object if_viewer_cannot_see_expanded_color { get; set; }
+        public object if_viewer_can_edit_highlight_units_settings { get; set; }
+        public IfViewerCannotEditHighlightUnitsSettings if_viewer_cannot_edit_highlight_units_settings { get; set; }
+        public object if_viewer_is_admin { get; set; }
+        public bool is_newly_created { get; set; }
+        public bool should_hide_feature_unit_for_new_groups { get; set; }
+        public int highlight_section_vpvd_time { get; set; }
+        public bool highlight_section_collapse_by_default { get; set; }
+        public FollowJoinModel follow_join_model { get; set; }
+        public ModuleOperationGroupsCometFeedGroupHighlightUnits __module_operation_GroupsCometFeed_group_highlight_units { get; set; }
+        public ModuleComponentGroupsCometFeedGroupHighlightUnits __module_component_GroupsCometFeed_group_highlight_units { get; set; }
+    }
+
+    public class InlineSprout
+    {
+        public string __typename { get; set; }
+        public string __isICometComposerSprout { get; set; }
+        public string inline_label { get; set; }
+        public Icon icon { get; set; }
+        public ModuleOperationGroupsCometFeedInlineComposerSproutsListGroup __module_operation_GroupsCometFeedInlineComposerSproutsList_group { get; set; }
+        public ModuleComponentGroupsCometFeedInlineComposerSproutsListGroup __module_component_GroupsCometFeedInlineComposerSproutsList_group { get; set; }
+    }
+
+    public class LeadersEngagementLoggingSettings
+    {
+        public List<CometSurfaceMapping> comet_surface_mappings { get; set; }
+    }
+
+
+    public class MGAwDyO
+    {
+        public string type { get; set; }
+        public string src { get; set; }
+        public string tsrc { get; set; }
+        public string p { get; set; }
+        public string m { get; set; }
+    }
+
+    public class MissingNavigationErrorHandler
+    {
+        public List<string> r { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class ModuleComponentGroupsCometColorWrapperGroupCanSeeExpandedColor
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleComponentGroupsCometDefaultGroupInlineComposerGroupIfViewerCanSeeCustomizedDefaultPostTypeComposer
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleComponentGroupsCometFeedGroupHighlightUnits
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleComponentGroupsCometFeedInlineComposerSproutsListGroup
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleComponentGroupsCometHighlightsSectionGroupHeader
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleComponentGroupsCometInlineComposerRendererGroup
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleOperationGroupsCometColorWrapperGroupCanSeeExpandedColor
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleOperationGroupsCometDefaultGroupInlineComposerGroupIfViewerCanSeeCustomizedDefaultPostTypeComposer
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleOperationGroupsCometFeedGroupHighlightUnits
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleOperationGroupsCometFeedInlineComposerSproutsListGroup
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleOperationGroupsCometHighlightsSectionGroupHeader
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleOperationGroupsCometInlineComposerRendererGroup
+    {
+        public string __dr { get; set; }
+    }
+
+    public class OffPlatCometCrawlabilityGk
+    {
+        public bool passes_gk { get; set; }
+    }
+
+    public class PlaceholderText
+    {
+        public string text { get; set; }
+    }
+
+
+
+    public class Rdfds
+    {
+        public List<string> m { get; set; }
+        public List<string> r { get; set; }
+    }
+
+    public class Rds
+    {
+        public List<string> m { get; set; }
+        public List<string> r { get; set; }
+    }
+
+    public class SecuredActionBlockDialogReact
+    {
+        public List<string> r { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class SecuredActionChallengeCDSPasswordDialogReact
+    {
+        public List<string> r { get; set; }
+        public Rdfds rdfds { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class SecuredActionChallengePasswordDialogReact
+    {
+        public List<string> r { get; set; }
+        public Rdfds rdfds { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class SecuredActionNoChallengeAvailableCDSDialogReact
+    {
+        public List<string> r { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class StoryHeader
+    {
+        public List<StyleInfo> style_infos { get; set; }
+    }
+
+    public class StyleInfo
+    {
+        public string __typename { get; set; }
+        public List<ViewerAvailableSortingSwitcher> viewer_available_sorting_switchers { get; set; }
+    }
+
+    public class TopLevelEligiblePromotions
+    {
+        public List<object> nodes { get; set; }
+    }
+
+
+    public class TwoStepVerificationRootReact
+    {
+        public List<string> r { get; set; }
+        public Rdfds rdfds { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class Viewer
+    {
+        public Actor actor { get; set; }
+    }
+
+    public class ViewerAvailableSortingSwitcher
+    {
+        public string option_description { get; set; }
+        public string option_name { get; set; }
+        public string sorting_setting { get; set; }
+        public string __typename { get; set; }
+    }
+
+
 
 
 }

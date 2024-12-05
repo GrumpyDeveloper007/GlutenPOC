@@ -81,6 +81,8 @@ Contains data structures that represent a snapshot of FB models.
 
 ## TODO 
 
+https://mapshaper.org/
+
 User wish list
  - some way to address keeping the shop info up-to-date/accurate
 

@@ -1,4 +1,6 @@
-﻿using Gluten.FBModel;
+﻿using Gluten.Core.Helper;
+using Gluten.FBModel;
+using Gluten.FBModel.Helper;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -10,12 +12,28 @@ namespace Smeagol.Services
 {
     internal class DataService
     {
-        private readonly List<string> _LoadedIds = [];
+        private List<string> _LoadedIds = [];
+        internal static readonly string[] crlf = ["/r/n"];
+        private const string GroupPostProcessedFileName = "D:\\Coding\\Gluten\\Database\\GroupPostProcessed.json";
+
+
+        public void SaveGroupPost()
+        {
+            JsonHelper.SaveDb<List<string>>(GroupPostProcessedFileName, _LoadedIds);
+        }
+
+        public List<string> LoadGroupPost()
+        {
+            var data = JsonHelper.TryLoadJson<string>(GroupPostProcessedFileName);
+            if (data == null) return new List<string>();
+            return data;
+        }
 
         public void ReadFileLineByLine(string filePath)
         {
+            _LoadedIds = LoadGroupPost();
+
             if (!File.Exists(filePath)) return;
-            if (File.Exists(filePath + "2-")) File.Delete(filePath + "2-");
             // Open the file and read each line
             using StreamReader sr = new(filePath);
             string? line;
@@ -28,23 +46,19 @@ namespace Smeagol.Services
                 }
                 if (line != null)
                 {
-                    var messages = line.Split(new string[] { "}/r/n" }, StringSplitOptions.None);
+                    var messages = line.Split(crlf, StringSplitOptions.None);
+
                     var duplicatedLine = true;
                     foreach (var message in messages)
                     {
+                        if (string.IsNullOrWhiteSpace(message)) continue;
                         try
                         {
-                            GroupRoot? m;
-                            if (messages.Length > 1 && message != messages[messages.Length - 1])
+                            GroupRoot? m = JsonConvert.DeserializeObject<GroupRoot>(message);
+                            var nodeId = FbModelHelper.GetNodeId(m);
+                            if (nodeId != null && !_LoadedIds.Contains(nodeId))
                             {
-                                m = JsonConvert.DeserializeObject<GroupRoot>(message + "}");
-                            }
-                            else
-                            {
-                                m = JsonConvert.DeserializeObject<GroupRoot>(message);
-                            }
-                            if (!ProcessModel(m, message))
-                            {
+                                _LoadedIds.Add(nodeId);
                                 duplicatedLine = false;
                             }
                         }
@@ -57,10 +71,6 @@ namespace Smeagol.Services
                     if (duplicatedLine)
                     {
                         Console.WriteLine($"Duplicate key in data store {i}");
-                    }
-                    else
-                    {
-                        //System.IO.File.AppendAllText(filePath + "2-", line + "\r\n");
                     }
                 }
                 i++;
@@ -76,6 +86,7 @@ namespace Smeagol.Services
         {
             var duplicatedLine = true;
             var messages = line.Split(new string[] { "\r\n" }, StringSplitOptions.None);
+
             foreach (var message in messages)
             {
                 if (message.StartsWith("{\"data\":")) continue;
@@ -89,8 +100,14 @@ namespace Smeagol.Services
                     {
                         GroupRoot? m;
                         m = JsonConvert.DeserializeObject<GroupRoot>(message);
-                        if (!ProcessModel(m, message))
+                        var nodeId = FbModelHelper.GetNodeId(m);
+                        if (nodeId == null)
                         {
+                            //Console.WriteLine($"Unknown Node Id, {message}");
+                        }
+                        if (nodeId != null && !_LoadedIds.Contains(nodeId))
+                        {
+                            _LoadedIds.Add(nodeId);
                             duplicatedLine = false;
                         }
 
@@ -105,44 +122,5 @@ namespace Smeagol.Services
             return duplicatedLine;
         }
 
-        private Node? GetStoryNode(GroupRoot? groupRoot)
-        {
-            if (groupRoot == null) return null;
-            if (groupRoot == null || groupRoot.data.node == null) return null;
-
-            var a = groupRoot.data.node.comet_sections;
-            var node = groupRoot.data.node;
-
-            if (node.__typename == "Group")
-            {
-                if (node.group_feed.edges.Count > 1)
-                {
-                    Console.WriteLine("multiple edges");
-                }
-                node = node.group_feed.edges[0].node;
-            }
-            else if (node.__typename != "Story")
-            {
-                Console.WriteLine("unknown node");
-            }
-            return node;
-        }
-
-
-        private bool ProcessModel(GroupRoot? groupRoot, string json)
-        {
-            if (groupRoot == null) return true;
-            if (groupRoot == null || groupRoot.data.node == null) return true;
-
-            var node = GetStoryNode(groupRoot);
-            if (node == null) return true;
-
-            var nodeId = node.id;
-            if (_LoadedIds.Contains(nodeId)) return true;
-            _LoadedIds.Add(nodeId);
-            var story = node.comet_sections.content.story;
-            var messageText = story?.message?.text;
-            return false;
-        }
     }
 }

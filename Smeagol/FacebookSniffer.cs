@@ -9,17 +9,10 @@ namespace Smeagol;
 /// <summary>
 /// Open and listen for facebook api responses and capture them in a text file for later processing
 /// </summary>
-internal class FacebookSniffer
+internal class FacebookSniffer(DataService _dataService, SettingValues _settings)
 {
-    private string _responsefileName = Environment.CurrentDirectory + "/Responses.txt";
-    private ChromeDriver _driver;
-    private DataService _dataService;
-
-    public FacebookSniffer(DataService dataService)
-    {
-        _driver = new ChromeDriver();
-        _dataService = dataService;
-    }
+    private readonly string _responsefileName = "D:\\Coding\\Gluten\\Database\\Responses.txt";
+    private readonly ChromeDriver _driver = new ChromeDriver();
 
     public void Start()
     {
@@ -39,6 +32,12 @@ internal class FacebookSniffer
         network.StartMonitoring();
 
         _driver.Navigate().GoToUrl("https://www.facebook.com/");
+        //Get the Web Element corresponding to the field Business Email (Textfield)
+        var email = _driver.FindElement(By.Id("email"));
+        var password = _driver.FindElement(By.Id("email"));
+
+        email.SendKeys(_settings.Email);
+        //password.SendKeys();
     }
 
     public void Close()
