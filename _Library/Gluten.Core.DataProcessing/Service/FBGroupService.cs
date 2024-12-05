@@ -16,24 +16,40 @@ namespace Gluten.Core.DataProcessing.Service
     {
         private readonly Dictionary<string, string> _knownGroupIds = new()
         {
+            {"806902313439614","Thailand" }, // not gf group
+            {"1300758866697297","Cambodia/Vietnam" },//Cambodia & Vietnam Travel Tips
+            {"286367932803894","Cambodia" },//Cambodia Travel
+            {"292593134198337","" },//Coeliacs Eat Abroad - only back to july
+
+            {"361337232353766","Vietnam" }, // not active
+            { "769136475365475","" },
+
             {"379994195544478","Japan" },//Gluten-Free in Japan!
-            {"1025248344200757","Australia" },
-            {"361337232353766","Vietnam" },
-            {"806902313439614","Thailand" },
-            {"3087018218214300","Indonesia" },
-            {"1420852834795381","South Korea" },
-            {"1015752345220391","Thailand" },//Gluten Free Chiang Mai
-            {"852980778556330","Fiji" },
-            {"353439621914938","Taiwan" },
-            {"319517678837045","Vietnam" },//Gluten Free Hanoi
+            {"182984958515029","Singapore" },//Gluten Free Singapore - Support Group
+            {"3087018218214300","Indonesia" },//Gluten Free in Bali
+            {"422262581142441","China" },//Gluten Free in Hong Kong
             {"660915839470807","Vietnam" },//Gluten Free Saigon (Ho Chi Minh City)
             {"823200180025057","Vietnam" },//Gluten-free Hội An Community
-            {"422262581142441","China" },//Gluten Free in Hong Kong
-            {"302515126584130","Philippines" },
+            {"353439621914938","Taiwan" }, //Gluten free Taipei
+            {"319517678837045","Vietnam" },//Gluten Free Hanoi
+            {"1015752345220391","Thailand" },//Gluten Free Chiang Mai
             {"1053129328213251","Thailand" },//Gluten Free Thailand
-            {"182984958515029","Singapore" },//Gluten Free Singapore - Support Group
-            { "769136475365475","" }
-//            {"","" },
+            {"852980778556330","Fiji" },//Gluten Free Fiji
+            {"1420852834795381","South Korea" }, //Wheat and Gluten-Free in South Korea
+            {"302515126584130","Philippines" }, //Gluten-Free Philippines
+            {"488425731191722","Malaysia" },//Off The Wheaten Path In Kuala Lumpur (Gluten Free Tips, Recipes & Findings)
+            {"1720098858232675","United Arab Emirates" },//Gluten Free - UAE
+            {"687227675922496","Spain" },
+            {"1025248344200757","Australia" }, //Gluten Free Eating Out Sydney & New South Wales, Australia
+            
+            {"342422672937608","Indonesia" },//Gluten Free Bali
+            {"247208302148491","India" },//Gluten free , Grain free ,healthy living in India
+            {"229495282203436","South Africa" },//Living gluten free in South Africa
+            {"383755778784374","Italy" },//Gluten Free Italy
+            {"550373421739534","Australia" },//Australia's Gluten & Celiac/Coeliac Support Group
+            {"1452094601717166","Australia" },//Gluten Free Melbourne
+            {"307872078321","Australia" },//Gluten Free Tasmania
+            //{"","" },
         };
 
         public string GetCountryName(string groupId)

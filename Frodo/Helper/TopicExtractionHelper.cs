@@ -6,15 +6,8 @@ namespace Frodo.Helper
     /// <summary>
     /// General helper function for string
     /// </summary>
-    internal class StringHelper
+    internal class TopicExtractionHelper
     {
-        public static string Truncate(string? value, int maxLength, string truncationSuffix = "…")
-        {
-            return (value?.Length > maxLength
-                ? string.Concat(value.AsSpan(0, maxLength), truncationSuffix)
-                : value) ?? "";
-        }
-
         public static List<string> ExtractHashTags(string text)
         {
             // Define a regular expression to match hashtags

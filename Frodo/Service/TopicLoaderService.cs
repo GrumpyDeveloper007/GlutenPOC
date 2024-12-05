@@ -73,8 +73,10 @@ namespace Frodo.Service
                 }
                 DetailedTopic? currentTopic = _topicHelper.GetOrCreateTopic(topics, nodeId, messageText);
 
-                var a = groupRoot.data.node.comet_sections;
+                var a = node.comet_sections;
+                var ufiStory = a.feedback.story.story_ufi_container.story;
                 var story2 = a.feedback.story.story_ufi_container.story.feedback_context.interesting_top_level_comments;
+                var tracking = a.feedback.story.story_ufi_container.story.tracking;
                 foreach (var feedback in story2)
                 {
                     var d = feedback.comment;
@@ -86,8 +88,8 @@ namespace Frodo.Service
                 }
                 currentTopic.Title = messageText;
                 currentTopic.FacebookUrl = story?.wwwURL;
-                currentTopic.GroupId = story.target_group.id;
-                currentTopic.PostCreated = FbModelHelper.GetTrackingPostDate(story.story_ufi_container.story.tracking);
+                currentTopic.GroupId = ufiStory.target_group.id;
+                currentTopic.PostCreated = FbModelHelper.GetTrackingPostDate(tracking);
 
                 if (currentTopic.GroupId == null && story != null)
                 {

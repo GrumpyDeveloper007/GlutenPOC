@@ -87,7 +87,34 @@ namespace Gluten.FBModel.Helper
                     seconds = trackingInfo.page_insights._823200180025057.post_context.publish_time;
                 else if (trackingInfo.page_insights._100058326253164 != null)
                     seconds = trackingInfo.page_insights._100058326253164.post_context.publish_time;
-                //1189303823
+                else if (trackingInfo.page_insights._1041374946 != null)
+                    seconds = trackingInfo.page_insights._1041374946.post_context.publish_time;
+                else if (trackingInfo.page_insights._100075040247767 != null)
+                    seconds = trackingInfo.page_insights._100075040247767.post_context.publish_time;
+                else if (trackingInfo.page_insights._422284561238159 != null)
+                    seconds = trackingInfo.page_insights._422284561238159.post_context.publish_time;
+                else if (trackingInfo.page_insights._488425731191722 != null)
+                    seconds = trackingInfo.page_insights._488425731191722.post_context.publish_time;
+                else if (trackingInfo.page_insights._687227675922496 != null)
+                    seconds = trackingInfo.page_insights._687227675922496.post_context.publish_time;
+                else if (trackingInfo.page_insights._1720098858232675 != null)
+                    seconds = trackingInfo.page_insights._1720098858232675.post_context.publish_time;
+                else if (trackingInfo.page_insights._61565218066228 != null)
+                    seconds = trackingInfo.page_insights._61565218066228.post_context.publish_time;
+                else if (trackingInfo.page_insights._61555127954574 != null)
+                    seconds = trackingInfo.page_insights._61555127954574.post_context.publish_time;
+                else if (trackingInfo.page_insights._450713908359721 != null)
+                    seconds = trackingInfo.page_insights._450713908359721.post_context.publish_time;
+                else if (trackingInfo.page_insights._1573265922 != null)
+                    seconds = trackingInfo.page_insights._1573265922.post_context.publish_time;
+                else if (trackingInfo.page_insights._1300758866697297 != null)
+                    seconds = trackingInfo.page_insights._1300758866697297.post_context.publish_time;
+                else if (trackingInfo.page_insights._286367932803894 != null)
+                    seconds = trackingInfo.page_insights._286367932803894.post_context.publish_time;
+                else if (trackingInfo.page_insights._61559586850363 != null)
+                    seconds = trackingInfo.page_insights._61559586850363?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._292593134198337 != null)
+                    seconds = trackingInfo.page_insights._292593134198337?.post_context?.publish_time ?? 0;
                 else
                 {
                     Console.WriteLine($"Unknown message structure {trackingInfoString}");

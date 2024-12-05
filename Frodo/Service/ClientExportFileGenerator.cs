@@ -10,7 +10,6 @@ using Newtonsoft.Json;
 using Gluten.Data.Access.Service;
 using Gluten.Data.Access.DatabaseModel;
 using Gluten.Core.Helper;
-using NetTopologySuite.Index.HPRtree;
 
 namespace Frodo.Service
 {
@@ -254,7 +253,7 @@ namespace Frodo.Service
                             var cachePin = _mapPinCache.TryGetPin(aiVenue.Pin.Label, groupCountry);
                             var pinCountry = _geoService.GetCountryPin(cachePin);
 
-                            if (groupCountry != pinCountry && !string.IsNullOrWhiteSpace(pinCountry))
+                            if (!groupCountry.Contains(pinCountry, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrWhiteSpace(pinCountry))
                             {
                                 Console.WriteLine($"Rejecting pin for {groupCountry}, pin country : {pinCountry}");
                                 continue;
@@ -282,7 +281,7 @@ namespace Frodo.Service
                             var cachePin = _mapPinCache.TryGetPin(url.Pin.Label, groupCountry);
                             var pinCountry = _geoService.GetCountryPin(cachePin);
 
-                            if (groupCountry != pinCountry && !string.IsNullOrWhiteSpace(pinCountry))
+                            if (!groupCountry.Contains(pinCountry, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrWhiteSpace(pinCountry))
                             {
                                 Console.WriteLine($"Rejecting pin for {groupCountry}, pin country : {pinCountry}");
                                 continue;

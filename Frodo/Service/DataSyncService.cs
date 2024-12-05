@@ -4,7 +4,6 @@ using Gluten.Core.Helper;
 using Gluten.Core.LocationProcessing.Service;
 using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
-using StringHelper = Frodo.Helper.StringHelper;
 
 namespace Frodo.Service
 {
@@ -22,6 +21,8 @@ namespace Frodo.Service
         PinCacheSyncService _pinCacheSyncService
         )
     {
+        // TODO:Move to shared location
+        private readonly string _responsefileName = "D:\\Coding\\Gluten\\Database\\Responses.txt";
         private readonly TopicsDataLoaderService _topicsHelper = new();
         private readonly LocalAiInterfaceService _localAi = new();
         private readonly TopicLoaderService _topicLoaderService = new();
@@ -37,7 +38,7 @@ namespace Frodo.Service
         /// </summary>
         public void ProcessFile()
         {
-            var skipSomeOperationsForDebugging = true;
+            var skipSomeOperationsForDebugging = false;
             var topics = _topicsHelper.TryLoadTopics();
             if (topics != null)
             {
@@ -49,7 +50,7 @@ namespace Frodo.Service
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nReading captured FB data");
             if (!skipSomeOperationsForDebugging)
-                _topicLoaderService.ReadFileLineByLine("D:\\Coding\\Gluten\\Smeagol\\bin\\Debug\\net8.0\\Responses.txt", Topics);
+                _topicLoaderService.ReadFileLineByLine(_responsefileName, Topics);
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nProcessing topics, generating short titles");
@@ -58,6 +59,10 @@ namespace Frodo.Service
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nProcessing information from source");
             UpdateMessageAndResponseUrls();
+
+            Console.WriteLine("--------------------------------------");
+            Console.WriteLine($"\r\nFiltering AI pins");
+            RemoveAiPinsInBadLocations();
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nStarting AI processing - detecting venue name/address");
@@ -146,8 +151,8 @@ namespace Frodo.Service
                 var topic = Topics[i];
                 var groupCountry = _fBGroupService.GetCountryName(topic.GroupId);
                 // Update url list from title
-                topic.HashTags = StringHelper.ExtractHashTags(topic.Title);
-                var newUrls = StringHelper.ExtractUrls(topic.Title);
+                topic.HashTags = TopicExtractionHelper.ExtractHashTags(topic.Title);
+                var newUrls = TopicExtractionHelper.ExtractUrls(topic.Title);
                 if (topic.UrlsV2 == null)
                 {
                     topic.UrlsV2 = newUrls;
@@ -189,7 +194,7 @@ namespace Frodo.Service
                     var message = topic.ResponsesV2[z].Message;
                     if (message == null) continue;
 
-                    var newLinks = StringHelper.ExtractUrls(message);
+                    var newLinks = TopicExtractionHelper.ExtractUrls(message);
                     if (topic.ResponsesV2[z].Links == null)
                     {
                         topic.ResponsesV2[z].Links = newLinks;
@@ -236,8 +241,11 @@ namespace Frodo.Service
 
         private void RemoveAiPinsInBadLocations()
         {
+            Console.Clear();
+            LabelHelper.Reset();
             var restaurantService = new RestaurantTypeService();
             var invalidGeo = 0;
+            var unmatchedLabels = 0;
             for (int i = 0; i < Topics.Count; i++)
             {
                 DetailedTopic? topic = Topics[i];
@@ -250,11 +258,39 @@ namespace Frodo.Service
                     {
                         var venue = topic.AiVenues[t];
                         var pin = venue.Pin;
+                        if (venue.PlaceName == "Vegan restaurant")
+                        {
+                            topic.AiVenues.RemoveAt(t);
+                        }
+
+                        // Try to filter out invalid pins
+                        if (!LabelHelper.IsInTextBlock(venue.PlaceName, topic.Title))
+                        {
+                            if (pin != null)
+                            {
+                                if (!LabelHelper.IsInTextBlock(pin.Label, topic.Title))
+                                {
+                                    //Console.WriteLine($"Removing pin {t} in topic {i}");
+                                    Console.WriteLine($"missing label in title, label :{venue.PlaceName} pin:{pin.Label}  :{topic.Title}");
+                                    //topic.AiVenues.RemoveAt(t);
+                                    unmatchedLabels++;
+                                }
+                            }
+                            else
+                            {
+                                //Console.WriteLine($"missing label in title, label :{venue.PlaceName}  :{topic.Title}");
+                                Console.WriteLine($"Removing pin {t} in topic {i}");
+                                topic.AiVenues.RemoveAt(t);
+                                unmatchedLabels++;
+                            }
+                        }
+
                         if (pin != null)
                         {
                             var cachePin = _mapPinCache.TryGetPinLatLong(pin.GeoLatitude, pin.GeoLongitude);
                             var groupCountry = _fBGroupService.GetCountryName(topic.GroupId);
                             var country = _geoService.GetCountryPin(cachePin);
+
 
                             if (!IsPinInGroupCountry(pin, topic))
                             {
@@ -282,6 +318,8 @@ namespace Frodo.Service
                 }
             }
 
+            LabelHelper.Check();
+            Console.WriteLine($"Unmatched labels {unmatchedLabels}");
             Console.WriteLine($"Invalid pins {invalidGeo}");
             _topicsHelper.SaveTopics(Topics);
         }
@@ -295,8 +333,7 @@ namespace Frodo.Service
 
                 if (!string.IsNullOrWhiteSpace(country))
                 {
-                    if (groupCountry != country
-                        && !(groupCountry == "Hong Kong" && country == "China"))
+                    if (!groupCountry.Contains(country, StringComparison.InvariantCultureIgnoreCase))
                     {
                         _ = double.TryParse(pin.GeoLongitude, out double longitude);
                         _ = double.TryParse(pin.GeoLatitude, out double latitude);

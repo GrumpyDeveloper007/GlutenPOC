@@ -7,6 +7,7 @@ using Newtonsoft.Json;
 using System.Collections.Generic;
 using Humanizer;
 using System.ClientModel;
+using Frodo.Helper;
 
 namespace Frodo.Service
 {
@@ -59,12 +60,12 @@ namespace Frodo.Service
                 .RegisterPrintMessage();
         }
 
-        private List<AiVenue> PostProcessAiVenue(List<AiVenue> item)
+        private List<AiVenue> PostProcessAiVenue(List<AiVenue> item, string message)
         {
             var output = new List<AiVenue>();
             foreach (var aiVenue in item)
             {
-                var newItem = PostProcessAiVenue(aiVenue);
+                var newItem = PostProcessAiVenue(aiVenue, message);
                 if (newItem != null)
                 {
                     output.Add(newItem);
@@ -73,9 +74,9 @@ namespace Frodo.Service
             return output;
         }
 
-        private AiVenue? PostProcessAiVenue(AiVenue item)
+        private AiVenue? PostProcessAiVenue(AiVenue item, string message)
         {
-            if (item.PlaceName == null) return item;
+            if (item.PlaceName == null) return null;
             foreach (var nameFilter in _nameFilters)
             {
                 if (item.PlaceName.Contains(nameFilter, StringComparison.CurrentCultureIgnoreCase))
@@ -89,6 +90,9 @@ namespace Frodo.Service
                 item.Address = item.Address?.Replace(filter, "");
             }
             item.Address = item.Address?.Trim();
+
+            // if we cannot find the place name in the original text, filter
+            if (!LabelHelper.IsInTextBlock(item.PlaceName, message)) return null;
 
             return item;
         }
@@ -105,6 +109,7 @@ namespace Frodo.Service
             if (response == null) return "";
             var responseContent = response.GetContent();
             if (responseContent == null) return "";
+            if (responseContent.StartsWith("Based on the information provided")) return "";
             return responseContent;
         }
 
@@ -199,7 +204,7 @@ namespace Frodo.Service
                 {
                     var aiVenue = JsonConvert.DeserializeObject<List<AiVenue>>(json);
                     if (aiVenue == null) return null;
-                    return PostProcessAiVenue(aiVenue);
+                    return PostProcessAiVenue(aiVenue, message);
                 }
                 catch (Exception ex)
                 {
