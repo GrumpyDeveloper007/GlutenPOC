@@ -9,6 +9,33 @@ namespace Gluten.Core.LocationProcessing.Helper
 {
     public static class CurrencyHelper
     {
+        public static bool StartsWithCurrencySymbol(string text)
+        {
+            if (text.Contains('¥')
+                || text.Contains('￥')
+                || text.Contains("₫1")
+                || text.Contains("TWD")
+                || text.Contains("SGD")
+                || text.Contains("USD")
+                || text.Contains("MXN")
+                || text.Contains("HKD")
+                || text.Contains("RM")
+                || text.Contains("Rp")
+                || text.Contains("Rs")
+                || text.Contains('฿')
+                || text.Contains('₱')
+                || text.Contains('₩')
+                || text.Contains('₫')
+                || text.Contains('€')
+                || text.Contains('£')
+                || text.Contains('៛')
+                || text.Contains('₹')
+                || text.Contains('$'))
+            {
+                return true;
+            }
+            return false;
+        }
         public static bool IsCurrencySymbol(string text)
         {
             if (text.Contains('¥')

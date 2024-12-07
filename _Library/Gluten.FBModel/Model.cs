@@ -210,6 +210,7 @@ namespace Gluten.FBModel
 
     public class CometSections
     {
+        public Content attached_story_layout { get; set; }
         public string __typename { get; set; }
         public Content content { get; set; }
         public Layout layout { get; set; }
@@ -225,7 +226,7 @@ namespace Gluten.FBModel
         public object above_message { get; set; }
         public object info_icon { get; set; }
         public object attachment_overlay { get; set; }
-        public object attached_story { get; set; }
+        public Story attached_story { get; set; }
         public Message message { get; set; }
         public object message_suffix { get; set; }
         public MessageContainer message_container { get; set; }
@@ -2190,7 +2191,7 @@ namespace Gluten.FBModel
         public object ghl_label_mocked_cta_button { get; set; }
         public string wwwURL { get; set; }
         public TargetGroup target_group { get; set; }
-        public object attached_story { get; set; }
+        public Story attached_story { get; set; }
         public string id { get; set; }
         public string url { get; set; }
         public string __typename { get; set; }

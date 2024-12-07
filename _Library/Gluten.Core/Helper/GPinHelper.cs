@@ -28,5 +28,19 @@ namespace Gluten.Core.Helper
                 pins.Add(newPin);
             }
         }
+
+        public static void TryAddPin(Dictionary<string, GMapsPin> pins, GMapsPin newPin)
+        {
+            if (!pins.TryGetValue(newPin.GeoLatitude + ":" + newPin.GeoLongitude, out var found))
+            {
+                pins.Add(newPin.GeoLatitude + ":" + newPin.GeoLongitude, newPin);
+            }
+            else
+            {
+                found.Comment = newPin.Comment;
+                found.RestaurantType = newPin.RestaurantType;
+            }
+
+        }
     }
 }

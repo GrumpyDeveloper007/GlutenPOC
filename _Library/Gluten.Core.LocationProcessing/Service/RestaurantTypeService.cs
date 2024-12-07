@@ -12,7 +12,10 @@ namespace Gluten.Core.LocationProcessing.Service
 {
     public class RestaurantTypeService
     {
-        private List<string> _rejectionList = [
+
+        public bool IsRejectedRestaurantType(string? restaurantType)
+        {
+            List<string> _rejectionList = [
             "Adult education school",
             "Aged Care Service",
             "Agricultural service",
@@ -34,6 +37,8 @@ namespace Gluten.Core.LocationProcessing.Service
             "Cars",
             "Car racing track",
             "Charity",
+            "Children's book store",
+            "Clothes market",
             "Company",
             "Condominium complex",
             "Conference center",
@@ -43,6 +48,7 @@ namespace Gluten.Core.LocationProcessing.Service
             "Cruise line company",
             //"Dairy farm",
             "Diagnostic center",
+            "Driveshaft shop",
             "E-commerce service",
             "Education center",
             "Electronics manufacturer",
@@ -121,8 +127,6 @@ namespace Gluten.Core.LocationProcessing.Service
             "Wholesaler",
             ];
 
-        public bool IsRejectedRestaurantType(string? restaurantType)
-        {
             if (string.IsNullOrWhiteSpace(restaurantType)) return false;
             return _rejectionList.Exists(o => o == restaurantType);
         }

@@ -76,7 +76,7 @@ namespace Frodo.Service
 
         private AiVenue? PostProcessAiVenue(AiVenue item, string message)
         {
-            if (item.PlaceName == null) return null;
+            if (item == null || item.PlaceName == null) return null;
             foreach (var nameFilter in _nameFilters)
             {
                 if (item.PlaceName.Contains(nameFilter, StringComparison.CurrentCultureIgnoreCase))
@@ -92,7 +92,16 @@ namespace Frodo.Service
             item.Address = item.Address?.Trim();
 
             // if we cannot find the place name in the original text, filter
-            if (!LabelHelper.IsInTextBlock(item.PlaceName, message)) return null;
+            if (!LabelHelper.IsInTextBlock(item.PlaceName, message))
+            {
+                Console.BackgroundColor = ConsoleColor.Blue;
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.WriteLine($"Rejecting '{item.PlaceName}' as it cannot be found in the message :{message}");
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.ForegroundColor = ConsoleColor.Gray;
+
+                return null;
+            }
 
             return item;
         }
@@ -177,7 +186,7 @@ namespace Frodo.Service
                     topic.AiIsQuestion = true;
                 }
 
-                question = "can you extract any references to places to eat and street addresses of those places and respond only with json in the following format [{PlaceName:\"<Insert place name here>\",Address:\"<insert address here>\"},]? Ignore any further questions. \r\n";
+                question = "can you extract any references to places to eat and street addresses of those places and respond only with json in the following format [{PlaceName:\"<Insert place name here>\",Address:\"<insert address here>\"},]? if no address can be found return \"\" in the Address field. Ignore any further questions. \r\n";
                 Console.WriteLine(question);
                 response = _lmAgent.SendAsync(question + $"{message}").Result;
 

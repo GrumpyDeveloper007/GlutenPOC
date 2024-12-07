@@ -37,7 +37,7 @@ namespace Gluten.Core.DataProcessing.Service
                 {
                     string? i = placeNames[t];
                     var processedString = StringHelper.RemoveDiacritics(i).ToUpper();
-                    if (processedString.Contains(searchString, StringComparison.InvariantCulture))
+                    if (processedString.StartsWith(searchString, StringComparison.InvariantCulture))
                     {
                         matchingPlaces.Add(mapUrls[t]);
                     }

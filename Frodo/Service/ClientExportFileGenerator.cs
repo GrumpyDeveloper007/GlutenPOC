@@ -63,6 +63,7 @@ namespace Frodo.Service
             for (int i = 0; i < gmPins.Count; i++)
             {
                 var item = gmPins[i];
+                item.Description = $"Pin generated from Google maps - {item.Comment}";
                 Console.WriteLine($"Writing to database {i}");
                 var dbItem = mapper.Map<GMapsPinDb, GMapsPin>(item);
                 dbItem.Country = _geoService.GetCountryPin(item);
@@ -205,11 +206,12 @@ namespace Frodo.Service
             }
             DataHelper.RemoveTopicTitles(pins);
 
+            GenerateGMPinExport(pins);
 
-            WriteToDatabase(pins, gmPins);
+            var gmPinsWithDescriptions = gmPins.Where(x => !string.IsNullOrWhiteSpace(x.Comment) && x.Comment.Contains("gluten", StringComparison.InvariantCultureIgnoreCase)).ToList();
+            WriteToDatabase(pins, gmPinsWithDescriptions);
 
             _databaseLoaderService.SavePinTopics(pins);
-            GenerateGMPinExport(pins);
             CreateExportFolderData(pins, topics);
             CreateExportFolderDataGM(gmPins);
             Console.WriteLine($"Unknown restaurant types : {unknownRestaurantType}");
@@ -243,6 +245,8 @@ namespace Frodo.Service
                 var newT = mapper.Map<PinLinkInfo, DetailedTopic>(topic);
                 var groupCountry = _fBGroupService.GetCountryName(topic.GroupId);
 
+                if (_fBGroupService.IsGenericGroup(topic.GroupId)) continue; // skip export for generic groups 
+
                 if (topic.AiVenues != null)
                 {
                     foreach (var aiVenue in topic.AiVenues)
@@ -253,11 +257,18 @@ namespace Frodo.Service
                             var cachePin = _mapPinCache.TryGetPin(aiVenue.Pin.Label, groupCountry);
                             var pinCountry = _geoService.GetCountryPin(cachePin);
 
-                            if (!groupCountry.Contains(pinCountry, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrWhiteSpace(pinCountry))
+                            if (!groupCountry.Contains(pinCountry, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrWhiteSpace(groupCountry))
                             {
                                 Console.WriteLine($"Rejecting pin for {groupCountry}, pin country : {pinCountry}");
                                 continue;
                             }
+
+                            if (!_fBGroupService.IsPinWithinExpectedRange(topic.GroupId, aiVenue.Pin))
+                            {
+                                Console.WriteLine($"Rejecting pin latitude / longitude out of range");
+                                continue;
+                            }
+
 
                             if (aiVenue.Pin != null
                                 && !string.IsNullOrWhiteSpace(aiVenue.Pin.GeoLatitude)
@@ -281,7 +292,7 @@ namespace Frodo.Service
                             var cachePin = _mapPinCache.TryGetPin(url.Pin.Label, groupCountry);
                             var pinCountry = _geoService.GetCountryPin(cachePin);
 
-                            if (!groupCountry.Contains(pinCountry, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrWhiteSpace(pinCountry))
+                            if (!groupCountry.Contains(pinCountry, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrWhiteSpace(groupCountry))
                             {
                                 Console.WriteLine($"Rejecting pin for {groupCountry}, pin country : {pinCountry}");
                                 continue;

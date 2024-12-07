@@ -8,7 +8,7 @@ namespace Gluten.Core.Helper
     /// <summary>
     /// Some helper function for pin generation
     /// </summary>
-    public class PinHelper()
+    public class PinHelper
     {
         public static bool IsInList(List<PinTopic> pins, double geoLatitude, double geoLongitude)
         {

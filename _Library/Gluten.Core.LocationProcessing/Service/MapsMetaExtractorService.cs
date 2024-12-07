@@ -4,6 +4,7 @@ using Gluten.Core.LocationProcessing.Helper;
 using Gluten.Data.PinCache;
 using HtmlAgilityPack;
 using System;
+using System.Diagnostics;
 
 namespace Gluten.Core.LocationProcessing.Service
 {
@@ -247,12 +248,37 @@ namespace Gluten.Core.LocationProcessing.Service
             _restaurantTypes.Clear();
         }
 
-        public string GetRestaurantType(string html)
+        public HtmlNodeCollection? GetSpanNodes(string html)
         {
             HtmlDocument document = new();
             document.LoadHtml(html);
 
-            var spanNodes = document.DocumentNode.SelectNodes("//span[last()]");
+            return document.DocumentNode.SelectNodes("//span[last()]");
+        }
+
+        public string GetRestaurantType(HtmlNodeCollection? spanNodes)
+        {
+            foreach (var span in spanNodes)
+            {
+                if (string.IsNullOrWhiteSpace(span.InnerText)) continue;
+                if (span.InnerText.Contains("review")) continue;
+                if (span.InnerText.Contains("(")) continue;
+                if (span.InnerText.Contains("$")) continue;
+                if (span.InnerText.StartsWith(" · ")) continue;
+                if (span.InnerText.Contains("–1")) continue;
+                if (span.InnerText.Contains("–2")) continue;
+                if (span.InnerText.Contains("–3")) continue;
+                if (span.InnerText.Contains("–4")) continue;
+                if (span.InnerText.Contains("–5")) continue;
+                if (span.InnerText.Contains("–6")) continue;
+                if (span.InnerText.Contains("–7")) continue;
+                if (span.InnerText.Contains("–8")) continue;
+                if (span.InnerText.Contains("–9")) continue;
+                if (CurrencyHelper.StartsWithCurrencySymbol(span.InnerText)) continue;
+                if (span.InnerText.StartsWith("Price")) continue;
+
+                return span.InnerText;
+            }
 
             if (spanNodes.Count > 5)
             {
@@ -261,13 +287,8 @@ namespace Gluten.Core.LocationProcessing.Service
             return "";
         }
 
-        public string GetComment(string html)
+        public string GetComment(HtmlNodeCollection? spanNodes)
         {
-            HtmlDocument document = new();
-            document.LoadHtml(html);
-
-            var spanNodes = document.DocumentNode.SelectNodes("//span[last()]");
-
             var comment = spanNodes.Last().ParentNode.InnerText;
             if (!comment.Contains("gluten", StringComparison.InvariantCultureIgnoreCase))
             {

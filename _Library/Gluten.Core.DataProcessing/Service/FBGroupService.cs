@@ -1,5 +1,6 @@
 ﻿// Ignore Spelling: geo
 
+using Gluten.Data.TopicModel;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,7 +23,7 @@ namespace Gluten.Core.DataProcessing.Service
             {"292593134198337","" },//Coeliacs Eat Abroad - only back to july
 
             {"361337232353766","Vietnam" }, // not active
-            { "769136475365475","" },
+            { "769136475365475","NA" }, // dales gf map
 
             {"379994195544478","Japan" },//Gluten-Free in Japan!
             {"182984958515029","Singapore" },//Gluten Free Singapore - Support Group
@@ -37,6 +38,7 @@ namespace Gluten.Core.DataProcessing.Service
             {"852980778556330","Fiji" },//Gluten Free Fiji
             {"1420852834795381","South Korea" }, //Wheat and Gluten-Free in South Korea
             {"302515126584130","Philippines" }, //Gluten-Free Philippines
+            {"422284561238159","South Korea" },
             {"488425731191722","Malaysia" },//Off The Wheaten Path In Kuala Lumpur (Gluten Free Tips, Recipes & Findings)
             {"1720098858232675","United Arab Emirates" },//Gluten Free - UAE
             {"687227675922496","Spain" },
@@ -49,6 +51,9 @@ namespace Gluten.Core.DataProcessing.Service
             {"550373421739534","Australia" },//Australia's Gluten & Celiac/Coeliac Support Group
             {"1452094601717166","Australia" },//Gluten Free Melbourne
             {"307872078321","Australia" },//Gluten Free Tasmania
+
+            {"450713908359721","Cambodia" },
+            
             //{"","" },
         };
 
@@ -57,13 +62,35 @@ namespace Gluten.Core.DataProcessing.Service
             return _knownGroupIds[groupId];
         }
 
+        public bool IsGenericGroup(string groupId)
+        {
+            if (groupId == "292593134198337") return true;
+            return false;
+        }
+
 
         /// <summary>
         /// Provides some pin filtering based on geo location of the group and pin, 
         /// e.g. why would a pin for the Japan group be located in USA, something went wrong, remove it
         /// </summary>
-        public static bool IsPinWithinExpectedRange(string groupId, double geoLatitude, double geoLongitude)
+        public bool IsPinWithinExpectedRange(string groupId, TopicPin pin)
         {
+            double geoLatitude = double.Parse(pin.GeoLatitude);
+            double geoLongitude = double.Parse(pin.GeoLongitude);
+
+            //29.3786989,-13.2875609
+            //27.031709,-18.3669599
+            if (groupId == "687227675922496" &&
+                (geoLongitude < -18.3669599
+                || geoLongitude > -13.2875609
+                || geoLatitude < 27.031709
+                || geoLatitude > 29.3786989)
+                )
+            {
+                Console.WriteLine($"Rejecting pin for Gran Canaria");
+                return false;
+            }
+
             //    { "379994195544478","Japan" },//Gluten-Free in Japan!
             //24.4556439,122.9483518
             //44.2725791,145.3226978
@@ -90,7 +117,7 @@ namespace Gluten.Core.DataProcessing.Service
                 || groupId == "319517678837045"
                 || groupId == "660915839470807"
                 || groupId == "823200180025057") &&
-                (geoLongitude < 103.962525
+                (geoLongitude < 103
                 || geoLongitude > 110.599140
                 || geoLatitude < 7.991949
                 || geoLatitude > 23.506164)
@@ -120,7 +147,7 @@ namespace Gluten.Core.DataProcessing.Service
             if (groupId == "1420852834795381" &&
                 (geoLongitude < 125.842844
                 || geoLongitude > 130.072375
-                || geoLatitude < 33.986797
+                || geoLatitude < 32.986797
                 || geoLatitude > 38.555603)
                 )
             {
@@ -151,7 +178,7 @@ namespace Gluten.Core.DataProcessing.Service
             //-23.750312, 173.138554
             if (groupId == "852980778556330" &&
                 (geoLongitude < -168.527795 // TODO: Wrap problem
-                || geoLongitude > 173.138554
+                || geoLongitude > 179.138554
                 || geoLatitude < -23.750312
                 || geoLatitude > -9.975805)
                 )

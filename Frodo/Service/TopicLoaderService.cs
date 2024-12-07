@@ -60,6 +60,7 @@ namespace Frodo.Service
 
             var nodeId = node.id;
             var story = node.comet_sections.content.story;
+            var attachedMessage = story.attached_story?.message?.text;
 
             if (story != null)
             {
@@ -67,7 +68,10 @@ namespace Frodo.Service
 
                 if (string.IsNullOrWhiteSpace(messageText))
                 {
-                    Console.WriteLine($"Empty message text, node id = {nodeId}");
+                    if (string.IsNullOrWhiteSpace(attachedMessage))
+                    {
+                        Console.WriteLine($"Empty message text, node id = {nodeId}");
+                    }
                     // TODO: Log?
                     return;
                 }

@@ -105,11 +105,11 @@ namespace Gluten.Data.Access.Service
             await container.DeleteItemAsync<dbObject>(newDbItem.Id, new PartitionKey(newDbItem.PartitionKey));
         }
 
-        public async Task DeletePartitionAsync<dbObject>(dbObject newDbItem) where dbObject : IDbModel, new()
-        {
-            var container = await GetContainer<dbObject>(new dbObject());
-            await container.DeleteAllItemsByPartitionKeyStreamAsync(new PartitionKey(newDbItem.PartitionKey));
-        }
+        //public async Task DeletePartitionAsync<dbObject>(dbObject newDbItem) where dbObject : IDbModel, new()
+        //{
+        //    var container = await GetContainer<dbObject>(new dbObject());
+        //    await container.DeleteAllItemsByPartitionKeyStreamAsync(new PartitionKey(newDbItem.PartitionKey));
+        //}
 
 
         /// <summary>

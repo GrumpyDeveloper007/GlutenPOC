@@ -45,6 +45,7 @@ namespace Gluten.Core.Helper
         /// </summary>
         public static string RemoveDiacritics(string text)
         {
+            if (text == null) return "";
             var normalizedString = text.Replace("é", "e").Normalize(NormalizationForm.FormD);
             var stringBuilder = new StringBuilder(capacity: normalizedString.Length);
 
