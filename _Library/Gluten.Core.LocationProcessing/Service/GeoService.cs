@@ -8,6 +8,7 @@ using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -68,6 +69,22 @@ namespace Gluten.Core.LocationProcessing.Service
             double longitude = double.Parse(pin.GeoLongitude);
             double latitude = double.Parse(pin.GeoLatitude);
             return GetCountry(longitude, latitude);
+        }
+
+        public List<string> GetCountries()
+        {
+            List<string> values = [];
+            foreach (var feature in _features)
+            {
+                if (feature.Attributes != null)
+                {
+                    var attribute = feature.Attributes["Country"];
+                    if (!string.IsNullOrWhiteSpace(attribute.ToString()))
+                        values.Add(attribute.ToString() ?? "");
+                }
+            }
+            return values;
+
         }
 
         //longitude: 12.4924, latitude: 41.8902

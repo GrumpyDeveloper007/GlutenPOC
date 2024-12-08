@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿// Ignore Spelling: Fb
+
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +12,7 @@ namespace Gluten.FBModel.Helper
 {
     public static class FbModelHelper
     {
-        public static ExtractedModel GetStoryInfo(Node? storyNode, string nodeId)
+        public static ExtractedModel? GetStoryInfo(Node? storyNode, string nodeId)
         {
             var result = new ExtractedModel();
             if (storyNode == null) return null;
@@ -26,8 +28,8 @@ namespace Gluten.FBModel.Helper
             }
 
             result.Title = messageText;
-            result.FacebookUrl = story?.wwwURL;
-            result.GroupId = story.target_group.id;
+            result.FacebookUrl = story?.wwwURL ?? "";
+            result.GroupId = story?.target_group.id ?? "";
             result.PostCreated = FbModelHelper.GetTrackingPostDate(story.story_ufi_container.story.tracking) ?? DateTimeOffset.FromUnixTimeSeconds(0);
 
             if (result.GroupId == null && story != null)

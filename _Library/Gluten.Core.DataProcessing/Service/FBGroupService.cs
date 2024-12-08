@@ -75,6 +75,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public bool IsPinWithinExpectedRange(string groupId, TopicPin pin)
         {
+            if (pin.GeoLatitude == null || pin.GeoLongitude == null) return false;
             double geoLatitude = double.Parse(pin.GeoLatitude);
             double geoLongitude = double.Parse(pin.GeoLongitude);
 

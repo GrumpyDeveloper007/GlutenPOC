@@ -26,6 +26,7 @@ namespace Frodo.Service
 
         private static void SaveDb<typeToSave>(string fileName, typeToSave topics)
         {
+
             var json = JsonConvert.SerializeObject(topics, Formatting.None,
                 [new StringEnumConverter()]);
             File.WriteAllText(fileName, json);
@@ -90,17 +91,19 @@ namespace Frodo.Service
             foreach (var item in pins)
             {
                 string groupId = "";
+                string groupCountry = "";
                 if (item.Topics != null)
                 {
                     foreach (var topic in item.Topics)
                     {
                         var selectedTopic = topics.First(o => o.NodeID == topic.NodeID);
                         groupId = selectedTopic.GroupId;
+                        groupCountry = _fBGroupService.GetCountryName(groupId);
+                        if (string.IsNullOrWhiteSpace(groupCountry)) groupCountry = selectedTopic.TitleCountry ?? "";
                         break;
                     }
                 }
 
-                var groupCountry = _fBGroupService.GetCountryName(groupId);
 
                 if (!files.TryGetValue(groupCountry, out List<PinTopic>? value))
                 {
@@ -147,7 +150,7 @@ namespace Frodo.Service
         /// <summary>
         /// Group data by pin (venue), export to json
         /// </summary>
-        public void GenerateTopicExport(List<DetailedTopic> topics)
+        public async Task GenerateTopicExport(List<DetailedTopic> topics)
         {
             List<PinTopic>? pins = _databaseLoaderService.LoadPinTopics();
             pins ??= [];
@@ -176,10 +179,10 @@ namespace Frodo.Service
                         }
 
                         var existingCache = _databaseLoaderService.GetPinDescriptionCache(nodes);
-                        if (existingCache == null)
+                        if (existingCache == null || pin.Description?.Contains(pin.Label ?? "") == false)
                         {
 
-                            pin.Description = _analyzeDocumentService.ExtractDescriptionTitle(message, pin.Label);
+                            pin.Description = await _analyzeDocumentService.ExtractDescriptionTitle(message, pin.Label);
                             var cache = new PinDescriptionCache()
                             {
                                 Nodes = nodes,
@@ -244,8 +247,8 @@ namespace Frodo.Service
             {
                 var newT = mapper.Map<PinLinkInfo, DetailedTopic>(topic);
                 var groupCountry = _fBGroupService.GetCountryName(topic.GroupId);
+                if (string.IsNullOrWhiteSpace(groupCountry)) groupCountry = topic.TitleCountry ?? "";
 
-                if (_fBGroupService.IsGenericGroup(topic.GroupId)) continue; // skip export for generic groups 
 
                 if (topic.AiVenues != null)
                 {

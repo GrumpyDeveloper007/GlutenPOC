@@ -12,7 +12,7 @@ namespace Frodo.Helper
 {
     internal static class LabelHelper
     {
-        static List<string> wordMatch;
+        static List<string> wordMatch = [];
 
         public static void Reset()
         {

@@ -1,7 +1,12 @@
-﻿namespace Gluten.Data.TopicModel
+﻿// Ignore Spelling: Facebook
+
+namespace Gluten.Data.TopicModel
 {
     public class DetailedTopic
     {
+        public string? TitleCountry { get; set; }
+
+        public string? TitleCity { get; set; }
         public required string Title { get; set; }
         public string? ShortTitle { get; set; }
         public bool ShortTitleProcessed { get; set; } = false;
@@ -14,8 +19,6 @@
         public List<TopicLink>? UrlsV2 { get; set; }
 
         public List<Response> ResponsesV2 { get; set; } = [];
-
-        public List<string>? HashTags { get; set; } = null;
 
         public string GroupId { get; set; } = "";
         public DateTimeOffset? PostCreated { get; set; }
@@ -32,17 +35,6 @@
                 if (url.Pin != null) return true;
             }
             return false;
-        }
-
-        public string GetHashTags()
-        {
-            string tags = "";
-            if (HashTags == null) return tags;
-            foreach (var tag in HashTags)
-            {
-                tags += tag + ",";
-            }
-            return tags;
         }
 
         public bool HasLink()
