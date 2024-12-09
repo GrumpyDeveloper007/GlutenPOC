@@ -164,7 +164,8 @@ namespace Frodo.Service
             var unknownRestaurantType = 0;
             foreach (var pin in pins)
             {
-                if (string.IsNullOrEmpty(pin.Description))
+                if (string.IsNullOrEmpty(pin.Description)
+                    || pin.Description?.Contains(pin.Label ?? "", StringComparison.InvariantCultureIgnoreCase) == false)
                 {
                     Console.WriteLine($"Updating descriptions - {ii} of {pins.Count}");
                     var message = "";
@@ -249,6 +250,7 @@ namespace Frodo.Service
                 var groupCountry = _fBGroupService.GetCountryName(topic.GroupId);
                 if (string.IsNullOrWhiteSpace(groupCountry)) groupCountry = topic.TitleCountry ?? "";
 
+                //if (_fBGroupService.IsGenericGroup(topic.GroupId)) continue; // skip export for generic groups 
 
                 if (topic.AiVenues != null)
                 {

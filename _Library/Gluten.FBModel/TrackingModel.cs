@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿// Ignore Spelling: psn fbtype fbid qid tl mf objid ent attachement actrs tds flgs
+
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -123,6 +125,21 @@ namespace Gluten.FBModel
         public _379994195544478 _1300758866697297 { get; set; }
         [JsonProperty("286367932803894")]
         public _379994195544478 _286367932803894 { get; set; }
+
+        [JsonProperty("550373421739534")]
+        public _379994195544478 _550373421739534 { get; set; }
+        [JsonProperty("383755778784374")]
+        public _379994195544478 _383755778784374 { get; set; }
+        [JsonProperty("309301445942480")]
+        public _379994195544478 _309301445942480 { get; set; }
+        [JsonProperty("229495282203436")]
+        public _379994195544478 _229495282203436 { get; set; }
+        [JsonProperty("247208302148491")]
+        public _379994195544478 _247208302148491 { get; set; }
+
+
+
+
 
 
 

@@ -4,6 +4,7 @@ using Gluten.Core.Helper;
 using Gluten.Core.LocationProcessing.Service;
 using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
+using static Gluten.Core.LocationProcessing.Service.CityService;
 
 namespace Frodo.Service
 {
@@ -46,14 +47,13 @@ namespace Frodo.Service
                 Topics = topics;
             }
 
-            await _localAi.GenerateShortTitle("this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message");
+            //await _localAi.GenerateShortTitle("this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message");
 
             _placeNameSkipList = _databaseLoaderService.LoadPlaceSkipList();
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nReading captured FB data");
-            if (!skipSomeOperationsForDebugging)
-                _topicLoaderService.ReadFileLineByLine(_responsefileName, Topics);
+            _topicLoaderService.ReadFileLineByLine(_responsefileName, Topics);
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nGenerating country names from topic title");
@@ -148,9 +148,6 @@ namespace Frodo.Service
             for (int i = 0; i < Topics.Count; i++)
             {
                 if (i < 31129) continue;
-                //if (Topics[i].AiVenues == null) continue;
-                //if (Topics[i].AiVenues.Count() == 0) continue;
-                //if (!_fbGroupService.IsGenericGroup(Topics[i].GroupId)) continue;
                 if (!string.IsNullOrWhiteSpace(Topics[i].TitleCountry)) continue;
 
                 Console.WriteLine($"Extracting city/country names {i} of {Topics.Count}");
@@ -168,8 +165,11 @@ namespace Frodo.Service
                         else
                         {
                             Console.WriteLine($"Unknown city {city}");
-
                         }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"City not found in message");
                     }
                 }
 
@@ -182,6 +182,7 @@ namespace Frodo.Service
                 country = country.Replace("\"", "");
 
                 if (string.IsNullOrWhiteSpace(country)) continue;
+                if (country.Contains("\r\n")) continue;
                 if (country == "Europe") continue;
 
                 if (!countries.Exists(o => o == country)
@@ -190,7 +191,6 @@ namespace Frodo.Service
                 {
                     Console.WriteLine($"Unknown country {country}");
                     continue;
-                    //Topics[i].AiVenues = null;
                 }
                 topic.TitleCountry = country.Replace("é", "e");
             }
@@ -482,6 +482,9 @@ namespace Frodo.Service
                 DetailedTopic? topic = Topics[i];
                 var groupCountry = _fBGroupService.GetCountryName(topic.GroupId);
                 if (string.IsNullOrWhiteSpace(groupCountry)) groupCountry = topic.TitleCountry ?? "";
+
+                // Skip if the country and city cannot be identified
+                if (string.IsNullOrWhiteSpace(groupCountry) && string.IsNullOrWhiteSpace(topic.TitleCity)) continue;
 
                 if (topic.AiVenues == null || topic.AiVenues.Count == 0) continue;
 

@@ -117,6 +117,18 @@ namespace Gluten.FBModel.Helper
                     seconds = trackingInfo.page_insights._61559586850363?.post_context?.publish_time ?? 0;
                 else if (trackingInfo.page_insights._292593134198337 != null)
                     seconds = trackingInfo.page_insights._292593134198337?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._550373421739534 != null)
+                    seconds = trackingInfo.page_insights._550373421739534?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._383755778784374 != null)
+                    seconds = trackingInfo.page_insights._383755778784374?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._309301445942480 != null)
+                    seconds = trackingInfo.page_insights._309301445942480?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._229495282203436 != null)
+                    seconds = trackingInfo.page_insights._229495282203436?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._247208302148491 != null)
+                    seconds = trackingInfo.page_insights._247208302148491?.post_context?.publish_time ?? 0;
+
+
                 else
                 {
                     Console.WriteLine($"Unknown message structure {trackingInfoString}");
@@ -153,6 +165,24 @@ namespace Gluten.FBModel.Helper
                 Console.WriteLine("unknown node");
             }
             return node;
+        }
+
+        public static List<string>? GetNodeIds(SearchRoot? root)
+        {
+            var results = new List<string>();
+            if (root == null || root.data.serpResponse == null) return null;
+
+            foreach (var edge in root.data.serpResponse.results.edges)
+            {
+                if (edge.relay_rendering_strategy.__typename == "SearchEndOfResultsModuleRenderingStrategy") continue;
+                if (edge.relay_rendering_strategy.view_model.click_model.story != null)
+                {
+                    var story = edge.relay_rendering_strategy.view_model.click_model.story;
+                    results.Add(story.id);
+                }
+            }
+
+            return results;
         }
 
         public static string? GetNodeId(GroupRoot? groupRoot)

@@ -1,7 +1,7 @@
-﻿using OpenQA.Selenium.Chrome;
-using OpenQA.Selenium.DevTools;
+﻿// Ignore Spelling: Facebook
+
+using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium;
-using System.Diagnostics;
 using Smeagol.Services;
 
 namespace Smeagol;
@@ -9,10 +9,23 @@ namespace Smeagol;
 /// <summary>
 /// Open and listen for facebook api responses and capture them in a text file for later processing
 /// </summary>
-internal class FacebookSniffer(DataService _dataService, SettingValues _settings)
+internal class FacebookSniffer
 {
     private readonly string _responsefileName = "D:\\Coding\\Gluten\\Database\\Responses.txt";
-    private readonly ChromeDriver _driver = new ChromeDriver();
+    private readonly ChromeDriver _driver;
+    private int _index = 0;
+
+    public DataService _dataService;
+    public SettingValues _settings;
+
+    public FacebookSniffer(DataService dataService, SettingValues settings)
+    {
+        _dataService = dataService;
+        _settings = settings;
+        var options = new ChromeOptions();
+        options.AddArguments("--js-flags=\" --max_old_space_size=1024 --max_semi_space_size=1024 \"");
+        _driver = new ChromeDriver(options);
+    }
 
     public void Start()
     {
@@ -20,15 +33,12 @@ internal class FacebookSniffer(DataService _dataService, SettingValues _settings
 
         var devTools = (OpenQA.Selenium.DevTools.IDevTools)_driver;
 
-        DevToolsSession session = devTools.GetDevToolsSession();
-        session.Domains.Network.EnableNetwork().Wait();
-        session.DevToolsEventReceived += Session_DevToolsEventReceived;
-
-        var domains = session.GetVersionSpecificDomains<DevToolsSessionDomains>();
+        //DevToolsSession session = devTools.GetDevToolsSession();
+        //session.Domains.Network.EnableNetwork().Wait();
+        //var domains = session.GetVersionSpecificDomains<DevToolsSessionDomains>();
 
         _driver.Manage().Network.NetworkResponseReceived += Network_NetworkResponseReceived;
         var network = _driver.Manage().Network;
-        network.NetworkRequestSent += Network_NetworkRequestSent;
         network.StartMonitoring();
 
         _driver.Navigate().GoToUrl("https://www.facebook.com/");
@@ -42,59 +52,37 @@ internal class FacebookSniffer(DataService _dataService, SettingValues _settings
 
     public void Close()
     {
-        _driver.ClearNetworkConditions();
+        try
+        {
+            _driver.ClearNetworkConditions();
+        }
+        catch
+        {
+
+        }
         _driver.CloseDevToolsSession();
         _driver.Close();
-    }
-
-    private void Session_DevToolsEventReceived(object? sender, DevToolsEventReceivedEventArgs e)
-    {
-        if (e.EventName != "webSocketFrameReceived" && e.EventName != "webSocketFrameSent" && e.EventName != "dataReceived")
-        {
-            //Debug.WriteLine($"Event: {e.EventName} - {e.EventData["request"]?["url"]}");
-        }
-
-        if (e.EventName == "responseReceived")
-        {
-            //Debug.WriteLine($"responseReceived: requestId : {e.EventData["requestId"]} - {e.EventData["response"]?["url"]}");
-        }
-        if (e.EventName == "loadingFinished")
-        {
-            //Debug.WriteLine($"requestId : {e.EventData["requestId"]} - {e.EventData["encodedDataLength"]}");
-        }
-
-
-        if (e.EventData["headers"] != null && e.EventData["headers"]["x-fb-friendly-name"]?.ToString() == "GroupsCometFeedRegularStoriesPaginationQuery")
-        {
-            //Debug.WriteLine($"GroupsCometFeedRegularStoriesPaginationQuery: {e.EventData.ToJsonString()}");
-        }
-
-        if (e.EventName == "dataReceived")
-        {
-            //Debug.WriteLine($"dataReceived : {e.EventData["requestId"]} - {e.EventData["encodedDataLength"]}");
-        }
-    }
-
-    private void Network_NetworkRequestSent(object? sender, NetworkRequestSentEventArgs e)
-    {
-        Debug.WriteLine("New Work Response received");
     }
 
     private void Network_NetworkResponseReceived(object? sender, NetworkResponseReceivedEventArgs e)
     {
         if (e.ResponseUrl.ToLower() == "https://www.facebook.com/api/graphql/".ToLower())
         {
+
+            _index++;
+            //GC.Collect();
             // TODO: Create a better locking solution or post to a DB
             try
             {
                 if (!_dataService.LoadLine(e.ResponseBody))
                 {
-                    System.IO.File.AppendAllText(_responsefileName, e.ResponseBody + "/r/n");
-                    Console.WriteLine("Response saved");
+                    System.IO.File.AppendAllText(_responsefileName, e.ResponseBody + "\r\n");
+                    Console.WriteLine($"Response saved {_index}");
                 }
                 else
                 {
-                    Console.WriteLine("Response skipped");
+                    Console.WriteLine($"Response skipped {_index}");
+                    System.IO.File.AppendAllText("D:\\Coding\\Gluten\\Database\\RejectedResponses.txt", e.ResponseBody + "\r\n");
                 }
             }
             catch (Exception ex)
