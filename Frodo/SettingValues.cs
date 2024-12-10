@@ -1,4 +1,6 @@
-﻿using System;
+﻿// Ignore Spelling: SQL CONNECTIONSTRING Api
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,6 +14,8 @@ namespace Frodo
 
         public required string AIEndPoint { get; set; }
         public required string AIApiKey { get; set; }
+        public required string DbEndpointUri { get; set; }
+        public required string DbPrimaryKey { get; set; }
     }
 
 }

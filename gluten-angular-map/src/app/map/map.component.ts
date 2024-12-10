@@ -1,15 +1,15 @@
-import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, AfterViewInit, OnDestroy, EventEmitter, Output, Input } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { NgFor } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
+import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Map, NavigationControl, Marker } from 'maplibre-gl';
 import * as maplibre from 'maplibre-gl';
-import myData from './TopicsExport.json';
-import { Renderer2 } from '@angular/core';
-import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { TopicGroup } from "../model/model";
-import { EventEmitter, Output, Input } from '@angular/core';
-import { ModalService } from '../_services';
-import { FormsModule } from '@angular/forms';
+import { forkJoin, Observable, tap } from 'rxjs';
+import { GMapsPin, TopicGroup } from "../_model/model";
+import { Others, restaurantTypes } from "../_model/staticData";
+import { ModalService, GlutenApiService, LocationService, MapDataService } from '../_services';
 import { ModalComponent } from '../_components';
-import { NgIf, NgFor } from '@angular/common';
 
 @Component({
   selector: 'app-map',
@@ -30,193 +30,47 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
   currentMarkers: Marker[] = [];
   restaurants: Restaurant[] = [];
   fileUrl: SafeResourceUrl = "";
+  pinTopics: TopicGroup[] = [];
+  pinCache: { [id: string]: TopicGroup[]; } = {};
+  gmPins: GMapsPin[] = [];
+  gmPinCache: { [id: string]: GMapsPin[]; } = {};
+  selectedPins = 0;
+  _showHotels: boolean = true;
+  _showStores: boolean = true;
+  _showOthers: boolean = true;
+  _showGMPins: boolean = true;
+  mapBounds: maplibre.LngLatBounds = new maplibre.LngLatBounds();
 
-  restaurantTypes: string[] = [
-    'All',
-    'American restaurant',
-    'Art cafe',
-    'Asian fusion restaurant',
-    'Asian restaurant',
-    'Australian restaurant',
-    'Bakery',
-    'Bar',
-    'Bar &amp; grill',
-    'Barbecue restaurant',
-    'Belgian restaurant',
-    'Bistro',
-    'Brazilian restaurant',
-    'Breakfast restaurant',
-    'Brewery',
-    'Brewpub',
-    'British restaurant',
-    'Brunch restaurant',
-    'Buddhist temple',
-    'Buffet restaurant',
-    'Cafe',
-    'Cafeteria',
-    'Charcuterie',
-    'Chicken restaurant',
-    'Chinese restaurant',
-    'Cocktail bar',
-    'Coffee roasters',
-    'Conveyor belt sushi restaurant',
-    'Crab house',
-    'Creative cuisine restaurant',
-    'Creperie',
-    'Deli',
-    'Dessert restaurant',
-    'Dim sum restaurant',
-    'Dog cafe',
-    'Dumpling restaurant',
-    'Falafel restaurant',
-    'Family restaurant',
-    'Fast food restaurant',
-    'Fine dining restaurant',
-    'Fish &amp; chips restaurant',
-    'Fish restaurant',
-    'Food court',
-    'French restaurant',
-    'Fried chicken takeaway',
-    'Fruit parlor',
-    'Fusion restaurant',
-    'Gluten-free restaurant',
-    'Greek restaurant',
-    'Gyudon restaurant',
-    'Hamburger restaurant',
-    'Hawaiian restaurant',
-    'Hawker stall',
-    'Health food restaurant',
-    'Hot pot restaurant',
-    'Hunan restaurant',
-    'Indian restaurant',
-    'Irish pub',
-    'Italian restaurant',
-    'Izakaya restaurant',
-    'Japanese curry restaurant',
-    'Japanese delicatessen',
-    'Japanese restaurant',
-    'Japanese steakhouse',
-    'Japanese sweets restaurant',
-    'Japanized western restaurant',
-    'Kaiseki restaurant',
-    'Konditorei',
-    'Korean barbecue restaurant',
-    'Korean restaurant',
-    'Kushiyaki restaurant',
-    'Kyoto style Japanese restaurant',
-    'Lebensmittelhändler',
-    'Macrobiotic restaurant',
-    'Matchaa year ago',
-    'Meat dish restaurant',
-    'Mexican restaurant',
-    'Modern izakaya restaurant',
-    'Mutton barbecue restaurant',
-    'Nepalese restaurant',
-    'New American restaurant',
-    'Obanzai restaurant',
-    'Okonomiyaki restaurant',
-    'Organic restaurant',
-    'Oyster bar restaurant',
-    'Pakistani restaurant',
-    'Pancake restaurant',
-    'Patisserie',
-    'Persian restaurant',
-    'Pizza restaurant',
-    'Pizza takeaway',
-    'Pub',
-    'Ramen restaurant',
-    'Restauracja japońska (okonomiyaki)',
-    'Restaurant',
-    'Rice restaurant',
-    'Ristorante italiano',
-    'Sake brewery',
-    'Samgyetang restaurant',
-    'Seafood donburi restaurant',
-    'Seafood restaurant',
-    'Shabu-shabu restaurant',
-    'Sichuan restaurant',
-    'Singaporean restaurant',
-    'Snack bar',
-    'South Indian restaurant',
-    'Southeast Asian restaurant',
-    'Sports bar',
-    'Steak house',
-    'Sukiyaki and Shabu Shabu restaurant',
-    'Sushi restaurant',
-    'Sushirestaurant med transportbånd',
-    'Swiss restaurant',
-    'Syokudo and Teishoku restaurant',
-    'Taco restaurant',
-    'Taiwanese restaurant',
-    'Take Away Restaurant',
-    'Tapas bar',
-    'Tapas restaurant',
-    'Tea house',
-    'Tempura restaurant',
-    'Teppanyaki restaurant',
-    'Teppanyaki-Restaurant',
-    'Tex-Mex restaurant',
-    'Thai restaurant',
-    'Tofu restaurant',
-    'Tonkatsu restaurant',
-    'Traditional restaurant',
-    'Traditional teahouse',
-    'Udon noodle restaurant',
-    'Unagi restaurant',
-    'Vegan restaurant',
-    'Vegetarian cafe and deli',
-    'Vegetarian restaurant',
-    'Vietnamese restaurant',
-    'Warehouse club',
-    'West African restaurant',
-    'Western restaurant',
-    'Wholesale bakery',
-    'Yakatabune',
-    'Yakiniku restaurant',
-    'Yakitori restaurant',
-  ];
-
-  bodyText = 'This text can be updated in modal 1';
-
-  constructor(private renderer: Renderer2, public sanitizer: DomSanitizer, protected modalService: ModalService) { }
-
-  private _showHotels: boolean = true;
-  private _showStores: boolean = true;
-  private _showOthers: boolean = true;
+  constructor(public sanitizer: DomSanitizer,
+    protected modalService: ModalService, private http: HttpClient,
+    private apiService: GlutenApiService,
+    private locationService: LocationService,
+    private mapDataService: MapDataService) { }
 
   @Input() set showHotels(value: boolean) {
-
     this._showHotels = value;
     console.debug("Map Hotels click ");
     // clear pins
     this.currentMarkers.forEach((marker: Marker) => marker.remove())
     this.loadMapPins();
   }
-  get showHotels(): boolean {
-    return this._showHotels;
-  }
-
   @Input() set showStores(value: boolean) {
-
     this._showStores = value;
     console.debug("Map Stores click ");
     // clear pins
     this.currentMarkers.forEach((marker: Marker) => marker.remove())
     this.loadMapPins();
   }
-  get showStores(): boolean {
-    return this._showStores;
-  }
-
   @Input() set showOthers(value: boolean) {
-
     this._showOthers = value;
     // clear pins
     this.currentMarkers.forEach((marker: Marker) => marker.remove())
     this.loadMapPins();
   }
-  get showOthers(): boolean {
-    return this._showOthers;
+  @Input() set showGMPins(value: boolean) {
+    this._showGMPins = value;
+    this.currentMarkers.forEach((marker: Marker) => marker.remove())
+    this.loadMapPins();
   }
 
   selectNone(): void {
@@ -239,18 +93,15 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
     this.restaurants.forEach(restaurant => {
       if (restaurant.Name === restaurantType) {
         if (restaurant.Show === true) {
-          console.debug('Is selected');
           result = true;
         }
       }
-
     });
     return result;
   }
 
   selectComplete(): void {
     this.modalService.close();
-    this.currentMarkers.forEach((marker: Marker) => marker.remove())
     this.loadMapPins();
   }
 
@@ -262,138 +113,208 @@ export class MapComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
   }
-
-  ngAfterViewInit() {
-    this.restaurantTypes.forEach(restaurant => {
+  ngOnDestroy() {
+    this.map?.remove();
+  }
+  async ngAfterViewInit() {
+    restaurantTypes.forEach(restaurant => {
       var a = new Restaurant(true, restaurant);
       this.restaurants.push(a);
     });
 
-    const initialState = { lng: 139.753, lat: 35.6844, zoom: 14 };
+    var geoLocation = new maplibre.GeolocateControl({
+      positionOptions: {
+        enableHighAccuracy: true
+
+      },
+      trackUserLocation: true
+    });
+
+    var location = { latitude: 35.6844, longitude: 139.753 };
+    await this.locationService.getUserLocation()
+      .then((loc) => {
+        location = loc;
+      })
+      .catch((err) => {
+        console.debug(err);
+      });
+    this.apiService.postMapHome(location.latitude, location.longitude).subscribe();
+
+    const initialState = { lng: location.longitude, lat: location.latitude, zoom: 14 };
     this.map = new Map({
       container: this.mapContainer.nativeElement,
       style: `https://api.maptiler.com/maps/streets-v2/style.json?key=1nY38lyeIv8XEbtohY5t`,
       center: [initialState.lng, initialState.lat],
       zoom: initialState.zoom,
       interactive: true,
+      renderWorldCopies: false
     });
-    this.map.addControl(new maplibre.GeolocateControl({
-      positionOptions: {
-        enableHighAccuracy: true
-      },
-      trackUserLocation: true
-    }));
-    this.map.addControl(new NavigationControl({}), 'top-right');
 
-    console.debug("Total pins :" + myData.length);
-    console.debug("is undefined :" + (this.map === undefined));
-    console.debug("map :" + this.map);
+    this.map.addControl(geoLocation);
+    this.map.addControl(new NavigationControl({}), 'top-right');
+    this.mapBounds = this.map.getBounds();
+
+    this.map
+      .on('moveend', (e: MouseEvent | TouchEvent | WheelEvent | undefined) => {
+        if ((this.map === undefined)) return;
+        var newBounds = this.map.getBounds();
+        if (newBounds.getNorthEast().lat == this.mapBounds.getNorthEast().lat &&
+          newBounds.getNorthEast().lng == this.mapBounds.getNorthEast().lng) return;
+        this.mapMoved(e);
+        this.mapBounds = this.map.getBounds();
+      });
+
+    this.loadMapPins();
+  }
+
+  mapMoved(e: MouseEvent | TouchEvent | WheelEvent | undefined) {
+    if ((this.map === undefined)) return;
     this.loadMapPins();
   }
 
   loadMapPins() {
-    var pinTopics: any[] = myData;
+    this.pinTopics = [];
+    this.gmPins = [];
+
+    if ((this.map === undefined)) return;
+
+    const bounds = this.map.getBounds();
+    // Trigger api calls
+    var waitForDataLoad = false;
+    const countryNames = this.mapDataService.getCountriesInView(bounds);
+    console.debug("Countries in view: " + countryNames);
+    const requests: Observable<any>[] = [];
+    for (let key in countryNames) {
+      let value = countryNames[key];
+      if (value in this.pinCache) {
+        // key exists
+        this.pinTopics = this.pinTopics.concat(this.pinCache[value]);
+      } else {
+        // key does not exist
+        waitForDataLoad = true;
+        this.pinCache[value] = [];
+        requests.push(this.apiService.getPinTopic(value).pipe(
+          tap(data => {
+            this.pinCache[value] = data;
+            this.pinTopics = this.pinTopics.concat(this.pinCache[value]);
+          })));
+      }
+
+      if (value in this.gmPinCache) {
+        // key exists
+        this.gmPins = this.gmPins.concat(this.gmPinCache[value]);
+      } else {
+        // key does not exist
+        waitForDataLoad = true;
+        this.gmPinCache[value] = [];
+        requests.push(this.apiService.getGMPin(value).pipe(
+          tap(data => {
+            this.gmPinCache[value] = data;
+            this.gmPins = this.gmPins.concat(this.gmPinCache[value]);
+          })));
+      }
+    }
+
+    forkJoin(requests).subscribe(_ => {
+      // all observables have been completed
+      this.showMapPins();
+    });
+
+    if (!waitForDataLoad) {
+      this.showMapPins();
+    }
+
+  }
+
+  showMapPins() {
     var map: Map;
-    if (!(this.map === undefined)) {
-      console.debug("Updating pins");
-      map = this.map
-      var exportData = "Latitude, Longitude, Description\r\n";
+    if ((this.map === undefined)) return;
+    var map = this.map
+    var exportData = "Latitude, Longitude, Description\r\n";
+    this.selectedPins = 0;
 
-      var Others: Array<string> = ['Train station',
-        'Airports',
-        'Sightseeing tour agency',
-        'Laundromat',
-        'Historical landmark',
-        'Island',
-        'Electronics manufacturer',
-        'Corporate office',
-        'Theme park',
-        'Subway station',
-        'Food manufacturer',
-        'Art museum',
-        'International airport',
-        'Airport',
-        'Garden',
-        'Cinema',
-        'Manufacturer',
-        'Observation deck',
-        'Mountain peak',
-        'Amusement park',
-        'Bridge',
-        'Soy sauce maker',
-        'Housing development',
-        'Massage spa',
-        'Waterfall',
-        'Delivery service',
-        'Water treatment supplier',
-        'River',
-        'Event venue',
-        'Museum',
-        'Florist',
-        'Park',
-        'Tourist attraction',
-        'Business park',
-        'Hair salon',
-        'Holiday apartment',
-        'Car racing track',
-        'Language school',
-        'Host club',
-        'Shinto shrine',
-        'Cultural center',
-        'Foreign consulate',
-        'Non-profit organization',
-        'Truck parts supplier',
-        'Gift shop',
-        'Lake',
-        'Spa',
-        'Festival',
-        'Beach',
-        'Dog trainer',
-        'Concert hall',
-        'Tour operator',
-        'Art gallery',
-        'Health and beauty shop'];
+    console.debug("Updating pins");
+    const bounds = map.getBounds();
 
-      var selectedPins = 0;
-      pinTopics.forEach(pin => {
+    // Remove existing pins
+    this.currentMarkers.forEach((marker: Marker) => marker.remove())
+    this.currentMarkers = [];
 
-        var isStore = pin.RestaurantType != null && (pin.RestaurantType.includes("store") || pin.RestaurantType.includes("Supermarket")
-          || pin.RestaurantType.includes("shop")
-          || pin.RestaurantType.includes("market") || pin.RestaurantType.includes("mall") || pin.RestaurantType.includes("Hypermarket")
+    this.pinTopics.forEach(pin => {
+      try {
+        if (this.selectedPins >= 500) return;
+        if (pin.geoLatitude > bounds._ne.lat) return;
+        if (pin.geoLatitude < bounds._sw.lat) return;
+        if (pin.geoLongitude > bounds._ne.lng) return;
+        if (pin.geoLongitude < bounds._sw.lng) return;
+
+        var isStore = pin.restaurantType != null && (pin.restaurantType.includes("store") || pin.restaurantType.includes("Supermarket")
+          || pin.restaurantType.includes("shop")
+          || pin.restaurantType.includes("market") || pin.restaurantType.includes("mall") || pin.restaurantType.includes("Hypermarket")
         );
-        var isHotel = pin.RestaurantType == "Hotel";
-        var isOther = pin.RestaurantType != null && Others.includes(pin.RestaurantType);
-        var isSelected = this.isSelected(pin.RestaurantType);
+        var isHotel = pin.restaurantType == "Hotel";
+        var isOther = pin.restaurantType != null && Others.includes(pin.restaurantType);
+        var isSelected = this.isSelected(pin.restaurantType);
         if (!isSelected) return;
         if (!this._showHotels && isHotel) return;
         if (!this._showStores && isStore) return;
         if (!this._showOthers && isOther) return;
-        selectedPins++;
-        exportData += `${pin.GeoLatitude},${pin.GeoLongitude},${pin.Label}\r\n`;
+        this.selectedPins++;
+        exportData += `${pin.geoLatitude},${pin.geoLongitude},${pin.label}\r\n`;
+
         // trigger event to call a function back in angular
         var popup = new maplibre.Popup({ offset: 25 })
-          .setHTML(`<h3>${pin.Label}</h3>`)
+          .setHTML(`<h3>${pin.label}</h3>`)
           .on('open', () => {
             this.pinSelected(pin);
           });
+        var color = "#FF0000";
+        if (isHotel) color = "#00FF00";
+        if (isStore) color = "#0000FF";
+        if (isOther) color = "#00FFFF";
 
-        const marker = new Marker({ color: "#FF0000" })
-          .setLngLat([parseFloat(pin.GeoLongitude), parseFloat(pin.GeoLatitude)])
+        const marker = new Marker({ color: color })
+          .setLngLat([pin.geoLongitude, pin.geoLatitude])
           .setPopup(popup)
           .addTo(map);
         this.currentMarkers.push(marker);
+      } catch { }
+
+    });
+
+    if (this._showGMPins) {
+      this.gmPins.forEach(pin => {
+        try {
+          if (this.selectedPins >= 500) return;
+          if (Number.parseFloat(pin.geoLatitude) > bounds._ne.lat) return;
+          if (Number.parseFloat(pin.geoLatitude) < bounds._sw.lat) return;
+          if (Number.parseFloat(pin.geoLongitude) > bounds._ne.lng) return;
+          if (Number.parseFloat(pin.geoLongitude) < bounds._sw.lng) return;
+
+          this.selectedPins++;
+          exportData += `${pin.geoLatitude},${pin.geoLongitude},${pin.label}\r\n`;
+
+          // trigger event to call a function back in angular
+          var popup = new maplibre.Popup({ offset: 25 })
+            .setHTML(`<h3>${pin.label}</h3>`)
+            .on('open', () => {
+              this.pinSelected(pin);
+            });
+          var color = "#7f7f7f";
+
+          const marker = new Marker({ color: color })
+            .setLngLat([parseFloat(pin.geoLongitude), parseFloat(pin.geoLatitude)])
+            .setPopup(popup)
+            .addTo(map);
+          this.currentMarkers.push(marker);
+        } catch { }
       });
-      console.debug("selected pins :" + selectedPins);
-      const blob = new Blob([exportData], { type: 'application/octet-stream' });
-      this.fileUrl = this.sanitizer.bypassSecurityTrustResourceUrl(window.URL.createObjectURL(blob));
-
     }
-  }
 
-  ngOnDestroy() {
-    this.map?.remove();
+    console.debug("selected pins :" + this.selectedPins);
+    const blob = new Blob([exportData], { type: 'application/octet-stream' });
+    this.fileUrl = this.sanitizer.bypassSecurityTrustResourceUrl(window.URL.createObjectURL(blob));
   }
-
 }
 
 export class Restaurant {

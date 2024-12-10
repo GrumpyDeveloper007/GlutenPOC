@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Gluten.Core.LocationProcessing\Gluten.Core.LocationProcessing.csproj" />
     <ProjectReference Include="..\Gluten.Core\Gluten.Core.csproj" />
     <ProjectReference Include="..\Gluten.Data\Gluten.Data.csproj" />
   </ItemGroup>

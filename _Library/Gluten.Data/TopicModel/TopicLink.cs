@@ -10,7 +10,5 @@ namespace Gluten.Data.TopicModel
     {
         public required string Url { get; set; }
         public TopicPin? Pin { get; set; }
-
-        public bool? AiGenerated { get; set; }
     }
 }

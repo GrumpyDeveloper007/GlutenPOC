@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+﻿// Ignore Spelling: psn fbtype fbid qid tl mf objid ent attachement actrs tds flgs
+
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -85,7 +87,55 @@ namespace Gluten.FBModel
         [JsonProperty("1053129328213251")]
         public _379994195544478 _1053129328213251 { get; set; }
 
+        [JsonProperty("182984958515029")]
+        public _379994195544478 _182984958515029 { get; set; }
+        [JsonProperty("3087018218214300")]
+        public _379994195544478 _3087018218214300 { get; set; }
+        [JsonProperty("769136475365475")]
+        public _379994195544478 _769136475365475 { get; set; }
+        [JsonProperty("823200180025057")]
+        public _379994195544478 _823200180025057 { get; set; }
+        [JsonProperty("100058326253164")]
+        public _379994195544478 _100058326253164 { get; set; }
+        [JsonProperty("1041374946")]
+        public _379994195544478 _1041374946 { get; set; }
+        [JsonProperty("100075040247767")]
+        public _379994195544478 _100075040247767 { get; set; }
+        [JsonProperty("422284561238159")]
+        public _379994195544478 _422284561238159 { get; set; }
+        [JsonProperty("292593134198337")]
+        public _379994195544478 _292593134198337 { get; set; }
+        [JsonProperty("488425731191722")]
+        public _379994195544478 _488425731191722 { get; set; }
+        [JsonProperty("687227675922496")]
+        public _379994195544478 _687227675922496 { get; set; }
+        [JsonProperty("1720098858232675")]
+        public _379994195544478 _1720098858232675 { get; set; }
+        [JsonProperty("61565218066228")]
+        public _379994195544478 _61565218066228 { get; set; }
+        [JsonProperty("61555127954574")]
+        public _379994195544478 _61555127954574 { get; set; }
+        [JsonProperty("450713908359721")]
+        public _379994195544478 _450713908359721 { get; set; }
+        [JsonProperty("61559586850363")]
+        public _379994195544478 _61559586850363 { get; set; }
+        [JsonProperty("1573265922")]
+        public _379994195544478 _1573265922 { get; set; }
+        [JsonProperty("1300758866697297")]
+        public _379994195544478 _1300758866697297 { get; set; }
+        [JsonProperty("286367932803894")]
+        public _379994195544478 _286367932803894 { get; set; }
 
+        [JsonProperty("550373421739534")]
+        public _379994195544478 _550373421739534 { get; set; }
+        [JsonProperty("383755778784374")]
+        public _379994195544478 _383755778784374 { get; set; }
+        [JsonProperty("309301445942480")]
+        public _379994195544478 _309301445942480 { get; set; }
+        [JsonProperty("229495282203436")]
+        public _379994195544478 _229495282203436 { get; set; }
+        [JsonProperty("247208302148491")]
+        public _379994195544478 _247208302148491 { get; set; }
 
 
 

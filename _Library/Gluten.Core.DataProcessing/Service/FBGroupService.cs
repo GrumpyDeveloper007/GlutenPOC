@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Ignore Spelling: geo
+
+using Gluten.Core.Interface;
+using Gluten.Data.TopicModel;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,43 +14,101 @@ namespace Gluten.Core.DataProcessing.Service
     /// Provides information about FB groups, 
     /// TODO: Move hard coded elements to DB
     /// </summary>
-    public class FBGroupService
+    public class FBGroupService(IConsole Console)
     {
-        public static string DefaultGroupId = "379994195544478";
-
-        private readonly Dictionary<string, string> _knownGroupIds = new Dictionary<string, string>()
+        private readonly Dictionary<string, string> _knownGroupIds = new()
         {
+            {"806902313439614","Thailand" }, // not gf group
+            {"769136475365475","NA" }, // dales gf map
+
             {"379994195544478","Japan" },//Gluten-Free in Japan!
-            {"1025248344200757","Australia" },
-            {"361337232353766","Vietnam" },
-            {"806902313439614","Thailand" },
-            {"3087018218214300","Bail" },
-            {"1420852834795381","South Korea" },
-            {"1015752345220391","Thailand" },//Gluten Free Chiang Mai
-            {"852980778556330","Fiji" },
-            {"353439621914938","Taipei" },
-            {"319517678837045","Vietnam" },//Gluten Free Hanoi
+            {"182984958515029","Singapore" },//Gluten Free Singapore - Support Group
+            {"3087018218214300","Indonesia" },//Gluten Free in Bali
+            {"422262581142441","China" },//Gluten Free in Hong Kong
             {"660915839470807","Vietnam" },//Gluten Free Saigon (Ho Chi Minh City)
             {"823200180025057","Vietnam" },//Gluten-free Hội An Community
-            {"422262581142441","Hong Kong" },//Gluten Free in Hong Kong
-            {"302515126584130","Philippines" },
+            {"353439621914938","Taiwan" }, //Gluten free Taipei
+            {"319517678837045","Vietnam" },//Gluten Free Hanoi
+            {"1015752345220391","Thailand" },//Gluten Free Chiang Mai
             {"1053129328213251","Thailand" },//Gluten Free Thailand
-            {"182984958515029","Singapore" },//Gluten Free Singapore - Support Group
-//            {"","" },
+            {"852980778556330","Fiji" },//Gluten Free Fiji
+            {"1420852834795381","South Korea" }, //Wheat and Gluten-Free in South Korea
+            {"302515126584130","Philippines" }, //Gluten-Free Philippines
+            {"422284561238159","South Korea" },
+
+            {"488425731191722","Malaysia" },//Off The Wheaten Path In Kuala Lumpur (Gluten Free Tips, Recipes & Findings)
+            {"1720098858232675","United Arab Emirates" },//Gluten Free - UAE
+            {"687227675922496","Spain" },
+            {"383755778784374","Italy" },//Gluten Free Italy
+            {"229495282203436","South Africa" },//Living gluten free in South Africa
+
+            {"1025248344200757","Australia" }, //Gluten Free Eating Out Sydney & New South Wales, Australia
+            {"9413340041","United Kingdom" },      //Coeliacs Eat Out Too UK
+
+            {"292593134198337","" },//Coeliacs Eat Abroad - only back to july
+            {"195689771214297","" },//Celiac Travel
+            {"798810970466035","" },//Celiac Travel Group
+
+            {"1066858930047711","" },//Coeliacs Eat Out Take Two
+            
+            {"247208302148491","India" },//Gluten free , Grain free ,healthy living in India
+
+            {"550373421739534","Australia" },//Australia's Gluten & Celiac/Coeliac Support Group
+            {"1452094601717166","Australia" },//Gluten Free Melbourne
+            {"307872078321","Australia" },//Gluten Free Tasmania
+            {"625162559593528","Australia" },//Gluten Free Brisbane
+
+            // Not active
+            {"450713908359721","Cambodia" },//Cambodia
+            {"746699194039212","Vietnam" },//Vietnam 
+            {"191520127713279","Singapore" },//Singapore
+            {"428227140573301","Japan" },//Japan
+            {"1587317368127948","Thailand" },//Thailand
+            {"403103165372802","Cambodia" },//Cambodia,
+            {"361337232353766","Vietnam" }, // not active
+
+            {"286367932803894","Cambodia" },//Cambodia Travel
+            {"1300758866697297","Cambodia/Vietnam" },//Cambodia & Vietnam Travel Tips
+            {"309301445942480","Cambodia" },//Cambodia Travels & Tips
+            
+            {"342422672937608","Indonesia" },//Gluten Free Bali
+
+            
+            //{"","" },
         };
 
+        /// <summary>
+        /// Get a country name based on what group the message was posted in (groupId)
+        /// </summary>
         public string GetCountryName(string groupId)
         {
+            if (!_knownGroupIds.ContainsKey(groupId)) Console.WriteLine($"Unknown group :{groupId}");
             return _knownGroupIds[groupId];
         }
-
 
         /// <summary>
         /// Provides some pin filtering based on geo location of the group and pin, 
         /// e.g. why would a pin for the Japan group be located in USA, something went wrong, remove it
         /// </summary>
-        public static bool IsPinWithinExpectedRange(string groupId, double geoLatitude, double geoLongitude)
+        public bool IsPinWithinExpectedRange(string groupId, TopicPin pin)
         {
+            if (pin.GeoLatitude == null || pin.GeoLongitude == null) return false;
+            double geoLatitude = double.Parse(pin.GeoLatitude);
+            double geoLongitude = double.Parse(pin.GeoLongitude);
+
+            //29.3786989,-13.2875609
+            //27.031709,-18.3669599
+            if (groupId == "687227675922496" &&
+                (geoLongitude < -18.3669599
+                || geoLongitude > -13.2875609
+                || geoLatitude < 27.031709
+                || geoLatitude > 29.3786989)
+                )
+            {
+                Console.WriteLine($"Rejecting pin for Gran Canaria");
+                return false;
+            }
+
             //    { "379994195544478","Japan" },//Gluten-Free in Japan!
             //24.4556439,122.9483518
             //44.2725791,145.3226978
@@ -73,7 +135,7 @@ namespace Gluten.Core.DataProcessing.Service
                 || groupId == "319517678837045"
                 || groupId == "660915839470807"
                 || groupId == "823200180025057") &&
-                (geoLongitude < 103.962525
+                (geoLongitude < 103
                 || geoLongitude > 110.599140
                 || geoLatitude < 7.991949
                 || geoLatitude > 23.506164)
@@ -103,7 +165,7 @@ namespace Gluten.Core.DataProcessing.Service
             if (groupId == "1420852834795381" &&
                 (geoLongitude < 125.842844
                 || geoLongitude > 130.072375
-                || geoLatitude < 33.986797
+                || geoLatitude < 32.986797
                 || geoLatitude > 38.555603)
                 )
             {
@@ -134,7 +196,7 @@ namespace Gluten.Core.DataProcessing.Service
             //-23.750312, 173.138554
             if (groupId == "852980778556330" &&
                 (geoLongitude < -168.527795 // TODO: Wrap problem
-                || geoLongitude > 173.138554
+                || geoLongitude > 179.138554
                 || geoLatitude < -23.750312
                 || geoLatitude > -9.975805)
                 )

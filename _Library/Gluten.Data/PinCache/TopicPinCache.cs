@@ -10,5 +10,8 @@
         public string? MapsUrl { get; set; }
         public string? MetaHtml { get; set; }
         public PinCacheMeta? MetaData { get; set; }
+        public bool MetaProcessed { get; set; } = false;
+        public string? Country { get; set; }
+        public List<string> SearchStrings { get; set; } = new();
     }
 }

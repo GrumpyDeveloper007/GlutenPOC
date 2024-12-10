@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 #pragma warning disable CS8618
 #pragma warning disable IDE1006
+#pragma warning disable VSSpell001 // Spell Check
 
 namespace Gluten.FBModel
 {
@@ -42,6 +43,10 @@ namespace Gluten.FBModel
         public ProfilePicture profile_picture { get; set; }
         public bool is_additional_profile_plus { get; set; }
         public object delegate_page { get; set; }
+        public string __isProfile { get; set; }
+        public string __isGroupMember { get; set; }
+        public GroupMembership group_membership { get; set; }
+        public string short_name { get; set; }
     }
 
     public class Actor3
@@ -90,6 +95,8 @@ namespace Gluten.FBModel
     {
         public string context_actor_hovercard { get; set; }
         public string id { get; set; }
+        public object answer_agent_id { get; set; }
+        public LeadersEngagementLoggingSettings leaders_engagement_logging_settings { get; set; }
     }
 
     public class Attachment
@@ -203,6 +210,7 @@ namespace Gluten.FBModel
 
     public class CometSections
     {
+        public Content attached_story_layout { get; set; }
         public string __typename { get; set; }
         public Content content { get; set; }
         public Layout layout { get; set; }
@@ -218,7 +226,7 @@ namespace Gluten.FBModel
         public object above_message { get; set; }
         public object info_icon { get; set; }
         public object attachment_overlay { get; set; }
-        public object attached_story { get; set; }
+        public Story attached_story { get; set; }
         public Message message { get; set; }
         public object message_suffix { get; set; }
         public MessageContainer message_container { get; set; }
@@ -999,14 +1007,22 @@ namespace Gluten.FBModel
     {
         public Node node { get; set; }
         public string cursor { get; set; }
+        public PageInfo? page_info { get; set; }
+        public Group group { get; set; }
+    }
+
+    public class PageInfo
+    {
+        public string end_cursor { get; set; }
+        public bool has_next_page { get; set; }
     }
 
     public class Ddd
     {
         public Hsrp hsrp { get; set; }
         public Jsmods jsmods { get; set; }
-        public List<string> allResources { get; set; }
-        public TieredResources tieredResources { get; set; }
+        //public List<string> allResources { get; set; }
+        //public TieredResources tieredResources { get; set; }
     }
 
     public class Description
@@ -1030,13 +1046,59 @@ namespace Gluten.FBModel
         public Node node { get; set; }
         public string i18n_reaction_count { get; set; }
         public int reaction_count { get; set; }
+        public string cursor { get; set; }
+
+        public List<object> debug_overlay_info { get; set; }
+        public string logging_unit_id { get; set; }
+        public bool has_relay_child_rendering_strategy { get; set; }
+        public RelayRenderingStrategy relay_rendering_strategy { get; set; }
+    }
+
+    public class RelayRenderingStrategy
+    {
+        public string __typename { get; set; }
+        public ViewModel view_model { get; set; }
+        public ModuleOperationSearchCometResultsPaginatedResultsSearchQuery __module_operation_SearchCometResultsPaginatedResults_searchQuery { get; set; }
+        public ModuleComponentSearchCometResultsPaginatedResultsSearchQuery __module_component_SearchCometResultsPaginatedResults_searchQuery { get; set; }
+    }
+
+    public class ModuleComponentSearchCometResultsPaginatedResultsSearchQuery
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleOperationSearchCometResultsPaginatedResultsSearchQuery
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ViewModel
+    {
+        public string __typename { get; set; }
+        public ClickModel click_model { get; set; }
+    }
+
+    public class ClickModel
+    {
+        public LoggingModel logging_model { get; set; }
+        public Story story { get; set; }
+    }
+
+    public class LoggingModel
+    {
+        public string session_id { get; set; }
+        public string logging_unit_id { get; set; }
+        public string tapped_result_id { get; set; }
+        public string typeahead_sid { get; set; }
+        public string module_role { get; set; }
     }
 
     public class Extensions
     {
         public List<PrefetchUrisV2> prefetch_uris_v2 { get; set; }
         public bool is_final { get; set; }
-        public SrPayload sr_payload { get; set; }
+        //public SrPayload sr_payload { get; set; }
+        public List<FulfilledPayload> fulfilled_payloads { get; set; }
     }
 
     public class Feedback
@@ -1153,6 +1215,48 @@ namespace Gluten.FBModel
     {
         public string id { get; set; }
         public object answer_agent_id { get; set; }
+
+        public IfViewerCanSeeExpandedColor if_viewer_can_see_expanded_color { get; set; }
+        public object if_viewer_cannot_see_expanded_color { get; set; }
+        public TopLevelEligiblePromotions top_level_eligible_promotions { get; set; }
+        public GroupFeed group_feed { get; set; }
+        public OffPlatCometCrawlabilityGk off_plat_comet_crawlability_gk { get; set; }
+        public string group_address { get; set; }
+        public string vanity { get; set; }
+        public bool render_directory_link { get; set; }
+        public string name { get; set; }
+        public string context_actor_hovercard { get; set; }
+        public object if_viewer_can_see_streamer_videos { get; set; }
+        public IfViewerCanSeeHighlightUnits if_viewer_can_see_highlight_units { get; set; }
+        public object if_viewer_can_see_announcements_unit { get; set; }
+        public object if_viewer_can_see_announcements_unit_for_count { get; set; }
+        public object if_viewer_can_see_community_profile_announcements_unit { get; set; }
+        public bool is_group_mall_seo_heading_optimized { get; set; }
+        public object card { get; set; }
+        public object group_moment { get; set; }
+        public object if_viewer_can_see_pending_post_in_mall { get; set; }
+        public CometInlineComposerRenderer comet_inline_composer_renderer { get; set; }
+        public int viewer_last_visited_time { get; set; }
+        public IfViewerCanSeeContent if_viewer_can_see_content { get; set; }
+        public object if_viewer_can_see_composer_on_community_profile_tab { get; set; }
+        public object if_viewer_can_see_pending_content_card { get; set; }
+        public object if_viewer_can_see_participation_questionnaire { get; set; }
+        public IfViewerCanSeeChatHostRole if_viewer_can_see_chat_host_role { get; set; }
+        public object if_viewer_can_see_new_member_consumption { get; set; }
+        public object if_viewer_can_see_key_groups_max_test_upsell_in_mall { get; set; }
+        public object if_viewer_can_request_to_participate_in_forum { get; set; }
+        public object if_viewer_can_see_pending_forum_participant_experience { get; set; }
+        public Community community { get; set; }
+        public GroupMallNuxProvider group_mall_nux_provider { get; set; }
+        public ConvoStarterInfoBottomsheet convo_starter_info_bottomsheet { get; set; }
+        public object if_viewer_can_see_public_group_hint_text_in_composer { get; set; }
+        public IfViewerCanSeeGroupComposer if_viewer_can_see_group_composer { get; set; }
+        public GroupCometComposerNoParams group_comet_composer_no_params { get; set; }
+        public object if_viewer_can_create_reels { get; set; }
+        public AvailableActors available_actors { get; set; }
+        public object if_viewer_can_see_anonymous_post_toggle_button { get; set; }
+        public object if_viewer_can_participate_with_group_level_anonymous_voice { get; set; }
+        public IfViewerCanSeeCustomizedDefaultPostTypeComposer if_viewer_can_see_customized_default_post_type_composer { get; set; }
     }
 
     public class GroupCommentInfo
@@ -1166,7 +1270,7 @@ namespace Gluten.FBModel
     public class Hblp
     {
         public Consistency consistency { get; set; }
-        public RsrcMap rsrcMap { get; set; }
+        //        public RsrcMap rsrcMap { get; set; }
     }
 
     public class Hsrp
@@ -1210,7 +1314,9 @@ namespace Gluten.FBModel
 
     public class Jsmods
     {
-        public List<List<object>> require { get; set; }
+        //public List<List<object>> require { get; set; }
+        //public List<List<object>> define { get; set; }
+
     }
 
     public class Layout
@@ -1602,6 +1708,8 @@ namespace Gluten.FBModel
 
     public class Node
     {
+        public string role { get; set; }
+
         public GroupFeed group_feed { get; set; }
 
         public string __typename { get; set; }
@@ -1635,6 +1743,10 @@ namespace Gluten.FBModel
         public ClientViewConfig client_view_config { get; set; }
         public string __isNode { get; set; }
         public string localized_name { get; set; }
+
+        public Title title { get; set; }
+        public TargetGroup target_group { get; set; }
+        public StoryHeader story_header { get; set; }
     }
 
     public class Node2
@@ -1783,315 +1895,6 @@ namespace Gluten.FBModel
         public Extensions extensions { get; set; }
     }
 
-    public class RsrcMap
-    {
-        [JsonProperty("csr:_1i_2u_sS")]
-        public Csr1i2uSS csr_1i_2u_sS { get; set; }
-
-        [JsonProperty("csr:_1i_2v_Dd")]
-        public Csr1i2vDd csr_1i_2v_Dd { get; set; }
-
-        [JsonProperty("csr:_1i_2w_Ui")]
-        public Csr1i2wUi csr_1i_2w_Ui { get; set; }
-
-        [JsonProperty("csr:_1i_2x_aA")]
-        public Csr1i2xAA csr_1i_2x_aA { get; set; }
-
-        [JsonProperty("csr:_1i_2y_Iu")]
-        public Csr1i2yIu csr_1i_2y_Iu { get; set; }
-
-        [JsonProperty("csr:_1i_2z_Cb")]
-        public Csr1i2zCb csr_1i_2z_Cb { get; set; }
-
-        [JsonProperty("csr:_1i_30_35")]
-        public Csr1i3035 csr_1i_30_35 { get; set; }
-
-        [JsonProperty("csr:_1i_31_hl")]
-        public Csr1i31Hl csr_1i_31_hl { get; set; }
-
-        [JsonProperty("csr:_1i_32_l2")]
-        public Csr1i32L2 csr_1i_32_l2 { get; set; }
-
-        [JsonProperty("csr:_1i_33_CN")]
-        public Csr1i33CN csr_1i_33_CN { get; set; }
-
-        [JsonProperty("csr:_1i_34_oE")]
-        public Csr1i34OE csr_1i_34_oE { get; set; }
-
-        [JsonProperty("csr:_1i_35_uJ")]
-        public Csr1i35UJ csr_1i_35_uJ { get; set; }
-
-        [JsonProperty("csr:_1i_36_UO")]
-        public Csr1i36UO csr_1i_36_UO { get; set; }
-
-        [JsonProperty("csr:_1i_37_r3")]
-        public Csr1i37R3 csr_1i_37_r3 { get; set; }
-
-        [JsonProperty("csr:_1i_38_Zc")]
-        public Csr1i38Zc csr_1i_38_Zc { get; set; }
-
-        [JsonProperty("csr:_1i_39_9z")]
-        public Csr1i399z csr_1i_39_9z { get; set; }
-
-        [JsonProperty("csr:_1i_3a_Mf")]
-        public Csr1i3aMf csr_1i_3a_Mf { get; set; }
-
-        [JsonProperty("csr:_1i_3b_Wp")]
-        public Csr1i3bWp csr_1i_3b_Wp { get; set; }
-
-        [JsonProperty("csr:_1i_3c_EE")]
-        public Csr1i3cEE csr_1i_3c_EE { get; set; }
-
-        [JsonProperty("csr:_1i_3d_T/")]
-        public Csr1i3dT csr_1i_3d_T { get; set; }
-
-        [JsonProperty("csr:_1i_3e_ck")]
-        public Csr1i3eCk csr_1i_3e_ck { get; set; }
-
-        [JsonProperty("csr:_1i_3f_7/")]
-        public Csr1i3f7 csr_1i_3f_7 { get; set; }
-
-        [JsonProperty("csr:_1i_3g_rS")]
-        public Csr1i3gRS csr_1i_3g_rS { get; set; }
-
-        [JsonProperty("csr:_1i_3h_wu")]
-        public Csr1i3hWu csr_1i_3h_wu { get; set; }
-
-        [JsonProperty("csr:_1i_3i_9T")]
-        public Csr1i3i9T csr_1i_3i_9T { get; set; }
-
-        [JsonProperty("csr:_1i_3j_4B")]
-        public Csr1i3j4B csr_1i_3j_4B { get; set; }
-
-        [JsonProperty("csr:_1i_3k_J6")]
-        public Csr1i3kJ6 csr_1i_3k_J6 { get; set; }
-
-        [JsonProperty("csr:_1i_3l_NA")]
-        public Csr1i3lNA csr_1i_3l_NA { get; set; }
-
-        [JsonProperty("csr:_1i_3m_oY")]
-        public Csr1i3mOY csr_1i_3m_oY { get; set; }
-
-        [JsonProperty("csr:_1i_3n_fn")]
-        public Csr1i3nFn csr_1i_3n_fn { get; set; }
-
-        [JsonProperty("csr:_1i_3o_s8")]
-        public Csr1i3oS8 csr_1i_3o_s8 { get; set; }
-
-        [JsonProperty("csr:_1i_3p_kk")]
-        public Csr1i3pKk csr_1i_3p_kk { get; set; }
-
-        [JsonProperty("csr:_1i_3q_Vq")]
-        public Csr1i3qVq csr_1i_3q_Vq { get; set; }
-
-        [JsonProperty("csr:_1i_3r_6A")]
-        public Csr1i3r6A csr_1i_3r_6A { get; set; }
-
-        [JsonProperty("csr:_1i_3s_AS")]
-        public Csr1i3sAS csr_1i_3s_AS { get; set; }
-
-        [JsonProperty("csr:_1i_3t_HZ")]
-        public Csr1i3tHZ csr_1i_3t_HZ { get; set; }
-
-        [JsonProperty("csr:_1i_3u_Tz")]
-        public Csr1i3uTz csr_1i_3u_Tz { get; set; }
-
-        [JsonProperty("csr:_1i_3v_vR")]
-        public Csr1i3vVR csr_1i_3v_vR { get; set; }
-
-        [JsonProperty("csr:_1i_3w_f6")]
-        public Csr1i3wF6 csr_1i_3w_f6 { get; set; }
-
-        [JsonProperty("csr:_1i_3x_JW")]
-        public Csr1i3xJW csr_1i_3x_JW { get; set; }
-
-        [JsonProperty("csr:_1i_3y_tp")]
-        public Csr1i3yTp csr_1i_3y_tp { get; set; }
-
-        [JsonProperty("csr:_1i_3z_qM")]
-        public Csr1i3zQM csr_1i_3z_qM { get; set; }
-
-        [JsonProperty("csr:_1i_40_Uk")]
-        public Csr1i40Uk csr_1i_40_Uk { get; set; }
-
-        [JsonProperty("csr:_1i_41_+n")]
-        public Csr1i41N csr_1i_41_n { get; set; }
-
-        [JsonProperty("csr:_1i_42_1/")]
-        public Csr1i421 csr_1i_42_1 { get; set; }
-
-        [JsonProperty("csr:_1i_43_b9")]
-        public Csr1i43B9 csr_1i_43_b9 { get; set; }
-
-        [JsonProperty("csr:_1i_44_15")]
-        public Csr1i4415 csr_1i_44_15 { get; set; }
-
-        [JsonProperty("csr:_1i_45_AN")]
-        public Csr1i45AN csr_1i_45_AN { get; set; }
-
-        [JsonProperty("csr:_1i_46_SU")]
-        public Csr1i46SU csr_1i_46_SU { get; set; }
-
-        [JsonProperty("csr:_1i_47_ek")]
-        public Csr1i47Ek csr_1i_47_ek { get; set; }
-
-        [JsonProperty("csr:_1i_48_Lk")]
-        public Csr1i48Lk csr_1i_48_Lk { get; set; }
-
-        [JsonProperty("csr:_1i_49_gz")]
-        public Csr1i49Gz csr_1i_49_gz { get; set; }
-
-        [JsonProperty("csr:_1i_4a_eh")]
-        public Csr1i4aEh csr_1i_4a_eh { get; set; }
-
-        [JsonProperty("csr:_1i_4b_PS")]
-        public Csr1i4bPS csr_1i_4b_PS { get; set; }
-
-        [JsonProperty("csr:_1i_4c_25")]
-        public Csr1i4c25 csr_1i_4c_25 { get; set; }
-
-        [JsonProperty("csr:_1i_4d_jh")]
-        public Csr1i4dJh csr_1i_4d_jh { get; set; }
-
-        [JsonProperty("csr:_1i_4e_Q5")]
-        public Csr1i4eQ5 csr_1i_4e_Q5 { get; set; }
-
-        [JsonProperty("csr:_1i_4f_bQ")]
-        public Csr1i4fBQ csr_1i_4f_bQ { get; set; }
-
-        [JsonProperty("csr:_1i_4g_IL")]
-        public Csr1i4gIL csr_1i_4g_IL { get; set; }
-
-        [JsonProperty("csr:_1i_4h_ND")]
-        public Csr1i4hND csr_1i_4h_ND { get; set; }
-
-        [JsonProperty("csr:_1i_4i_Jt")]
-        public Csr1i4iJt csr_1i_4i_Jt { get; set; }
-
-        [JsonProperty("csr:_1i_4j_LZ")]
-        public Csr1i4jLZ csr_1i_4j_LZ { get; set; }
-
-        [JsonProperty("csr:_1i_4k_Xn")]
-        public Csr1i4kXn csr_1i_4k_Xn { get; set; }
-
-        [JsonProperty("csr:_1i_4l_an")]
-        public Csr1i4lAn csr_1i_4l_an { get; set; }
-
-        [JsonProperty("csr:_1i_4m_zg")]
-        public Csr1i4mZg csr_1i_4m_zg { get; set; }
-
-        [JsonProperty("csr:_1i_4n_Ue")]
-        public Csr1i4nUe csr_1i_4n_Ue { get; set; }
-
-        [JsonProperty("csr:_1i_4o_14")]
-        public Csr1i4o14 csr_1i_4o_14 { get; set; }
-
-        [JsonProperty("csr:_1i_4p_/j")]
-        public Csr1i4pJ csr_1i_4p_j { get; set; }
-
-        [JsonProperty("csr:_1i_4q_nm")]
-        public Csr1i4qNm csr_1i_4q_nm { get; set; }
-
-        [JsonProperty("csr:_1i_4r_LJ")]
-        public Csr1i4rLJ csr_1i_4r_LJ { get; set; }
-
-        [JsonProperty("csr:_1i_4s_fR")]
-        public Csr1i4sFR csr_1i_4s_fR { get; set; }
-
-        [JsonProperty("csr:_1i_4t_1r")]
-        public Csr1i4t1r csr_1i_4t_1r { get; set; }
-
-        [JsonProperty("csr:_1i_4u_WB")]
-        public Csr1i4uWB csr_1i_4u_WB { get; set; }
-
-        [JsonProperty("csr:_1i_4v_Fl")]
-        public Csr1i4vFl csr_1i_4v_Fl { get; set; }
-
-        [JsonProperty("csr:_1i_4w_00")]
-        public Csr1i4w00 csr_1i_4w_00 { get; set; }
-
-        [JsonProperty("csr:_1i_4x_O3")]
-        public Csr1i4xO3 csr_1i_4x_O3 { get; set; }
-
-        [JsonProperty("csr:_1i_4y_CJ")]
-        public Csr1i4yCJ csr_1i_4y_CJ { get; set; }
-
-        [JsonProperty("csr:_1i_4z_2B")]
-        public Csr1i4z2B csr_1i_4z_2B { get; set; }
-
-        [JsonProperty("csr:_1i_50_Rd")]
-        public Csr1i50Rd csr_1i_50_Rd { get; set; }
-
-        [JsonProperty("csr:_1i_51_JX")]
-        public Csr1i51JX csr_1i_51_JX { get; set; }
-
-        [JsonProperty("csr:_1i_52_wM")]
-        public Csr1i52WM csr_1i_52_wM { get; set; }
-
-        [JsonProperty("csr:_1i_53_ww")]
-        public Csr1i53Ww csr_1i_53_ww { get; set; }
-
-        [JsonProperty("csr:_1i_54_Bk")]
-        public Csr1i54Bk csr_1i_54_Bk { get; set; }
-
-        [JsonProperty("csr:_1i_55_jv")]
-        public Csr1i55Jv csr_1i_55_jv { get; set; }
-
-        [JsonProperty("csr:_1i_56_vo")]
-        public Csr1i56Vo csr_1i_56_vo { get; set; }
-
-        [JsonProperty("csr:_1i_57_9Z")]
-        public Csr1i579Z csr_1i_57_9Z { get; set; }
-
-        [JsonProperty("csr:_1i_58_zt")]
-        public Csr1i58Zt csr_1i_58_zt { get; set; }
-
-        [JsonProperty("csr:_1i_59_lC")]
-        public Csr1i59LC csr_1i_59_lC { get; set; }
-
-        [JsonProperty("csr:_1i_5a_o+")]
-        public Csr1i5aO csr_1i_5a_o { get; set; }
-
-        [JsonProperty("csr:_1i_5b_UW")]
-        public Csr1i5bUW csr_1i_5b_UW { get; set; }
-
-        [JsonProperty("csr:_1i_5c_On")]
-        public Csr1i5cOn csr_1i_5c_On { get; set; }
-
-        [JsonProperty("csr:_1i_5d_S5")]
-        public Csr1i5dS5 csr_1i_5d_S5 { get; set; }
-
-        [JsonProperty("csr:_1i_5e_7R")]
-        public Csr1i5e7R csr_1i_5e_7R { get; set; }
-
-        [JsonProperty("csr:_1i_5f_Ez")]
-        public Csr1i5fEz csr_1i_5f_Ez { get; set; }
-
-        [JsonProperty("csr:_1i_5g_hN")]
-        public Csr1i5gHN csr_1i_5g_hN { get; set; }
-
-        [JsonProperty("csr:_1i_5h_DS")]
-        public Csr1i5hDS csr_1i_5h_DS { get; set; }
-
-        [JsonProperty("csr:_1i_5i_+m")]
-        public Csr1i5iM csr_1i_5i_m { get; set; }
-
-        [JsonProperty("csr:_1i_5j_Mn")]
-        public Csr1i5jMn csr_1i_5j_Mn { get; set; }
-
-        [JsonProperty("csr:_1i_5k_J5")]
-        public Csr1i5kJ5 csr_1i_5k_J5 { get; set; }
-
-        [JsonProperty("csr:_1i_5l_oX")]
-        public Csr1i5lOX csr_1i_5l_oX { get; set; }
-
-        [JsonProperty("csr:_1i_5m_XA")]
-        public Csr1i5mXA csr_1i_5m_XA { get; set; }
-
-        [JsonProperty("csr:_1i_5n_XR")]
-        public Csr1i5nXR csr_1i_5n_XR { get; set; }
-    }
-
     public class SeenBy
     {
         public object count { get; set; }
@@ -2103,11 +1906,6 @@ namespace Gluten.FBModel
     {
         public int count { get; set; }
         public bool is_empty { get; set; }
-    }
-
-    public class SrPayload
-    {
-        public Ddd ddd { get; set; }
     }
 
     public class Story
@@ -2125,7 +1923,7 @@ namespace Gluten.FBModel
         public object ghl_label_mocked_cta_button { get; set; }
         public string wwwURL { get; set; }
         public TargetGroup target_group { get; set; }
-        public object attached_story { get; set; }
+        public Story attached_story { get; set; }
         public string id { get; set; }
         public string url { get; set; }
         public string __typename { get; set; }
@@ -2201,6 +1999,9 @@ namespace Gluten.FBModel
         public string id { get; set; }
         public string visibility { get; set; }
         public PrivacyInfo privacy_info { get; set; }
+        public bool can_viewer_see_sorting_switcher { get; set; }
+        public IfViewerCanSeeExpandedColor if_viewer_can_see_expanded_color { get; set; }
+        public object if_viewer_cannot_see_expanded_color { get; set; }
     }
 
     public class ThreadingConfig
@@ -2289,6 +2090,453 @@ namespace Gluten.FBModel
         public int width { get; set; }
         public string uri { get; set; }
     }
+
+
+    public class AvailableActors
+    {
+        public List<object> edges { get; set; }
+    }
+
+    public class CometComposerMediaAttachmentAreaReact
+    {
+        public List<string> r { get; set; }
+
+        public int be { get; set; }
+    }
+
+    public class CometHovercardLinkPreviewSettingsDialogReact
+    {
+        public List<string> r { get; set; }
+        public Rdfds rdfds { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class CometHovercardQueryRendererReact
+    {
+        public List<string> r { get; set; }
+        public int be { get; set; }
+    }
+
+    public class CometInlineComposerRenderer
+    {
+        public string __typename { get; set; }
+        public Group group { get; set; }
+        public Viewer viewer { get; set; }
+        public object override_hint_text { get; set; }
+        public ModuleOperationGroupsCometInlineComposerRendererGroup __module_operation_GroupsCometInlineComposerRenderer_group { get; set; }
+        public ModuleComponentGroupsCometInlineComposerRendererGroup __module_component_GroupsCometInlineComposerRenderer_group { get; set; }
+    }
+
+    public class CometNewsRegulationDialogReact
+    {
+        public List<string> r { get; set; }
+        public Rdfds rdfds { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class CometSurfaceMapping
+    {
+        public string __typename { get; set; }
+        public string surface { get; set; }
+        public string trace_policy { get; set; }
+        public List<string> prefixes { get; set; }
+    }
+
+    public class CometTooltipDEPRECATEDReact
+    {
+        public List<string> r { get; set; }
+        public Rdfds rdfds { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class Community
+    {
+        public object if_viewer_can_see_admod_chat { get; set; }
+        public object if_viewer_can_use_chat_templates { get; set; }
+        public object if_viewer_can_create_chat_as_admod { get; set; }
+        public string id { get; set; }
+    }
+
+
+    public class ComposerRenderer
+    {
+        public string __typename { get; set; }
+        public PlaceholderText placeholder_text { get; set; }
+        public string default_post_type { get; set; }
+    }
+
+    public class ConvoStarterInfoBottomsheet
+    {
+        public bool can_see_bottomsheet_view { get; set; }
+    }
+    public class FDSProfileVideoSectionReact
+    {
+        public List<string> r { get; set; }
+        public int be { get; set; }
+    }
+
+
+    public class FollowJoinModel
+    {
+        public string empty_feature_section_header { get; set; }
+    }
+
+    public class FulfilledPayload
+    {
+        public string label { get; set; }
+        public List<string> path { get; set; }
+    }
+
+    public class GroupCometComposerCreateDialogReact
+    {
+        public List<string> r { get; set; }
+        public Rdfds rdfds { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class GroupCometComposerNoParams
+    {
+        public List<InlineSprout> inline_sprouts { get; set; }
+    }
+
+    public class GroupMallNuxProvider
+    {
+        public object nux { get; set; }
+    }
+
+    public class GroupMembership
+    {
+        public bool has_member_feed { get; set; }
+        public AssociatedGroup associated_group { get; set; }
+        public string id { get; set; }
+    }
+
+    public class GroupsCometAnonProfilePopoverReact
+    {
+        public List<string> r { get; set; }
+        public Rdfds rdfds { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class GroupsCometAnswerAgentEducationModalReact
+    {
+        public List<string> r { get; set; }
+        public Rdfds rdfds { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class GroupsCometHighlightsSectionInfoCardReact
+    {
+        public List<string> r { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class GroupsCometHighlightUnitMenuReact
+    {
+        public List<string> r { get; set; }
+        public Rdfds rdfds { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class GroupsCometSaleComposerDialogReact
+    {
+        public List<string> r { get; set; }
+        public Rdfds rdfds { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class GroupSecondaryThemeColor
+    {
+        public string hexcolor { get; set; }
+    }
+
+    public class GroupThemeColor
+    {
+        public string hexcolor { get; set; }
+    }
+
+
+
+
+    public class HighlightSectionName
+    {
+        public string text { get; set; }
+    }
+
+    public class HighlightUnits
+    {
+        public List<object> edges { get; set; }
+        public PageInfo page_info { get; set; }
+        public int count { get; set; }
+    }
+
+
+    public class Icon
+    {
+        public string uri { get; set; }
+    }
+
+    public class IfViewerCannotEditHighlightUnitsSettings
+    {
+        public object if_viewer_is_admin { get; set; }
+        public string group_type_name_for_content { get; set; }
+        public HighlightSectionName highlight_section_name { get; set; }
+        public object highlight_section_subtitle { get; set; }
+        public bool highlight_section_collapse_by_default { get; set; }
+        public bool enable_collapsible_highlight_section { get; set; }
+        public ModuleOperationGroupsCometHighlightsSectionGroupHeader __module_operation_GroupsCometHighlightsSection_group_header { get; set; }
+        public ModuleComponentGroupsCometHighlightsSectionGroupHeader __module_component_GroupsCometHighlightsSection_group_header { get; set; }
+        public string id { get; set; }
+    }
+
+    public class IfViewerCanSeeChatHostRole
+    {
+        public string __typename { get; set; }
+        public string id { get; set; }
+    }
+
+    public class IfViewerCanSeeContent
+    {
+        public string __typename { get; set; }
+        public string id { get; set; }
+    }
+
+    public class IfViewerCanSeeCustomizedDefaultPostTypeComposer
+    {
+        public string id { get; set; }
+        public ComposerRenderer composer_renderer { get; set; }
+        public ModuleOperationGroupsCometDefaultGroupInlineComposerGroupIfViewerCanSeeCustomizedDefaultPostTypeComposer __module_operation_GroupsCometDefaultGroupInlineComposer_group_if_viewer_can_see_customized_default_post_type_composer { get; set; }
+        public ModuleComponentGroupsCometDefaultGroupInlineComposerGroupIfViewerCanSeeCustomizedDefaultPostTypeComposer __module_component_GroupsCometDefaultGroupInlineComposer_group_if_viewer_can_see_customized_default_post_type_composer { get; set; }
+    }
+
+    public class IfViewerCanSeeExpandedColor
+    {
+        public GroupThemeColor group_theme_color { get; set; }
+        public GroupSecondaryThemeColor group_secondary_theme_color { get; set; }
+        public object group_wash_theme_color { get; set; }
+        public ModuleOperationGroupsCometColorWrapperGroupCanSeeExpandedColor __module_operation_GroupsCometColorWrapper_group_canSeeExpandedColor { get; set; }
+        public ModuleComponentGroupsCometColorWrapperGroupCanSeeExpandedColor __module_component_GroupsCometColorWrapper_group_canSeeExpandedColor { get; set; }
+        public string id { get; set; }
+    }
+
+    public class IfViewerCanSeeGroupComposer
+    {
+        public string __typename { get; set; }
+        public string id { get; set; }
+    }
+
+    public class IfViewerCanSeeHighlightUnits
+    {
+        public string id { get; set; }
+        public HighlightUnits highlight_units { get; set; }
+        public IfViewerCanSeeExpandedColor if_viewer_can_see_expanded_color { get; set; }
+        public object if_viewer_cannot_see_expanded_color { get; set; }
+        public object if_viewer_can_edit_highlight_units_settings { get; set; }
+        public IfViewerCannotEditHighlightUnitsSettings if_viewer_cannot_edit_highlight_units_settings { get; set; }
+        public object if_viewer_is_admin { get; set; }
+        public bool is_newly_created { get; set; }
+        public bool should_hide_feature_unit_for_new_groups { get; set; }
+        public int highlight_section_vpvd_time { get; set; }
+        public bool highlight_section_collapse_by_default { get; set; }
+        public FollowJoinModel follow_join_model { get; set; }
+        public ModuleOperationGroupsCometFeedGroupHighlightUnits __module_operation_GroupsCometFeed_group_highlight_units { get; set; }
+        public ModuleComponentGroupsCometFeedGroupHighlightUnits __module_component_GroupsCometFeed_group_highlight_units { get; set; }
+    }
+
+    public class InlineSprout
+    {
+        public string __typename { get; set; }
+        public string __isICometComposerSprout { get; set; }
+        public string inline_label { get; set; }
+        public Icon icon { get; set; }
+        public ModuleOperationGroupsCometFeedInlineComposerSproutsListGroup __module_operation_GroupsCometFeedInlineComposerSproutsList_group { get; set; }
+        public ModuleComponentGroupsCometFeedInlineComposerSproutsListGroup __module_component_GroupsCometFeedInlineComposerSproutsList_group { get; set; }
+    }
+
+    public class LeadersEngagementLoggingSettings
+    {
+        public List<CometSurfaceMapping> comet_surface_mappings { get; set; }
+    }
+
+
+    public class MGAwDyO
+    {
+        public string type { get; set; }
+        public string src { get; set; }
+        public string tsrc { get; set; }
+        public string p { get; set; }
+        public string m { get; set; }
+    }
+
+    public class MissingNavigationErrorHandler
+    {
+        public List<string> r { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class ModuleComponentGroupsCometColorWrapperGroupCanSeeExpandedColor
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleComponentGroupsCometDefaultGroupInlineComposerGroupIfViewerCanSeeCustomizedDefaultPostTypeComposer
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleComponentGroupsCometFeedGroupHighlightUnits
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleComponentGroupsCometFeedInlineComposerSproutsListGroup
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleComponentGroupsCometHighlightsSectionGroupHeader
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleComponentGroupsCometInlineComposerRendererGroup
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleOperationGroupsCometColorWrapperGroupCanSeeExpandedColor
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleOperationGroupsCometDefaultGroupInlineComposerGroupIfViewerCanSeeCustomizedDefaultPostTypeComposer
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleOperationGroupsCometFeedGroupHighlightUnits
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleOperationGroupsCometFeedInlineComposerSproutsListGroup
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleOperationGroupsCometHighlightsSectionGroupHeader
+    {
+        public string __dr { get; set; }
+    }
+
+    public class ModuleOperationGroupsCometInlineComposerRendererGroup
+    {
+        public string __dr { get; set; }
+    }
+
+    public class OffPlatCometCrawlabilityGk
+    {
+        public bool passes_gk { get; set; }
+    }
+
+    public class PlaceholderText
+    {
+        public string text { get; set; }
+    }
+
+
+
+    public class Rdfds
+    {
+        public List<string> m { get; set; }
+        public List<string> r { get; set; }
+    }
+
+    public class Rds
+    {
+        public List<string> m { get; set; }
+        public List<string> r { get; set; }
+    }
+
+    public class SecuredActionBlockDialogReact
+    {
+        public List<string> r { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class SecuredActionChallengeCDSPasswordDialogReact
+    {
+        public List<string> r { get; set; }
+        public Rdfds rdfds { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class SecuredActionChallengePasswordDialogReact
+    {
+        public List<string> r { get; set; }
+        public Rdfds rdfds { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class SecuredActionNoChallengeAvailableCDSDialogReact
+    {
+        public List<string> r { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class StoryHeader
+    {
+        public List<StyleInfo> style_infos { get; set; }
+    }
+
+    public class StyleInfo
+    {
+        public string __typename { get; set; }
+        public List<ViewerAvailableSortingSwitcher> viewer_available_sorting_switchers { get; set; }
+    }
+
+    public class TopLevelEligiblePromotions
+    {
+        public List<object> nodes { get; set; }
+    }
+
+
+    public class TwoStepVerificationRootReact
+    {
+        public List<string> r { get; set; }
+        public Rdfds rdfds { get; set; }
+        public Rds rds { get; set; }
+        public int be { get; set; }
+    }
+
+    public class Viewer
+    {
+        public Actor actor { get; set; }
+    }
+
+    public class ViewerAvailableSortingSwitcher
+    {
+        public string option_description { get; set; }
+        public string option_name { get; set; }
+        public string sorting_setting { get; set; }
+        public string __typename { get; set; }
+    }
+
+
 
 
 }

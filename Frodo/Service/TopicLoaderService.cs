@@ -1,6 +1,8 @@
-﻿using Gluten.Core.Service;
+﻿using Gluten.Core.Interface;
+using Gluten.Core.Service;
 using Gluten.Data.TopicModel;
 using Gluten.FBModel;
+using Gluten.FBModel.Helper;
 using Newtonsoft.Json;
 
 namespace Frodo.Service
@@ -8,7 +10,7 @@ namespace Frodo.Service
     /// <summary>
     /// Processes the data captured from FB groups
     /// </summary>
-    internal class TopicLoaderService
+    internal class TopicLoaderService(IConsole Console)
     {
         private readonly TopicHelper _topicHelper = new();
         internal static readonly string[] crlf = ["/r/n"];
@@ -29,20 +31,62 @@ namespace Frodo.Service
                     var messages = line.Split(crlf, StringSplitOptions.None);
                     // Process the line
                     i++;
-                    Console.WriteLine(i);
-                    foreach (var message in messages)
+                    if (i % 100 == 0)
+                        Console.WriteLine(i);
+
+                    if (line.StartsWith("{\"data\":"))
                     {
-                        try
+                        ProcessSearchRootMessage(line, topics);
+                    }
+                    else
+                    {
+                        foreach (var message in messages)
                         {
-                            GroupRoot? m;
-                            m = JsonConvert.DeserializeObject<GroupRoot>(message);
-                            ProcessModel(m, topics);
-                        }
-                        catch (Exception ex)
-                        {
-                            Console.WriteLine(ex.Message);
+                            try
+                            {
+                                GroupRoot? m;
+                                m = JsonConvert.DeserializeObject<GroupRoot>(message);
+                                ProcessModel(m, topics);
+                            }
+                            catch (Exception ex)
+                            {
+                                Console.WriteLine(ex.Message);
+                            }
                         }
                     }
+                }
+            }
+        }
+
+        private void ProcessSearchRootMessage(string message, List<DetailedTopic> topics)
+        {
+            var sr = JsonConvert.DeserializeObject<SearchRoot>(message);
+            if (sr?.data?.serpResponse == null) return;
+
+            foreach (var edge in sr.data.serpResponse.results.edges)
+            {
+                if (edge.relay_rendering_strategy.__typename == "SearchEndOfResultsModuleRenderingStrategy") continue;
+                if (edge.relay_rendering_strategy.view_model.click_model.story == null) continue;
+
+                var story = edge.relay_rendering_strategy.view_model.click_model.story;
+                var comet_sectionsStory = story.comet_sections.content.story;
+                var metaData = story.comet_sections.context_layout.story.comet_sections.metadata;
+
+                //TODO: Assume element 0, CometFeedStoryLongerTimestampStrategy
+                var metaStoryCreationTime = metaData[0].story.creation_time;
+                var nodeId = story.id;
+                var messageText = comet_sectionsStory?.message?.text;
+                // If this is a linked story, ignore
+                if (string.IsNullOrWhiteSpace(messageText)) continue;
+                DetailedTopic? currentTopic = _topicHelper.GetOrCreateTopic(topics, nodeId, messageText);
+
+                currentTopic.Title = messageText ?? "";
+                currentTopic.FacebookUrl = comet_sectionsStory?.wwwURL;
+                currentTopic.PostCreated = DateTimeOffset.FromUnixTimeSeconds(metaStoryCreationTime);
+
+                if (string.IsNullOrWhiteSpace(currentTopic.GroupId))
+                {
+                    currentTopic.GroupId = comet_sectionsStory?.target_group.id ?? "";
                 }
             }
         }
@@ -53,100 +97,60 @@ namespace Frodo.Service
             string? messageText;
             if (groupRoot == null || groupRoot.data.node == null) return;
 
-            var a = groupRoot.data.node.comet_sections;
-            var nodeId = groupRoot.data.node.id;
+            var node = FbModelHelper.GetStoryNode(groupRoot);
+            if (node == null) return;
 
-            if (groupRoot.data.node.group_feed?.edges != null && a == null)
-                foreach (var edge in groupRoot.data.node.group_feed.edges)
-                {
-                    var node = edge.node;
-                    nodeId = node.id;
-                    a = node.comet_sections;
+            var nodeId = node.id;
+            var contentStory = node.comet_sections.content.story;
 
-                }
-
-            if (a != null)
+            if (contentStory != null)
             {
-                var story = a.content.story;
-                messageText = story?.message?.text;
+                messageText = contentStory?.message?.text;
 
                 if (string.IsNullOrWhiteSpace(messageText))
                 {
-                    // TODO: Log?
+                    var attachedMessage = contentStory?.attached_story?.message?.text;
+                    if (string.IsNullOrWhiteSpace(attachedMessage))
+                    {
+                        Console.WriteLine($"Empty message text, node id = {nodeId}");
+                    }
                     return;
                 }
                 DetailedTopic? currentTopic = _topicHelper.GetOrCreateTopic(topics, nodeId, messageText);
 
-                var story2 = a.feedback.story.story_ufi_container.story.feedback_context.interesting_top_level_comments;
-                foreach (var feedback in story2)
-                {
-                    var d = feedback.comment;
-                    if (d.body != null)
-                    {
-                        Response currentResponse = _topicHelper.GetOrCreateResponse(currentTopic, feedback.comment.id);
-                        currentResponse.Message = d.body.text;
-                    }
-                }
-                currentTopic.Title = messageText;
-                currentTopic.FacebookUrl = story?.wwwURL;
+                UpdateTopicFromStoryNode(node, currentTopic);
+            }
+        }
 
-                currentTopic.GroupId = a.feedback.story.story_ufi_container.story.target_group.id;
-                var b = a.feedback.story.story_ufi_container.story.tracking;
-                try
+        private void UpdateTopicFromStoryNode(Node node, DetailedTopic currentTopic)
+        {
+            var contentStory = node.comet_sections.content.story;
+            var messageText = contentStory?.message?.text;
+            var ufiStory = node.comet_sections.feedback.story.story_ufi_container.story;
+            var interesting_top_level_comments = ufiStory.feedback_context.interesting_top_level_comments;
+            var tracking = ufiStory.tracking;
+            foreach (var feedback in interesting_top_level_comments)
+            {
+                var d = feedback.comment;
+                if (d.body != null)
                 {
-                    var trackingInfo = JsonConvert.DeserializeObject<TrackingRoot>(b);
-                    long seconds = 0;
-                    if (trackingInfo == null)
-                    {
-                        Console.WriteLine("Unable to Deserialize tracking info");
-                    }
-                    else if (trackingInfo.page_insights._379994195544478 != null)
-                        seconds = trackingInfo.page_insights._379994195544478.post_context.publish_time;
-                    else if (trackingInfo.page_insights._361337232353766 != null)
-                        seconds = trackingInfo.page_insights._361337232353766.post_context.publish_time;
-                    else if (trackingInfo.page_insights._660915839470807 != null)
-                        seconds = trackingInfo.page_insights._660915839470807.post_context.publish_time;
-                    else if (trackingInfo.page_insights._100008943645323 != null)
-                        seconds = trackingInfo.page_insights._100008943645323.post_context.publish_time;
-                    else if (trackingInfo.page_insights._61561347076615 != null)
-                        seconds = trackingInfo.page_insights._61561347076615.post_context.publish_time;
-                    else if (trackingInfo.page_insights._330239776846883 != null)
-                        seconds = trackingInfo.page_insights._330239776846883.post_context.publish_time;
-                    else if (trackingInfo.page_insights._353439621914938 != null)
-                        seconds = trackingInfo.page_insights._353439621914938.post_context.publish_time;
-                    else if (trackingInfo.page_insights._319517678837045 != null)
-                        seconds = trackingInfo.page_insights._319517678837045.post_context.publish_time;
-                    else if (trackingInfo.page_insights._852980778556330 != null)
-                        seconds = trackingInfo.page_insights._852980778556330.post_context.publish_time;
-                    else if (trackingInfo.page_insights._100083231515067 != null)
-                        seconds = trackingInfo.page_insights._100083231515067.post_context.publish_time;
-                    else if (trackingInfo.page_insights._1015752345220391 != null)
-                        seconds = trackingInfo.page_insights._1015752345220391.post_context.publish_time;
-                    else if (trackingInfo.page_insights._422262581142441 != null)
-                        seconds = trackingInfo.page_insights._422262581142441.post_context.publish_time;
-                    else if (trackingInfo.page_insights._302515126584130 != null)
-                        seconds = trackingInfo.page_insights._302515126584130.post_context.publish_time;
-                    else if (trackingInfo.page_insights._1420852834795381 != null)
-                        seconds = trackingInfo.page_insights._1420852834795381.post_context.publish_time;
-                    else if (trackingInfo.page_insights._1053129328213251 != null)
-                        seconds = trackingInfo.page_insights._1053129328213251.post_context.publish_time;
-                    else
-                    {
-                        Console.WriteLine("Unknown message structure");
-                    }
-                    currentTopic.PostCreated = DateTimeOffset.FromUnixTimeSeconds(seconds);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                }
-
-                if (currentTopic.GroupId == null && story != null)
-                {
-                    currentTopic.GroupId = story.target_group.id;
+                    Response currentResponse = _topicHelper.GetOrCreateResponse(currentTopic, feedback.comment.id);
+                    currentResponse.Message = d.body.text;
                 }
             }
+            currentTopic.Title = messageText ?? "";
+            currentTopic.FacebookUrl = contentStory?.wwwURL;
+            currentTopic.PostCreated = FbModelHelper.GetTrackingPostDate(tracking);
 
+            if (string.IsNullOrWhiteSpace(currentTopic.GroupId) && ufiStory?.target_group != null)
+            {
+                currentTopic.GroupId = ufiStory.target_group.id;
+            }
+
+            if (string.IsNullOrWhiteSpace(currentTopic.GroupId) && contentStory?.target_group != null)
+            {
+                currentTopic.GroupId = contentStory.target_group.id;
+            }
         }
 
     }

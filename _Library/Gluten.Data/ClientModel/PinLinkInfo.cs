@@ -1,4 +1,6 @@
-﻿namespace Gluten.Data.ClientModel
+﻿// Ignore Spelling: Facebook
+
+namespace Gluten.Data.ClientModel
 {
     /// <summary>
     /// Useful client data for a facebook group post
