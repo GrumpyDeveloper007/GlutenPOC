@@ -1,4 +1,5 @@
-﻿using Gluten.Core.Service;
+﻿using Gluten.Core.Interface;
+using Gluten.Core.Service;
 using Gluten.Data.TopicModel;
 using Gluten.FBModel;
 using Gluten.FBModel.Helper;
@@ -9,7 +10,7 @@ namespace Frodo.Service
     /// <summary>
     /// Processes the data captured from FB groups
     /// </summary>
-    internal class TopicLoaderService
+    internal class TopicLoaderService(IConsole Console)
     {
         private readonly TopicHelper _topicHelper = new();
         internal static readonly string[] crlf = ["/r/n"];
@@ -80,12 +81,12 @@ namespace Frodo.Service
                 DetailedTopic? currentTopic = _topicHelper.GetOrCreateTopic(topics, nodeId, messageText);
 
                 currentTopic.Title = messageText ?? "";
-                currentTopic.FacebookUrl = comet_sectionsStory.wwwURL;
+                currentTopic.FacebookUrl = comet_sectionsStory?.wwwURL;
                 currentTopic.PostCreated = DateTimeOffset.FromUnixTimeSeconds(metaStoryCreationTime);
 
                 if (string.IsNullOrWhiteSpace(currentTopic.GroupId))
                 {
-                    currentTopic.GroupId = comet_sectionsStory.target_group.id;
+                    currentTopic.GroupId = comet_sectionsStory?.target_group.id ?? "";
                 }
             }
         }
@@ -108,12 +109,11 @@ namespace Frodo.Service
 
                 if (string.IsNullOrWhiteSpace(messageText))
                 {
-                    var attachedMessage = contentStory.attached_story?.message?.text;
+                    var attachedMessage = contentStory?.attached_story?.message?.text;
                     if (string.IsNullOrWhiteSpace(attachedMessage))
                     {
                         Console.WriteLine($"Empty message text, node id = {nodeId}");
                     }
-                    // TODO: Log?
                     return;
                 }
                 DetailedTopic? currentTopic = _topicHelper.GetOrCreateTopic(topics, nodeId, messageText);
@@ -142,7 +142,12 @@ namespace Frodo.Service
             currentTopic.FacebookUrl = contentStory?.wwwURL;
             currentTopic.PostCreated = FbModelHelper.GetTrackingPostDate(tracking);
 
-            if (string.IsNullOrWhiteSpace(currentTopic.GroupId) == null && contentStory != null)
+            if (string.IsNullOrWhiteSpace(currentTopic.GroupId) && ufiStory?.target_group != null)
+            {
+                currentTopic.GroupId = ufiStory.target_group.id;
+            }
+
+            if (string.IsNullOrWhiteSpace(currentTopic.GroupId) && contentStory?.target_group != null)
             {
                 currentTopic.GroupId = contentStory.target_group.id;
             }

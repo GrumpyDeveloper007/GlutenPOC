@@ -1,5 +1,6 @@
 ﻿using Gluten.Core.Helper;
 using Gluten.Core.LocationProcessing.Service;
+using Gluten.Core.Service;
 using Gluten.Data.ClientModel;
 using Gluten.Data.MapsModel;
 using Gluten.Data.PinCache;
@@ -45,11 +46,11 @@ namespace Gluten.Core.DataProcessing.Service
             }
             if (pins != null)
             {
-                _mapPinCache = new MapPinCache(pins);
+                _mapPinCache = new MapPinCache(pins, new DummyConsole());
             }
             else
             {
-                _mapPinCache = new MapPinCache([]);
+                _mapPinCache = new MapPinCache([], new DummyConsole());
             }
             if (File.Exists(PinDescriptionCacheFileName))
             {
@@ -64,6 +65,9 @@ namespace Gluten.Core.DataProcessing.Service
             _pinDescriptionsCache ??= [];
         }
 
+        /// <summary>
+        /// Get Pin Description cache
+        /// </summary>
         public PinDescriptionCache? GetPinDescriptionCache(List<string> nodes)
         {
             foreach (var item in _pinDescriptionsCache)
@@ -87,7 +91,9 @@ namespace Gluten.Core.DataProcessing.Service
             return null;
         }
 
-
+        /// <summary>
+        /// Add item to the pin description cache
+        /// </summary>
         public void AddPinDescriptionCache(PinDescriptionCache pinDescriptionsCache)
         {
             foreach (var item in _pinDescriptionsCache)
@@ -113,11 +119,17 @@ namespace Gluten.Core.DataProcessing.Service
             _pinDescriptionsCache.Add(pinDescriptionsCache);
         }
 
+        /// <summary>
+        /// Save pin description cache
+        /// </summary>
         public void SavePinDescriptionCache()
         {
             SaveDb(PinDescriptionCacheFileName, _pinDescriptionsCache);
         }
 
+        /// <summary>
+        /// Save restaurant list
+        /// </summary>
         public void SaveRestaurantList(List<string> restaurants)
         {
             //eg. 'Train station',
@@ -130,12 +142,17 @@ namespace Gluten.Core.DataProcessing.Service
             File.WriteAllText(RestaurantsFileName + ".txt", fileText.Replace("'", "\""));
         }
 
-
+        /// <summary>
+        /// Save AiVenue items that should not be added to future topics
+        /// </summary>
         public void SavePlaceSkipList(List<AiVenue> data)
         {
             SaveDb(PlacenameSkipListFileName, data);
         }
 
+        /// <summary>
+        /// Load AiVenue skip list
+        /// </summary>
         public List<AiVenue> LoadPlaceSkipList()
         {
             var data = TryLoadJson<AiVenue>(PlacenameSkipListFileName);
@@ -143,12 +160,17 @@ namespace Gluten.Core.DataProcessing.Service
             return data;
         }
 
-
+        /// <summary>
+        /// Save pins generated from Google maps
+        /// </summary>
         public void SaveGMPins(List<GMapsPin> data)
         {
             SaveDb<List<GMapsPin>>(GMPinFileName, data);
         }
 
+        /// <summary>
+        /// Load pins generated from google maps
+        /// </summary>
         public List<GMapsPin> LoadGMPins()
         {
             var data = TryLoadJson<GMapsPin>(GMPinFileName);

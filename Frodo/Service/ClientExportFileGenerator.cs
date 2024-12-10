@@ -2,150 +2,32 @@
 using Gluten.Core.DataProcessing.Service;
 using Gluten.Core.LocationProcessing.Service;
 using Gluten.Data.ClientModel;
-using Gluten.Data.MapsModel;
 using Gluten.Data.PinDescription;
 using Gluten.Data.TopicModel;
 using Newtonsoft.Json.Converters;
 using Newtonsoft.Json;
 using Gluten.Data.Access.Service;
 using Gluten.Data.Access.DatabaseModel;
-using Gluten.Core.Helper;
+using Gluten.Core.Interface;
+
 
 namespace Frodo.Service
 {
+    /// <summary>
+    /// Generates and exports data to the client database
+    /// </summary>
     internal class ClientExportFileGenerator(DatabaseLoaderService _databaseLoaderService,
         MappingService _mappingService,
         MapPinCache _mapPinCache,
         FBGroupService _fBGroupService,
         GeoService _geoService,
-        CloudDataStore _dataStore
+        CloudDataStore _dataStore,
+        IConsole Console
         )
     {
-        private readonly LocalAiInterfaceService _analyzeDocumentService = new();
+        private readonly LocalAiInterfaceService _analyzeDocumentService = new(Console);
         private const string ExportFolder = @"D:\Coding\Gluten\Export\";
-
-        private static void SaveDb<typeToSave>(string fileName, typeToSave topics)
-        {
-
-            var json = JsonConvert.SerializeObject(topics, Formatting.None,
-                [new StringEnumConverter()]);
-            File.WriteAllText(fileName, json);
-        }
-
-        private void WriteToDatabase(List<PinTopic> pins, List<GMapsPin> gmPins)
-        {
-            var mapper = new DbMapper();
-            //_dataStore.DeleteContainer<PinTopicDb>().Wait();
-            //_dataStore.DeleteContainer<GMapsPinDb>().Wait();
-
-            // delete locally removed
-            var itemsGm = _dataStore.GetData<GMapsPinDb>("").Result;
-            for (int i = 0; i < itemsGm.Count; i++)
-            {
-                var item = itemsGm[i];
-                if (!gmPins.Exists(o => o.GeoLatitude == item.GeoLatitude && o.GeoLongitude == item.GeoLongitude))
-                {
-                    Console.WriteLine($"Delete item {i}");
-                    _dataStore.DeleteItemAsync(item).Wait();
-                }
-            }
-
-            var items = _dataStore.GetData<PinTopicDb>("").Result;
-            for (int i = 0; i < items.Count; i++)
-            {
-                var item = items[i];
-                if (!pins.Exists(o => o.GeoLatitude == item.GeoLatitude && o.GeoLongitude == item.GeoLongitude))
-                {
-                    Console.WriteLine($"Delete item {i}");
-                    _dataStore.DeleteItemAsync(item).Wait();
-                }
-            }
-
-            for (int i = 0; i < gmPins.Count; i++)
-            {
-                var item = gmPins[i];
-                item.Description = $"Pin generated from Google maps - {item.Comment}";
-                Console.WriteLine($"Writing to database {i}");
-                var dbItem = mapper.Map<GMapsPinDb, GMapsPin>(item);
-                dbItem.Country = _geoService.GetCountryPin(item);
-                _dataStore.ReplaceItemAsync(dbItem).Wait();
-            }
-
-
-            for (int i = 0; i < pins.Count; i++)
-            {
-                var item = pins[i];
-                Console.WriteLine($"Writing to database {i}");
-                var dbItem = mapper.Map<PinTopicDb, PinTopic>(item);
-                dbItem.Country = _geoService.GetCountryPin(item);
-                _dataStore.ReplaceItemAsync(dbItem).Wait();
-            }
-
-        }
-
-
-        private void CreateExportFolderData(List<PinTopic> pins, List<DetailedTopic> topics)
-        {
-            Dictionary<string, List<PinTopic>> files = [];
-
-            foreach (var item in pins)
-            {
-                string groupId = "";
-                string groupCountry = "";
-                if (item.Topics != null)
-                {
-                    foreach (var topic in item.Topics)
-                    {
-                        var selectedTopic = topics.First(o => o.NodeID == topic.NodeID);
-                        groupId = selectedTopic.GroupId;
-                        groupCountry = _fBGroupService.GetCountryName(groupId);
-                        if (string.IsNullOrWhiteSpace(groupCountry)) groupCountry = selectedTopic.TitleCountry ?? "";
-                        break;
-                    }
-                }
-
-
-                if (!files.TryGetValue(groupCountry, out List<PinTopic>? value))
-                {
-                    value = ([]);
-                    files.Add(groupCountry, value);
-                }
-
-                value.Add(item);
-            }
-
-            foreach (var file in files)
-            {
-                SaveDb(ExportFolder + file.Key + ".json", file.Value);
-            }
-        }
-
-        private void CreateExportFolderDataGM(List<GMapsPin> pins)
-        {
-            Dictionary<string, List<GMapsPin>> files = [];
-
-            foreach (var item in pins)
-            {
-                var pinCountry = _geoService.GetCountryPin(item);
-
-                if (!string.IsNullOrWhiteSpace(pinCountry))
-                {
-                    if (!files.TryGetValue(pinCountry, out List<GMapsPin>? value))
-                    {
-                        value = ([]);
-                        files.Add(pinCountry, value);
-                    }
-
-                    value.Add(item);
-                }
-            }
-
-            foreach (var file in files)
-            {
-                SaveDb(ExportFolder + file.Key + "GM.json", file.Value);
-            }
-        }
-
+        private ClientExportFileGeneratorGM _exportFileGeneratorGM = new(_databaseLoaderService, _geoService, _dataStore, Console);
 
         /// <summary>
         /// Group data by pin (venue), export to json
@@ -154,7 +36,6 @@ namespace Frodo.Service
         {
             List<PinTopic>? pins = _databaseLoaderService.LoadPinTopics();
             pins ??= [];
-            var gmPins = _databaseLoaderService.LoadGMPins();
 
             DataHelper.CleanTopics(pins);
             pins = ExtractPinExport(pins, topics, _mappingService);
@@ -210,36 +91,12 @@ namespace Frodo.Service
             }
             DataHelper.RemoveTopicTitles(pins);
 
-            GenerateGMPinExport(pins);
-
-            var gmPinsWithDescriptions = gmPins.Where(x => !string.IsNullOrWhiteSpace(x.Comment) && x.Comment.Contains("gluten", StringComparison.InvariantCultureIgnoreCase)).ToList();
-            WriteToDatabase(pins, gmPinsWithDescriptions);
+            WriteToDatabase(pins);
 
             _databaseLoaderService.SavePinTopics(pins);
             CreateExportFolderData(pins, topics);
-            CreateExportFolderDataGM(gmPins);
+            _exportFileGeneratorGM.GenerateTopicExport(topics, pins, ExportFolder);
             Console.WriteLine($"Unknown restaurant types : {unknownRestaurantType}");
-        }
-
-        private void GenerateGMPinExport(List<PinTopic> pins)
-        {
-            var gmPins = _databaseLoaderService.LoadGMPins();
-            List<GMapsPin> exportPins = [];
-
-            foreach (var pin in gmPins)
-            {
-                if (!string.IsNullOrWhiteSpace(pin.Comment)
-                    && pin.GeoLatitude != null
-                    && pin.GeoLongitude != null
-                    && !PinHelper.IsInList(pins, double.Parse(pin.GeoLatitude), double.Parse(pin.GeoLongitude)))
-                {
-                    pin.Description = $"Pin generated from Google maps - {pin.Comment}";
-                    exportPins.Add(pin);
-                }
-            }
-
-            _databaseLoaderService.SaveGMMapPinExport(exportPins);
-            Console.WriteLine($"Exported {exportPins.Count} pins generated by google maps ");
         }
 
         private List<PinTopic> ExtractPinExport(List<PinTopic> pins, List<DetailedTopic> topics, MappingService mapper)
@@ -249,8 +106,6 @@ namespace Frodo.Service
                 var newT = mapper.Map<PinLinkInfo, DetailedTopic>(topic);
                 var groupCountry = _fBGroupService.GetCountryName(topic.GroupId);
                 if (string.IsNullOrWhiteSpace(groupCountry)) groupCountry = topic.TitleCountry ?? "";
-
-                //if (_fBGroupService.IsGenericGroup(topic.GroupId)) continue; // skip export for generic groups 
 
                 if (topic.AiVenues != null)
                 {
@@ -319,8 +174,76 @@ namespace Frodo.Service
             return pins;
         }
 
+        private static void SaveDb<typeToSave>(string fileName, typeToSave topics)
+        {
+
+            var json = JsonConvert.SerializeObject(topics, Formatting.None,
+                [new StringEnumConverter()]);
+            File.WriteAllText(fileName, json);
+        }
+
+        private void WriteToDatabase(List<PinTopic> pins)
+        {
+            var mapper = new DbMapper();
+
+            // delete locally removed
+            var items = _dataStore.GetData<PinTopicDb>("").Result;
+            for (int i = 0; i < items.Count; i++)
+            {
+                var item = items[i];
+                if (!pins.Exists(o => o.GeoLatitude == item.GeoLatitude && o.GeoLongitude == item.GeoLongitude))
+                {
+                    Console.WriteLine($"Delete item {i}");
+                    _dataStore.DeleteItemAsync(item).Wait();
+                }
+            }
+
+            for (int i = 0; i < pins.Count; i++)
+            {
+                var item = pins[i];
+                Console.WriteLine($"Writing to database {i}");
+                var dbItem = mapper.Map<PinTopicDb, PinTopic>(item);
+                dbItem.Country = _geoService.GetCountryPin(item);
+                _dataStore.ReplaceItemAsync(dbItem).Wait();
+            }
+
+        }
+
+        private void CreateExportFolderData(List<PinTopic> pins, List<DetailedTopic> topics)
+        {
+            Dictionary<string, List<PinTopic>> files = [];
+
+            foreach (var item in pins)
+            {
+                string groupId = "";
+                string groupCountry = "";
+                if (item.Topics != null)
+                {
+                    foreach (var topic in item.Topics)
+                    {
+                        var selectedTopic = topics.First(o => o.NodeID == topic.NodeID);
+                        groupId = selectedTopic.GroupId;
+                        groupCountry = _fBGroupService.GetCountryName(groupId);
+                        if (string.IsNullOrWhiteSpace(groupCountry)) groupCountry = selectedTopic.TitleCountry ?? "";
+                        break;
+                    }
+                }
 
 
+                if (!files.TryGetValue(groupCountry, out List<PinTopic>? value))
+                {
+                    value = ([]);
+                    files.Add(groupCountry, value);
+                }
+
+                value.Add(item);
+            }
+
+            foreach (var file in files)
+            {
+                SaveDb(ExportFolder + file.Key + ".json", file.Value);
+            }
+        }
 
     }
 }

@@ -1,5 +1,6 @@
 ﻿// Ignore Spelling: geo
 
+using Gluten.Core.Interface;
 using Gluten.Data.TopicModel;
 using System;
 using System.Collections.Generic;
@@ -13,17 +14,12 @@ namespace Gluten.Core.DataProcessing.Service
     /// Provides information about FB groups, 
     /// TODO: Move hard coded elements to DB
     /// </summary>
-    public class FBGroupService
+    public class FBGroupService(IConsole Console)
     {
         private readonly Dictionary<string, string> _knownGroupIds = new()
         {
             {"806902313439614","Thailand" }, // not gf group
-            {"1300758866697297","Cambodia/Vietnam" },//Cambodia & Vietnam Travel Tips
-            {"286367932803894","Cambodia" },//Cambodia Travel
-            {"292593134198337","" },//Coeliacs Eat Abroad - only back to july
-
-            {"361337232353766","Vietnam" }, // not active
-            { "769136475365475","NA" }, // dales gf map
+            {"769136475365475","NA" }, // dales gf map
 
             {"379994195544478","Japan" },//Gluten-Free in Japan!
             {"182984958515029","Singapore" },//Gluten Free Singapore - Support Group
@@ -39,35 +35,56 @@ namespace Gluten.Core.DataProcessing.Service
             {"1420852834795381","South Korea" }, //Wheat and Gluten-Free in South Korea
             {"302515126584130","Philippines" }, //Gluten-Free Philippines
             {"422284561238159","South Korea" },
+
             {"488425731191722","Malaysia" },//Off The Wheaten Path In Kuala Lumpur (Gluten Free Tips, Recipes & Findings)
             {"1720098858232675","United Arab Emirates" },//Gluten Free - UAE
             {"687227675922496","Spain" },
-            {"1025248344200757","Australia" }, //Gluten Free Eating Out Sydney & New South Wales, Australia
-            
-            {"342422672937608","Indonesia" },//Gluten Free Bali
-            {"247208302148491","India" },//Gluten free , Grain free ,healthy living in India
-            {"229495282203436","South Africa" },//Living gluten free in South Africa
             {"383755778784374","Italy" },//Gluten Free Italy
+            {"229495282203436","South Africa" },//Living gluten free in South Africa
+
+            {"1025248344200757","Australia" }, //Gluten Free Eating Out Sydney & New South Wales, Australia
+            {"9413340041","United Kingdom" },      //Coeliacs Eat Out Too UK
+
+            {"292593134198337","" },//Coeliacs Eat Abroad - only back to july
+            {"195689771214297","" },//Celiac Travel
+            {"798810970466035","" },//Celiac Travel Group
+
+            {"1066858930047711","" },//Coeliacs Eat Out Take Two
+            
+            {"247208302148491","India" },//Gluten free , Grain free ,healthy living in India
+
             {"550373421739534","Australia" },//Australia's Gluten & Celiac/Coeliac Support Group
             {"1452094601717166","Australia" },//Gluten Free Melbourne
             {"307872078321","Australia" },//Gluten Free Tasmania
+            {"625162559593528","Australia" },//Gluten Free Brisbane
 
-            {"450713908359721","Cambodia" },
+            // Not active
+            {"450713908359721","Cambodia" },//Cambodia
+            {"746699194039212","Vietnam" },//Vietnam 
+            {"191520127713279","Singapore" },//Singapore
+            {"428227140573301","Japan" },//Japan
+            {"1587317368127948","Thailand" },//Thailand
+            {"403103165372802","Cambodia" },//Cambodia,
+            {"361337232353766","Vietnam" }, // not active
+
+            {"286367932803894","Cambodia" },//Cambodia Travel
+            {"1300758866697297","Cambodia/Vietnam" },//Cambodia & Vietnam Travel Tips
+            {"309301445942480","Cambodia" },//Cambodia Travels & Tips
+            
+            {"342422672937608","Indonesia" },//Gluten Free Bali
+
             
             //{"","" },
         };
 
+        /// <summary>
+        /// Get a country name based on what group the message was posted in (groupId)
+        /// </summary>
         public string GetCountryName(string groupId)
         {
+            if (!_knownGroupIds.ContainsKey(groupId)) Console.WriteLine($"Unknown group :{groupId}");
             return _knownGroupIds[groupId];
         }
-
-        public bool IsGenericGroup(string groupId)
-        {
-            if (groupId == "292593134198337") return true;
-            return false;
-        }
-
 
         /// <summary>
         /// Provides some pin filtering based on geo location of the group and pin, 

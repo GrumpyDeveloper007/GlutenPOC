@@ -1,4 +1,5 @@
-﻿using OpenQA.Selenium;
+﻿using Gluten.Core.Interface;
+using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using System.Collections.ObjectModel;
 
@@ -7,7 +8,7 @@ namespace Gluten.Core.LocationProcessing.Service
     /// <summary>
     /// Uses Selenium to extract information from web pages
     /// </summary>
-    public class SeleniumMapsUrlProcessor
+    public class SeleniumMapsUrlProcessor(IConsole Console)
     {
         private readonly ChromeDriver _driver = new();
         private ReadOnlyCollection<IWebElement> _currentSearchResults = new([]);
@@ -32,7 +33,8 @@ namespace Gluten.Core.LocationProcessing.Service
                 while (existingUrl == _driver.Url)
                 {
                     Thread.Sleep(200);
-                    if (_driver.PageSource.Contains("Invalid Dynamic Link"))
+                    if (_driver.PageSource.Contains("Invalid Dynamic Link")
+                        || _driver.PageSource.Contains("Sorry, something went wrong"))
                     {
                         return _driver.Url;
                     }
@@ -95,6 +97,9 @@ namespace Gluten.Core.LocationProcessing.Service
             return "";
         }
 
+        /// <summary>
+        /// Gets interesting elements and saves for later
+        /// </summary>
         public void PreLoadSearchResults()
         {
             var elements = _driver.FindElements(By.CssSelector("[aria-label]"));

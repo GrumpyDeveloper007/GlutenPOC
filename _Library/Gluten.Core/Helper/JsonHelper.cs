@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json.Converters;
+﻿// Ignore Spelling: Json
+
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -8,8 +10,14 @@ using System.Threading.Tasks;
 
 namespace Gluten.Core.Helper
 {
+    /// <summary>
+    /// Json file IO helper class
+    /// </summary>
     public static class JsonHelper
     {
+        /// <summary>
+        /// Tries to load a collection of classes from a Json file
+        /// </summary>
         public static List<classType>? TryLoadJson<classType>(string fileName)
         {
             List<classType>? topics = null;
@@ -23,6 +31,9 @@ namespace Gluten.Core.Helper
             return topics;
         }
 
+        /// <summary>
+        /// Saves a class structure to a Json file
+        /// </summary>
         public static void SaveDb<typeToSave>(string fileName, typeToSave topics)
         {
             var json = JsonConvert.SerializeObject(topics, Formatting.Indented,

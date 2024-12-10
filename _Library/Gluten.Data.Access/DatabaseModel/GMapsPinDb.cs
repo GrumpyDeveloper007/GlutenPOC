@@ -1,12 +1,11 @@
 ﻿using Gluten.Data.MapsModel;
-using Microsoft.Azure.Cosmos;
 using Newtonsoft.Json;
 
 namespace Gluten.Data.Access.DatabaseModel
 {
     public class GMapsPinDb : GMapsPin, IDbModel
     {
-        public string Country { get; set; }
+        public string Country { get; set; } = "";
 
         [JsonProperty(PropertyName = "id")]
         public string Id
@@ -31,12 +30,5 @@ namespace Gluten.Data.Access.DatabaseModel
         {
             return $"{GeoLatitude}:{GeoLongitude}";
         }
-
-        private PartitionKey GetPartitionKey()
-        {
-            return new PartitionKey(Country);
-        }
     }
-
-
 }

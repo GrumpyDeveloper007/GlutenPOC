@@ -1,17 +1,18 @@
 ﻿using Gluten.Core.Helper;
+using Gluten.Core.Interface;
+using Gluten.Core.Service;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Policy;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using System.Web;
 
 namespace Frodo.Helper
 {
     internal static class LabelHelper
     {
+        public static IConsole Console { get; set; } = new DummyConsole();
+
         static List<string> wordMatch = [];
 
         public static void Reset()
@@ -32,13 +33,14 @@ namespace Frodo.Helper
             return Regex.Replace(input, pattern, replacement);
         }
 
-        public static bool IsInTextBlock(string matchText, string titleText)
+        public static bool IsInTextBlock(string? matchText, string titleText)
         {
+            if (matchText == null) return false;
             var title = StringHelper.RemoveIrrelevantChars(StringHelper.RemoveDiacritics(titleText));
 
             var label = StringHelper.RemoveDiacritics(HttpUtility.UrlDecode(matchText));
             var words = StringHelper.RemoveUnicode(StringHelper.ReplaceIrrelevantChars(label)).Split(' ');
-            var wordcount = label.Split(' ').Count();
+            var wordcount = label.Split(' ').Length;
 
             if (wordcount > 2)
             {

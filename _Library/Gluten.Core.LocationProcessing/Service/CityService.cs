@@ -9,14 +9,19 @@ using System.Threading.Tasks;
 
 namespace Gluten.Core.LocationProcessing.Service
 {
+    /// <summary>
+    /// Provides functionality to help identify city
+    /// </summary>
     public class CityService
     {
         private const string GeoJsonFilePath = "Resource\\cities500.json";
 
-        private List<City> _cityList;
+        private readonly List<City> _cityList;
 
         public class City
         {
+#pragma warning disable IDE1006 // Naming Styles
+
             public required string id { get; set; }
             public required string name { get; set; }
             public required string country { get; set; } // country code
@@ -24,8 +29,13 @@ namespace Gluten.Core.LocationProcessing.Service
             public required string lat { get; set; }
             public required string lon { get; set; }
             public required string pop { get; set; }
+#pragma warning restore IDE1006 // Naming Styles
+
         }
 
+        /// <summary>
+        /// Loads the database
+        /// </summary>
         public CityService()
         {
             var reader = new GeoJsonReader();
@@ -34,6 +44,9 @@ namespace Gluten.Core.LocationProcessing.Service
             _cityList = reader.Read<List<City>>(geoJson);
         }
 
+        /// <summary>
+        /// Returns true if the given string is a city name
+        /// </summary>
         public bool IsCity(string city)
         {
             List<string> cities = ["Krakow", "Reykjavik", "Cancun", "New York", "Rhodes",
@@ -43,6 +56,9 @@ namespace Gluten.Core.LocationProcessing.Service
             return false;
         }
 
+        /// <summary>
+        /// Returns city class if the given string is a city name
+        /// </summary>
         public City? GetCity(string city)
         {
             return _cityList.Where(o => o.name == city).FirstOrDefault<City>();

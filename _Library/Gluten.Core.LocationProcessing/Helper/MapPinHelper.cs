@@ -6,10 +6,17 @@ using System.Threading.Tasks;
 
 namespace Gluten.Core.LocationProcessing.Helper
 {
+    /// <summary>
+    /// Helper functions for map pins
+    /// </summary>
     internal static class MapPinHelper
     {
+        /// <summary>
+        /// Is the url a google maps url?
+        /// </summary>
         public static bool IsMapsUrl(string url)
         {
+            if (url.StartsWith("https://l.facebook.com/")) return false;
             // Link to street view
             //https://maps.google.com/maps/api/staticmap?center=34.6845322%2C135.1840363&amp;zoom=-1&amp;size=900x900&amp;language=en&amp;sensor=false&amp;client=google-maps-frontend&amp;signature=yGPXtu3-Vjroz_DtJZLPyDkVVC8\
             // Collection of pins 

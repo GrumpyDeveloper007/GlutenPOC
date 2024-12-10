@@ -7,8 +7,14 @@ using System.Threading.Tasks;
 
 namespace Gluten.Core.Helper
 {
+    /// <summary>
+    /// Helper functions for GMapPins
+    /// </summary>
     public static class GPinHelper
     {
+        /// <summary>
+        /// Add/Update pin
+        /// </summary>
         public static void TryAddPin(List<GMapsPin> pins, GMapsPin newPin)
         {
             var found = false;
@@ -29,6 +35,9 @@ namespace Gluten.Core.Helper
             }
         }
 
+        /// <summary>
+        /// Add/Update pin
+        /// </summary>
         public static void TryAddPin(Dictionary<string, GMapsPin> pins, GMapsPin newPin)
         {
             if (!pins.TryGetValue(newPin.GeoLatitude + ":" + newPin.GeoLongitude, out var found))

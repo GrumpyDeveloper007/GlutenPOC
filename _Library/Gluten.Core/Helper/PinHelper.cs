@@ -10,6 +10,9 @@ namespace Gluten.Core.Helper
     /// </summary>
     public class PinHelper
     {
+        /// <summary>
+        /// Checks to see if there is a pin in the list that has the Latitude/Longitude
+        /// </summary>
         public static bool IsInList(List<PinTopic> pins, double geoLatitude, double geoLongitude)
         {
             foreach (var pin in pins)
@@ -19,6 +22,9 @@ namespace Gluten.Core.Helper
             return false;
         }
 
+        /// <summary>
+        /// Converts a url to a Pin cache data item
+        /// </summary>
         public static TopicPinCache? GenerateMapPin(string url, string? searchString, string country)
         {
             if (url == null) return null;

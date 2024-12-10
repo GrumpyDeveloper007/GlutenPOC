@@ -28,11 +28,17 @@ namespace Gluten.Core.Helper
             return text.Replace(" ", "").Replace("-", "").Replace("’", "").Replace("'", "").Replace("+", "");
         }
 
+        /// <summary>
+        /// Removes unique characters that we do not care about for the purpose of matching
+        /// </summary>
         public static string ReplaceIrrelevantChars(string text)
         {
             return text.Replace("-", " ").Replace("’", " ").Replace("'", " ").Replace("+", " ").Replace(".", "");
         }
 
+        /// <summary>
+        /// Remove any unicode characters
+        /// </summary>
         public static string RemoveUnicode(string text)
         {
             string pattern = @"[^\u0000-\u007F]";

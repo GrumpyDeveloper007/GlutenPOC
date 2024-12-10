@@ -7,9 +7,15 @@ using System.Threading.Tasks;
 
 namespace Gluten.Core.LocationProcessing.Helper
 {
+    /// <summary>
+    /// Helper functions for currency symbol detection 
+    /// </summary>
     public static class CurrencyHelper
     {
-        public static bool StartsWithCurrencySymbol(string text)
+        /// <summary>
+        /// Tries to work out of the text contains a currency symbol
+        /// </summary>
+        public static bool ContainsCurrencySymbol(string text)
         {
             if (text.Contains('¥')
                 || text.Contains('￥')
@@ -36,6 +42,10 @@ namespace Gluten.Core.LocationProcessing.Helper
             }
             return false;
         }
+
+        /// <summary>
+        /// Contains currency symbol?
+        /// </summary>
         public static bool IsCurrencySymbol(string text)
         {
             if (text.Contains('¥')

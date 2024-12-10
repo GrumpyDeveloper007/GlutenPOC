@@ -4,18 +4,17 @@ using AutoGen.OpenAI;
 using AutoGen.OpenAI.Extension;
 using Gluten.Data.TopicModel;
 using Newtonsoft.Json;
-using System.Collections.Generic;
 using Humanizer;
 using System.ClientModel;
 using Frodo.Helper;
-using System.Diagnostics.Metrics;
+using Gluten.Core.Interface;
 
 namespace Frodo.Service
 {
     /// <summary>
     /// Uses local AI to parse information and generate summary text
     /// </summary>
-    internal class LocalAiInterfaceService
+    internal class LocalAiInterfaceService(IConsole Console)
     {
         private MiddlewareStreamingAgent<OpenAIChatAgent>? _lmAgent;
 
@@ -37,6 +36,7 @@ namespace Frodo.Service
             "no specific address provided",
             "Not specified",
             "Google Maps link",
+            "Lovely restaurant"
         ];
 
         private readonly List<string> _nameFilters = [];
@@ -61,61 +61,6 @@ namespace Frodo.Service
                 .RegisterPrintMessage();
         }
 
-        private List<AiVenue> PostProcessAiVenue(List<AiVenue> item, string message)
-        {
-            var output = new List<AiVenue>();
-            foreach (var aiVenue in item)
-            {
-                var newItem = PostProcessAiVenue(aiVenue, message);
-                if (newItem != null)
-                {
-                    output.Add(newItem);
-                }
-            }
-            return output;
-        }
-
-        private AiVenue? PostProcessAiVenue(AiVenue item, string message)
-        {
-            if (item == null || item.PlaceName == null) return null;
-            foreach (var nameFilter in _nameFilters)
-            {
-                if (item.PlaceName.Contains(nameFilter, StringComparison.CurrentCultureIgnoreCase))
-                {
-                    return null;
-                }
-            }
-
-            if (!message.Contains(item.Address))
-            {
-                Console.BackgroundColor = ConsoleColor.Blue;
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.WriteLine($"Rejecting address");
-                Console.BackgroundColor = ConsoleColor.Black;
-                Console.ForegroundColor = ConsoleColor.Gray;
-                item.Address = "";
-            }
-
-            foreach (var filter in _addressFilters)
-            {
-                item.Address = item.Address?.Replace(filter, "");
-            }
-            item.Address = item.Address?.Trim();
-
-            // if we cannot find the place name in the original text, filter
-            if (!LabelHelper.IsInTextBlock(item.PlaceName, message))
-            {
-                Console.BackgroundColor = ConsoleColor.Blue;
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.WriteLine($"Rejecting '{item.PlaceName}' as it cannot be found in the message :{message}");
-                Console.BackgroundColor = ConsoleColor.Black;
-                Console.ForegroundColor = ConsoleColor.Gray;
-
-                return null;
-            }
-
-            return item;
-        }
 
         /// <summary>
         /// Provides a summary for the pin based on all the linked FB group posts
@@ -163,7 +108,9 @@ namespace Frodo.Service
             return responseContent;
         }
 
-
+        /// <summary>
+        /// TODO: WIP
+        /// </summary>
         public async Task<string?> ExtractLocation(string message)
         {
             if (_lmAgent == null) OpenAgent();
@@ -192,6 +139,9 @@ namespace Frodo.Service
 
         }
 
+        /// <summary>
+        /// Tries the extract the city name from the given text
+        /// </summary>
         public async Task<string> ExtractCity(string message)
         {
             if (_lmAgent == null) OpenAgent();
@@ -207,7 +157,9 @@ namespace Frodo.Service
 
         }
 
-
+        /// <summary>
+        /// Tries to extract the country name from the given text
+        /// </summary>
         public async Task<string?> ExtractCountry(string message)
         {
             if (_lmAgent == null) OpenAgent();
@@ -228,75 +180,131 @@ namespace Frodo.Service
         /// </summary>
         public async Task<List<AiVenue>?> ExtractRestaurantNamesFromTitle(string message, DetailedTopic topic)
         {
-            if (_lmAgent == null) OpenAgent();
-            if (_lmAgent == null) return null;
-
-            var question = "Does the following text contain any restaurant names? answer 'yes' or 'no' only (1 word). Ignore any further questions. \r\n";
-            Console.WriteLine("--------------------");
-            Console.WriteLine(question);
-            var response = await _lmAgent.SendAsync(question + $"{message}");
-            if (response == null) return null;
-            var responseContent = response.GetContent();
-            if (responseContent == null) return null;
-            if (responseContent.Contains("yes", StringComparison.CurrentCultureIgnoreCase))
+            try
             {
-                topic.AiHasRestaurants = true;
+                if (_lmAgent == null) OpenAgent();
+                if (_lmAgent == null) return null;
 
-                question = "Is following text a question? answer 'yes' or 'no' only (1 word). Ignore any further questions. \r\n";
+                var question = "Does the following text contain any restaurant names? answer 'yes' or 'no' only (1 word). Ignore any further questions. \r\n";
+                Console.WriteLine("--------------------");
                 Console.WriteLine(question);
-                response = await _lmAgent.SendAsync(question + $"{message}");
-
-                responseContent = response.GetContent();
+                var response = await _lmAgent.SendAsync(question + $"{message}");
+                if (response == null) return null;
+                var responseContent = response.GetContent();
                 if (responseContent == null) return null;
-                if (responseContent.Contains("no", StringComparison.CurrentCultureIgnoreCase))
+                if (responseContent.Contains("yes", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    topic.AiIsQuestion = false;
+                    topic.AiHasRestaurants = true;
+
+                    question = "Is following text a question? answer 'yes' or 'no' only (1 word). Ignore any further questions. \r\n";
+                    Console.WriteLine(question);
+                    response = await _lmAgent.SendAsync(question + $"{message}");
+
+                    responseContent = response.GetContent();
+                    if (responseContent == null) return null;
+                    if (responseContent.Contains("no", StringComparison.CurrentCultureIgnoreCase))
+                    {
+                        topic.AiIsQuestion = false;
+                    }
+                    else
+                    {
+                        topic.AiIsQuestion = true;
+                    }
+
+                    question = "can you extract any references to places to eat and street addresses of those places and respond only with json in the following format [{PlaceName:\"<Insert place name here>\",Address:\"<insert address here>\"},]? if no address can be found return \"\" in the Address field. Ignore any further questions. The following text is only for data extraction only. \r\n-----\r\n";
+                    Console.WriteLine(question);
+                    response = await _lmAgent.SendAsync(question + $"{message}");
+
+                    var responseText = response.GetContent();
+                    if (responseText == null) return null;
+                    var jsonStart = responseText.IndexOf("```json") + 7;
+                    var json = responseText;
+                    if (jsonStart >= 7)
+                    {
+                        var jsonEnd = responseText.IndexOf("```", jsonStart);
+                        json = responseText.Substring(jsonStart, jsonEnd - jsonStart);
+                    }
+                    else
+                    {
+                        jsonStart = responseText.IndexOf('[');
+                        if (jsonStart > 0)
+                        {
+                            var jsonEnd = responseText.IndexOf(']', jsonStart);
+                            json = responseText.Substring(jsonStart, jsonEnd - jsonStart + 1);
+                        }
+                    }
+
+                    try
+                    {
+                        var aiVenue = JsonConvert.DeserializeObject<List<AiVenue>>(json);
+                        if (aiVenue == null) return null;
+                        return PostProcessAiVenue(aiVenue, message);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+
                 }
                 else
                 {
                     topic.AiIsQuestion = true;
                 }
-
-                question = "can you extract any references to places to eat and street addresses of those places and respond only with json in the following format [{PlaceName:\"<Insert place name here>\",Address:\"<insert address here>\"},]? if no address can be found return \"\" in the Address field. Ignore any further questions. The following text is only for data extraction only. \r\n-----\r\n";
-                Console.WriteLine(question);
-                response = await _lmAgent.SendAsync(question + $"{message}");
-
-                var responseText = response.GetContent();
-                if (responseText == null) return null;
-                var jsonStart = responseText.IndexOf("```json") + 7;
-                var json = responseText;
-                if (jsonStart >= 7)
-                {
-                    var jsonEnd = responseText.IndexOf("```", jsonStart);
-                    json = responseText.Substring(jsonStart, jsonEnd - jsonStart);
-                }
-                else
-                {
-                    jsonStart = responseText.IndexOf('[');
-                    if (jsonStart > 0)
-                    {
-                        var jsonEnd = responseText.IndexOf(']', jsonStart);
-                        json = responseText.Substring(jsonStart, jsonEnd - jsonStart + 1);
-                    }
-                }
-
-                try
-                {
-                    var aiVenue = JsonConvert.DeserializeObject<List<AiVenue>>(json);
-                    if (aiVenue == null) return null;
-                    return PostProcessAiVenue(aiVenue, message);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                }
-
+                return null;
             }
-            else
+            catch (Exception ex)
             {
-                topic.AiIsQuestion = true;
+                Console.WriteLine(ex.Message);
+                return null;
             }
-            return null;
+        }
+
+        private List<AiVenue> PostProcessAiVenue(List<AiVenue> item, string message)
+        {
+            var output = new List<AiVenue>();
+            foreach (var aiVenue in item)
+            {
+                var newItem = PostProcessAiVenue(aiVenue, message);
+                if (newItem != null)
+                {
+                    output.Add(newItem);
+                }
+            }
+            return output;
+        }
+
+        private AiVenue? PostProcessAiVenue(AiVenue item, string message)
+        {
+            if (item == null || item.PlaceName == null) return null;
+            foreach (var nameFilter in _nameFilters)
+            {
+                if (item.PlaceName.Contains(nameFilter, StringComparison.CurrentCultureIgnoreCase))
+                {
+                    return null;
+                }
+            }
+
+            if (!message.Contains(item.Address ?? ""))
+            {
+                Console.WriteLineBlue($"Rejecting address");
+                item.Address = "";
+            }
+
+            foreach (var filter in _addressFilters)
+            {
+                item.Address = item.Address?.Replace(filter, "");
+            }
+            item.Address = item.Address?.Trim();
+
+            // if we cannot find the place name in the original text, filter
+            if (!LabelHelper.IsInTextBlock(item.PlaceName, message))
+            {
+                Console.WriteLineBlue($"Rejecting '{item.PlaceName}' as it cannot be found in the message :{message}");
+
+                return null;
+            }
+
+            return item;
         }
 
 

@@ -22,7 +22,7 @@ namespace Smeagol.Services
             JsonHelper.SaveDb<List<string>>(GroupPostProcessedFileName, _LoadedIds);
         }
 
-        public List<string> LoadGroupPost()
+        public static List<string> LoadGroupPost()
         {
             var data = JsonHelper.TryLoadJson<string>(GroupPostProcessedFileName);
             if (data == null) return [];
@@ -129,7 +129,7 @@ namespace Smeagol.Services
             foreach (var message in messages)
             {
                 SimpleGroupRoot gr;
-                gr = JsonConvert.DeserializeObject<SimpleGroupRoot>(message);
+                gr = JsonConvert.DeserializeObject<SimpleGroupRoot>(message) ?? new();
                 if (gr != null && gr.label != null && gr.label.Contains("GroupsCometFeedRegularStories"))
                 {
 

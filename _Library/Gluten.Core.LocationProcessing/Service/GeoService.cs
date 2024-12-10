@@ -16,6 +16,9 @@ using System.Threading.Tasks;
 
 namespace Gluten.Core.LocationProcessing.Service
 {
+    /// <summary>
+    /// Provides geo location functionality
+    /// </summary>
     public class GeoService
     {
         private readonly NetTopologySuite.Features.FeatureCollection _features;
@@ -28,6 +31,9 @@ namespace Gluten.Core.LocationProcessing.Service
         // This seems to be the best fitting database obtainable online
         private const string GeoJsonFilePath = "Resource\\World-EEZ.geojson";
 
+        /// <summary>
+        /// Constructor - load data
+        /// </summary>
         public GeoService()
         {
             // Load GeoJSON
@@ -37,6 +43,9 @@ namespace Gluten.Core.LocationProcessing.Service
             _features = reader.Read<NetTopologySuite.Features.FeatureCollection>(geoJson);
         }
 
+        /// <summary>
+        /// Gets the country name for the given coordinates
+        /// </summary>
         public string GetCountryPin(GMapsPin? pin)
         {
             if (pin == null) return "";
@@ -46,6 +55,9 @@ namespace Gluten.Core.LocationProcessing.Service
             return GetCountry(longitude, latitude);
         }
 
+        /// <summary>
+        /// Gets the country name for the given coordinates
+        /// </summary>
         public string GetCountryPin(TopicPin? pin)
         {
             if (pin == null) return "";
@@ -55,13 +67,18 @@ namespace Gluten.Core.LocationProcessing.Service
             return GetCountry(longitude, latitude);
         }
 
+        /// <summary>
+        /// Gets the country name for the given coordinates
+        /// </summary>
         public string GetCountryPin(PinTopic? pin)
         {
             if (pin == null) return "";
             return GetCountry(pin.GeoLongitude, pin.GeoLatitude);
         }
 
-
+        /// <summary>
+        /// Gets the country name for the given coordinates
+        /// </summary>
         public string GetCountryPin(TopicPinCache? pin)
         {
             if (pin == null) return "";
@@ -71,6 +88,9 @@ namespace Gluten.Core.LocationProcessing.Service
             return GetCountry(longitude, latitude);
         }
 
+        /// <summary>
+        /// Gets a list of all countries in the database
+        /// </summary>
         public List<string> GetCountries()
         {
             List<string> values = [];
@@ -87,7 +107,9 @@ namespace Gluten.Core.LocationProcessing.Service
 
         }
 
-        //longitude: 12.4924, latitude: 41.8902
+        /// <summary>
+        /// Gets the country name for the given coordinates
+        /// </summary>
         public string GetCountry(double longitude, double latitude)
         {
             // Define the point (latitude, longitude)
@@ -101,8 +123,6 @@ namespace Gluten.Core.LocationProcessing.Service
                 {
                     if (feature.Geometry.Contains(point))
                     {
-                        //return feature.Attributes["ADMIN"].ToString();
-                        //return feature.Attributes["name"].ToString();
                         if (feature.Attributes != null)
                         {
                             var attribute = feature.Attributes["Country"];
@@ -115,7 +135,6 @@ namespace Gluten.Core.LocationProcessing.Service
                     Console.WriteLine(ex.ToString());
                 }
             }
-            //Console.WriteLine($" {latitude}, {longitude}");
             return "";
         }
 

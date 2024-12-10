@@ -1,5 +1,6 @@
 ﻿using Gluten.Core.DataProcessing.Helper;
 using Gluten.Core.Helper;
+using Gluten.Core.Interface;
 using Gluten.Core.LocationProcessing.Service;
 using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
@@ -9,16 +10,12 @@ namespace Gluten.Core.DataProcessing.Service
     /// <summary>
     /// Processes the AIVenue data type
     /// </summary>
-    public class AiVenueProcessorService(MapPinService mapPinService, MappingService mappingService,
-        FBGroupService fBGroupService)
+    public class AiVenueProcessorService(MapPinService mapPinService,
+        MappingService mappingService,
+        IConsole Console)
     {
         private readonly MapPinService _mapPinService = mapPinService;
         private readonly MappingService _mappingService = mappingService;
-
-        private string RemoveSuffixes(string placeName)
-        {
-            return placeName.Replace("Restaurant", "", StringComparison.InvariantCultureIgnoreCase);
-        }
 
         /// <summary>
         /// Returns a list of urls if the placename search results in multiple results,
@@ -133,7 +130,7 @@ namespace Gluten.Core.DataProcessing.Service
         private TopicPin? SearchForPin(string searchString, string placeName)
         {
             Console.WriteLine($"Searching for {searchString}");
-            var currentNewUrl = _mapPinService.GetMapUrl(searchString);
+            _mapPinService.GetMapUrl(searchString);
             var pin = _mapPinService.GetPinFromCurrentUrl(placeName);
             if (pin != null)
             {
@@ -141,5 +138,11 @@ namespace Gluten.Core.DataProcessing.Service
             }
             return null;
         }
+
+        private static string RemoveSuffixes(string placeName)
+        {
+            return placeName.Replace("Restaurant", "", StringComparison.InvariantCultureIgnoreCase);
+        }
+
     }
 }

@@ -1,5 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 using Frodo;
+using Frodo.Helper;
 using Frodo.Service;
 using Gluten.Core.DataProcessing.Service;
 using Gluten.Core.LocationProcessing.Service;
@@ -23,18 +24,26 @@ if (settings == null)
 
 var dbLoader = new DatabaseLoaderService();
 
+var consoleLogger = new ColorConsole();
 var geoService = new GeoService();
-var selenium = new SeleniumMapsUrlProcessor();
+var selenium = new SeleniumMapsUrlProcessor(consoleLogger);
 var mapper = new MappingService();
-var fbGroupService = new FBGroupService();
+var fbGroupService = new FBGroupService(consoleLogger);
 var pinCache = dbLoader.GetPinCache();
 var dataStore = new CloudDataStore(settings.DbEndpointUri, settings.DbPrimaryKey);
 var cityService = new CityService();
+var restaurantTypeService = new RestaurantTypeService();
 
-var ai = new MapPinService(selenium, pinCache, geoService, new MapsMetaExtractorService());
-var clientExportFileGenerator = new ClientExportFileGenerator(dbLoader, mapper, pinCache, fbGroupService, geoService, dataStore);
-var pinCacheSync = new PinCacheSyncService(ai, dbLoader, geoService, pinCache);
-var service = new DataSyncService(ai, dbLoader, mapper, clientExportFileGenerator, geoService, fbGroupService, pinCache, pinCacheSync, cityService);
+DataHelper.Console = consoleLogger;
+LabelHelper.Console = consoleLogger;
+
+consoleLogger.WriteLineBlue("Blue");
+consoleLogger.WriteLineRed("Red");
+
+var ai = new MapPinService(selenium, pinCache, geoService, new MapsMetaExtractorService(restaurantTypeService, consoleLogger), consoleLogger);
+var clientExportFileGenerator = new ClientExportFileGenerator(dbLoader, mapper, pinCache, fbGroupService, geoService, dataStore, consoleLogger);
+var pinCacheSync = new PinCacheSyncService(ai, dbLoader, geoService, pinCache, restaurantTypeService, consoleLogger);
+var service = new DataSyncService(ai, dbLoader, mapper, clientExportFileGenerator, geoService, fbGroupService, pinCache, pinCacheSync, cityService, consoleLogger);
 await service.ProcessFile();
 
 selenium.Stop();

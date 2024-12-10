@@ -1,6 +1,7 @@
 ﻿// Ignore Spelling: Lat
 
 using Gluten.Core.Helper;
+using Gluten.Core.Interface;
 using Gluten.Data.PinCache;
 using System;
 using System.Collections.Generic;
@@ -15,10 +16,15 @@ namespace Gluten.Core.LocationProcessing.Service
     /// Provides caching of pins
     /// </summary>
     public class MapPinCache(
-        Dictionary<string, TopicPinCache> pinCache)
+        Dictionary<string,
+        TopicPinCache> pinCache,
+        IConsole Console)
     {
         private Dictionary<string, TopicPinCache> _pinCache = pinCache;
 
+        /// <summary>
+        /// Tries to get a cached pin based on the place name, with fuzzy logic
+        /// </summary>
         public TopicPinCache? TryGetPin(string? placeName, string country)
         {
             if (placeName == null) return null;
@@ -54,6 +60,9 @@ namespace Gluten.Core.LocationProcessing.Service
             return null;
         }
 
+        /// <summary>
+        /// Tries to get a pin based on Geo location
+        /// </summary>
         public TopicPinCache? TryGetPinLatLong(string? latitude, string? longitude)
         {
             if (latitude == null) return null;
@@ -72,6 +81,9 @@ namespace Gluten.Core.LocationProcessing.Service
             return null;
         }
 
+        /// <summary>
+        /// Tries to get a pin based on a url
+        /// </summary>
         public TopicPinCache? TryGetPinByUrl(string url)
         {
             if (_pinCache == null) return null;
@@ -86,11 +98,17 @@ namespace Gluten.Core.LocationProcessing.Service
             return null;
         }
 
+        /// <summary>
+        /// Gets the current state of the database
+        /// </summary>
         public Dictionary<string, TopicPinCache> GetCache()
         {
             return _pinCache;
         }
 
+        /// <summary>
+        /// Updates the database
+        /// </summary>
         public void SetCache(Dictionary<string, TopicPinCache> newCache)
         {
             _pinCache = newCache;

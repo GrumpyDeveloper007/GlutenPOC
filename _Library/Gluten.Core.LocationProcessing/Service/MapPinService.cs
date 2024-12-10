@@ -1,11 +1,9 @@
 ﻿using Gluten.Core.Helper;
 using Gluten.Data.PinCache;
-using Gluten.Data.TopicModel;
-using System.Diagnostics.Metrics;
 using System;
 using System.Web;
-using System.Xml.Linq;
 using Gluten.Core.LocationProcessing.Helper;
+using Gluten.Core.Interface;
 
 namespace Gluten.Core.LocationProcessing.Service
 {
@@ -16,7 +14,8 @@ namespace Gluten.Core.LocationProcessing.Service
         SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor,
         MapPinCache _mapPinCache,
         GeoService _geoService,
-        MapsMetaExtractorService _mapsMetaExtractorService)
+        MapsMetaExtractorService _mapsMetaExtractorService,
+        IConsole Console)
     {
 
         /// <summary>
@@ -30,11 +29,17 @@ namespace Gluten.Core.LocationProcessing.Service
             return newUrl;
         }
 
+        /// <summary>
+        /// Gos to the specified url and waits for a change in the url (used for maps)
+        /// </summary>
         public string GoAndWaitForUrlChange(string url)
         {
             return _seleniumMapsUrlProcessor.GoAndWaitForUrlChange(url);
         }
 
+        /// <summary>
+        /// Gets meta data shown on the current page
+        /// </summary>
         public string GetMeta(string? placeName)
         {
             if (placeName == null) return "";
@@ -54,6 +59,9 @@ namespace Gluten.Core.LocationProcessing.Service
             return "";
         }
 
+        /// <summary>
+        /// Gets the current url in the browser
+        /// </summary>
         public string GetCurrentUrl()
         {
             return _seleniumMapsUrlProcessor.GetCurrentUrl();
@@ -92,11 +100,18 @@ namespace Gluten.Core.LocationProcessing.Service
             return url;
         }
 
+        /// <summary>
+        /// Gets the html in the first interesting label
+        /// </summary>
         public string GetFirstLabelInnerHTML()
         {
             return _seleniumMapsUrlProcessor.GetFirstLabelInnerHTML();
         }
 
+        /// <summary>
+        /// Go’s to the specified url
+        /// </summary>
+        /// <param name="url"></param>
         public void GoToUrl(string url)
         {
             _seleniumMapsUrlProcessor.GoToUrl(url);
@@ -184,6 +199,9 @@ namespace Gluten.Core.LocationProcessing.Service
             return TryToGenerateMapPin(newUrl, restaurantName, "");
         }
 
+        /// <summary>
+        /// Tries to convert the specified url in to a map pin
+        /// </summary>
         public TopicPinCache? TryToGenerateMapPin(string url, string searchString, string country)
         {
             var pin = _mapPinCache.TryToGenerateMapPin(url, searchString, country);

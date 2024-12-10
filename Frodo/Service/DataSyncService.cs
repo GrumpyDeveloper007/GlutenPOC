@@ -1,9 +1,11 @@
 ﻿using Frodo.Helper;
 using Gluten.Core.DataProcessing.Service;
 using Gluten.Core.Helper;
+using Gluten.Core.Interface;
 using Gluten.Core.LocationProcessing.Service;
 using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
+using System;
 using static Gluten.Core.LocationProcessing.Service.CityService;
 
 namespace Frodo.Service
@@ -20,15 +22,15 @@ namespace Frodo.Service
         FBGroupService _fBGroupService,
         MapPinCache _mapPinCache,
         PinCacheSyncService _pinCacheSyncService,
-        CityService _cityService
+        CityService _cityService,
+        IConsole Console
         )
     {
         // TODO:Move to shared location
         private readonly string _responsefileName = "D:\\Coding\\Gluten\\Database\\Responses.txt";
         private readonly TopicsDataLoaderService _topicsHelper = new();
-        private readonly LocalAiInterfaceService _localAi = new();
-        private readonly TopicLoaderService _topicLoaderService = new();
-        private readonly FBGroupService _fbGroupService = new();
+        private readonly LocalAiInterfaceService _localAi = new(Console);
+        private readonly TopicLoaderService _topicLoaderService = new(Console);
 
         public List<DetailedTopic> Topics = [];
         private readonly bool _regeneratePins = false;
@@ -40,7 +42,7 @@ namespace Frodo.Service
         /// </summary>
         public async Task ProcessFile()
         {
-            var skipSomeOperationsForDebugging = true;
+            var skipSomeOperationsForDebugging = false;
             var topics = _topicsHelper.TryLoadTopics();
             if (topics != null)
             {
@@ -75,7 +77,8 @@ namespace Frodo.Service
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nStarting AI processing - detecting venue name/address");
-            await ScanTopicsUseAiToDetectVenueInfo();
+            if (!skipSomeOperationsForDebugging)
+                await ScanTopicsUseAiToDetectVenueInfo();
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nUpdating pin information for Ai Venues");
@@ -130,6 +133,11 @@ namespace Frodo.Service
         {
             for (int i = 0; i < Topics.Count; i++)
             {
+                if (i % 100 == 0)
+                {
+                    _topicsHelper.SaveTopics(Topics);
+                }
+
                 if ((Topics[i].AiVenues == null && !Topics[i].AiIsQuestion))
                 {
                     Console.WriteLine($"Processing topic message {i} of {Topics.Count}");
@@ -173,13 +181,15 @@ namespace Frodo.Service
                     }
                 }
 
-                var country = await _localAi.ExtractCountry(topic.Title);
+                var country = await _localAi.ExtractCountry(topic.Title) ?? "";
                 country = country.Replace("United States of America", "United States");
                 country = country.Replace("UK", "United Kingdom");
                 country = country.Replace("The Netherlands", "Netherlands");
                 country = country.Replace("Nederland", "Netherlands");
                 country = country.Replace("SPAIN", "Spain");
                 country = country.Replace("\"", "");
+                country = country.Replace("Suid Afrika", "South Africa");
+
 
                 if (string.IsNullOrWhiteSpace(country)) continue;
                 if (country.Contains("\r\n")) continue;
@@ -212,6 +222,11 @@ namespace Frodo.Service
                 if (i < _lastImportedIndex) continue;
                 Console.WriteLine($"Processing {i} of {Topics.Count}");
                 var topic = Topics[i];
+                if (string.IsNullOrWhiteSpace(topic.GroupId))
+                {
+                    Console.WriteLine($"Missing group id : {i}, {topic.Title} ");
+                    continue;
+                }
                 var groupCountry = _fBGroupService.GetCountryName(topic.GroupId);
                 if (string.IsNullOrWhiteSpace(groupCountry)) groupCountry = topic.TitleCountry ?? "";
 
@@ -308,14 +323,13 @@ namespace Frodo.Service
         {
             Console.Clear();
             LabelHelper.Reset();
-            var restaurantService = new RestaurantTypeService();
             var invalidGeo = 0;
             var unmatchedLabels = 0;
             for (int i = 0; i < Topics.Count; i++)
             {
                 DetailedTopic? topic = Topics[i];
                 if (i % 100 == 0)
-                    Console.WriteLine($"Processing AI pins {i} of {Topics.Count}");
+                    Console.WriteLine($"Looking for invalid AI pins {i} of {Topics.Count}");
 
                 if (topic.AiVenues == null) continue;
                 for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
@@ -435,21 +449,9 @@ namespace Frodo.Service
             return true;
         }
 
-        private void RemoveDuplicatedVenues(List<AiVenue>? venues)
-        {
-            if (venues == null) return;
-
-            for (int t = venues.Count - 1; t >= 0; t--)
-            {
-                if (DataHelper.IsInList(venues, venues[t], t))
-                {
-                    venues.RemoveAt(t);
-                }
-            }
-        }
-
         private bool TryGetFromCache(AiVenue? ai, string groupCountry)
         {
+            if (ai == null) return false;
             var cachedPin = _mapPinCache.TryGetPin(ai.PlaceName, groupCountry);
             if (cachedPin != null)
             {
@@ -475,7 +477,7 @@ namespace Frodo.Service
         /// </summary>
         private void UpdatePinsForAiVenues()
         {
-            var aiPinService = new AiVenueProcessorService(_mapPinService, _mappingService, _fbGroupService);
+            var aiPinService = new AiVenueProcessorService(_mapPinService, _mappingService, Console);
 
             for (int i = 0; i < Topics.Count; i++)
             {
@@ -491,7 +493,7 @@ namespace Frodo.Service
                 Console.WriteLine($"Update Pins For AI Venues {i} of {Topics.Count} : {StringHelper.Truncate(topic.Title, 75).Replace("\n", "")}");
 
                 // Remove any duplicated pins
-                RemoveDuplicatedVenues(topic.AiVenues);
+                AiVenueDataHelper.RemoveDuplicatedVenues(topic.AiVenues);
 
                 var chainUrls = new List<string>();
                 if (topic.AiVenues == null) continue;

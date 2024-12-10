@@ -10,8 +10,13 @@ using System.Xml.Linq;
 
 namespace Gluten.FBModel.Helper
 {
+    /// <summary>
+    /// Provides helper functions to process data returned from FB
+    /// </summary>
     public static class FbModelHelper
     {
+        //public static IConsole Console { get; set; } = new DummyConsole();
+
         public static ExtractedModel? GetStoryInfo(Node? storyNode, string nodeId)
         {
             var result = new ExtractedModel();
@@ -30,7 +35,7 @@ namespace Gluten.FBModel.Helper
             result.Title = messageText;
             result.FacebookUrl = story?.wwwURL ?? "";
             result.GroupId = story?.target_group.id ?? "";
-            result.PostCreated = FbModelHelper.GetTrackingPostDate(story.story_ufi_container.story.tracking) ?? DateTimeOffset.FromUnixTimeSeconds(0);
+            result.PostCreated = GetTrackingPostDate(story?.story_ufi_container?.story?.tracking ?? "") ?? DateTimeOffset.FromUnixTimeSeconds(0);
 
             if (result.GroupId == null && story != null)
             {
@@ -39,8 +44,12 @@ namespace Gluten.FBModel.Helper
             return result;
         }
 
+        /// <summary>
+        /// Gets the topic creation data by decoding the tracking data,
+        /// </summary>
         public static DateTimeOffset? GetTrackingPostDate(string trackingInfoString)
         {
+            // TODO: Find a better way to support a dynamic group id field name
             long seconds = 0;
             try
             {
@@ -127,8 +136,6 @@ namespace Gluten.FBModel.Helper
                     seconds = trackingInfo.page_insights._229495282203436?.post_context?.publish_time ?? 0;
                 else if (trackingInfo.page_insights._247208302148491 != null)
                     seconds = trackingInfo.page_insights._247208302148491?.post_context?.publish_time ?? 0;
-
-
                 else
                 {
                     Console.WriteLine($"Unknown message structure {trackingInfoString}");
@@ -145,6 +152,9 @@ namespace Gluten.FBModel.Helper
             return null;
         }
 
+        /// <summary>
+        /// Scans nodes looking for 'Story' type
+        /// </summary>
         public static Node? GetStoryNode(GroupRoot? groupRoot)
         {
             if (groupRoot == null) return null;
@@ -167,6 +177,9 @@ namespace Gluten.FBModel.Helper
             return node;
         }
 
+        /// <summary>
+        /// Gets Node Ids contained in a search response
+        /// </summary>
         public static List<string>? GetNodeIds(SearchRoot? root)
         {
             var results = new List<string>();
@@ -185,6 +198,9 @@ namespace Gluten.FBModel.Helper
             return results;
         }
 
+        /// <summary>
+        /// Get Node Id contained in a group response
+        /// </summary>
         public static string? GetNodeId(GroupRoot? groupRoot)
         {
             if (groupRoot == null)
@@ -218,7 +234,7 @@ namespace Gluten.FBModel.Helper
                 return null;
             }
 
-            var node = FbModelHelper.GetStoryNode(groupRoot);
+            var node = GetStoryNode(groupRoot);
             if (node == null)
             {
                 Console.WriteLine($"Unknown Node Id, unable to get story");

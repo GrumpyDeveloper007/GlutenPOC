@@ -15,7 +15,7 @@ namespace Gluten.Data.Access.DatabaseModel
     /// </summary>
     public class PinTopicDb : PinTopic, IDbModel
     {
-        public string Country { get; set; }
+        public string Country { get; set; } = "";
 
         [JsonProperty(PropertyName = "id")]
         public string Id

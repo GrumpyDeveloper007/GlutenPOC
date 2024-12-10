@@ -1,5 +1,6 @@
 ﻿using Gluten.Core.DataProcessing.Service;
 using Gluten.Core.Helper;
+using Gluten.Core.Interface;
 using Gluten.Core.LocationProcessing.Service;
 using System;
 using System.Collections.Generic;
@@ -10,20 +11,28 @@ using System.Web;
 
 namespace Frodo.Service
 {
+    /// <summary>
+    /// Data check function for the pin cache database
+    /// </summary>
     internal class PinCacheSyncService(MapPinService _mapPinService,
         DatabaseLoaderService _databaseLoaderService,
         GeoService _geoService,
-        MapPinCache _mapPinCache
+        MapPinCache _mapPinCache,
+        RestaurantTypeService _restaurantTypeService,
+        IConsole Console
         )
     {
-        private readonly MapsMetaExtractorService _mapsMetaExtractorService = new();
+        private readonly MapsMetaExtractorService _mapsMetaExtractorService = new(_restaurantTypeService, Console);
 
 
+        /// <summary>
+        /// Checks that the pin cache database is valid and contains all needed info
+        /// </summary>
         public void ExtractMetaInfoFromPinCache()
         {
             int i = 0;
             var cache = _mapPinCache.GetCache();
-            _mapsMetaExtractorService.ClearRestaurantType();
+            _restaurantTypeService.ClearRestaurantType();
             foreach (var item in cache)
             {
                 if (string.IsNullOrWhiteSpace(item.Value.Country))
@@ -100,7 +109,7 @@ namespace Frodo.Service
 
                     if (item.Value.MetaData != null)
                     {
-                        _mapsMetaExtractorService.AddRestaurantType(item.Value.MetaData.RestaurantType);
+                        _restaurantTypeService.AddRestaurantType(item.Value.MetaData.RestaurantType);
                     }
                     else
                     {
@@ -111,7 +120,7 @@ namespace Frodo.Service
                 i++;
             }
 
-            var restaurants = _mapsMetaExtractorService.GetRestaurantTypes();
+            var restaurants = _restaurantTypeService.GetRestaurantTypes();
             _databaseLoaderService.SaveRestaurantList(restaurants);
             _databaseLoaderService.SavePinDB();
         }

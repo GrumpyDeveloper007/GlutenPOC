@@ -1,4 +1,6 @@
-﻿using Gluten.Data.ClientModel;
+﻿using Gluten.Core.Interface;
+using Gluten.Core.Service;
+using Gluten.Data.ClientModel;
 using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
 
@@ -9,6 +11,8 @@ namespace Frodo.Helper
     /// </summary>
     internal static class DataHelper
     {
+        public static IConsole Console { get; set; } = new DummyConsole();
+
         /// <summary>
         /// Removes existing topics associated with pins
         /// </summary>
@@ -121,7 +125,7 @@ namespace Frodo.Helper
                 }
                 else
                 {
-                    Console.WriteLine("No meta data found");
+                    System.Console.WriteLine("No meta data found");
                 }
             }
 

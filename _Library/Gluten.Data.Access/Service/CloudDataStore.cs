@@ -24,16 +24,6 @@ namespace Gluten.Data.Access.Service
             _database = _cosmosClient.CreateDatabaseIfNotExistsAsync(DatabaseId).Result;
         }
 
-        private async Task<Container> GetContainer<dbModel>(dbModel model) where dbModel : IDbModel
-        {
-            if (!_containers.TryGetValue(model.GetContainerId(), out var container))
-            {
-                container = await _database.CreateContainerIfNotExistsAsync(model.GetContainerId(), "/partitionKey");
-                _containers.Add(model.GetContainerId(), container);
-            }
-            return container;
-        }
-
         /// <summary>
         /// Get all objects of a specific type
         /// </summary>
@@ -77,6 +67,9 @@ namespace Gluten.Data.Access.Service
             return results;
         }
 
+        /// <summary>
+        /// Gets database data object with search criteria
+        /// </summary>
         public async Task<List<dbObject>> GetData<dbObject>(string whereClause) where dbObject : IDbModel, new()
         {
             var container = await GetContainer<dbObject>(new dbObject());
@@ -98,7 +91,9 @@ namespace Gluten.Data.Access.Service
             return results;
         }
 
-
+        /// <summary>
+        /// Deletes an data item
+        /// </summary>
         public async Task DeleteItemAsync<dbObject>(dbObject newDbItem) where dbObject : IDbModel, new()
         {
             var container = await GetContainer<dbObject>(new dbObject());
@@ -130,6 +125,9 @@ namespace Gluten.Data.Access.Service
             }
         }
 
+        /// <summary>
+        /// TODO
+        /// </summary>
         public async Task ScaleContainerAsync<dbObject>(int newThroughput) where dbObject : IDbModel, new()
         {
             var container = await GetContainer<dbObject>(new dbObject());
@@ -178,9 +176,23 @@ namespace Gluten.Data.Access.Service
         }
         */
 
+        /// <summary>
+        /// Close database
+        /// </summary>
         public void Dispose()
         {
             _cosmosClient.Dispose();
         }
+
+        private async Task<Container> GetContainer<dbModel>(dbModel model) where dbModel : IDbModel
+        {
+            if (!_containers.TryGetValue(model.GetContainerId(), out var container))
+            {
+                container = await _database.CreateContainerIfNotExistsAsync(model.GetContainerId(), "/partitionKey");
+                _containers.Add(model.GetContainerId(), container);
+            }
+            return container;
+        }
+
     }
 }

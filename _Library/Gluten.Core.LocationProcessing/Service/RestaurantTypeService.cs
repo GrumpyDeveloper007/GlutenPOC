@@ -1,10 +1,8 @@
-﻿using OpenQA.Selenium.BiDi.Modules.Script;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -12,10 +10,9 @@ namespace Gluten.Core.LocationProcessing.Service
 {
     public class RestaurantTypeService
     {
+        private readonly List<string> _restaurantTypes = [];
 
-        public bool IsRejectedRestaurantType(string? restaurantType)
-        {
-            List<string> _rejectionList = [
+        private readonly List<string> _rejectionList = [
             "Adult education school",
             "Aged Care Service",
             "Agricultural service",
@@ -125,10 +122,127 @@ namespace Gluten.Core.LocationProcessing.Service
             "Vehicle exporter",
             "Wholesale plant nursery",
             "Wholesaler",
+                        "Train station",
+            "Airports",
+            "airport",
+            "Sightseeing tour agency",
+            "Laundromat",
+            "Historical landmark",
+            "Island",
+            "Electronics manufacturer",
+            "Corporate office",
+            "Theme park",
+            "Subway station",
+            "Food manufacturer",
+            "Art museum",
+            "International airport",
+            "Airport",
+            "Garden",
+            "Cinema",
+            "Manufacturer",
+            "Observation deck",
+            "Mountain peak",
+            "Amusement park",
+            "Bridge",
+            "Soy sauce maker",
+            "Housing development",
+            "Massage spa",
+            "Waterfall",
+            "Delivery service",
+            "Water treatment supplier",
+            "River",
+            "Event venue",
+            "Museum",
+            "Florist",
+            "Park",
+            "Tourist attraction",
+            "Business park",
+            "Hair salon",
+            "Holiday apartment",
+            "Car racing track",
+            "Language school",
+            "Host club",
+            "Shinto shrine",
+            "Cultural center",
+            "Foreign consulate",
+            "Non-profit organization",
+            "Truck parts supplier",
+            "Gift shop",
+            "Lake",
+            "Spa",
+            "Festival",
+            "Beach",
+            "Dog trainer",
+            "Concert hall",
+            "Tour operator",
+            "Art gallery",
+            "Health and beauty sho",
+            "public bath",
+            "review",
+            "City park",
+            "Community center",
+            "Cooking class",
+            "Coworking space",
+            "Garment exporter",
+            "General hospital",
+            "Medical clinic",
+            "Modern art museum",
+            "Mobile caterer",
+            "Scenic spot",
+            "public bath",
+            "Yoga studio"
             ];
+
+        /// <summary>
+        /// Checks to see if the restaurant type is in the rejection list
+        /// </summary>
+        public bool IsRejectedRestaurantType(string? restaurantType)
+        {
 
             if (string.IsNullOrWhiteSpace(restaurantType)) return false;
             return _rejectionList.Exists(o => o == restaurantType);
+        }
+
+        /// <summary>
+        /// Gets a list of extracted restaurant types
+        /// </summary>
+        public List<string> GetRestaurantTypes()
+        {
+            _restaurantTypes.Sort();
+            var data = new List<string>();
+            var ignoreList = _rejectionList;
+            foreach (var item in _restaurantTypes)
+            {
+                if (!item.Contains("shop", StringComparison.InvariantCultureIgnoreCase)
+                    && !item.Contains("store", StringComparison.InvariantCultureIgnoreCase)
+                    && !item.Contains("market", StringComparison.InvariantCultureIgnoreCase)
+                    && !item.Contains("hotel", StringComparison.InvariantCultureIgnoreCase)
+                    && !ignoreList.Any(s => item.Contains(s, StringComparison.InvariantCultureIgnoreCase))
+                    )
+                {
+                    data.Add(item);
+                }
+            }
+            return data;
+        }
+
+        /// <summary>
+        /// Add a restaurant type to the data
+        /// </summary>
+        public void AddRestaurantType(string? restaurant)
+        {
+            if (!string.IsNullOrWhiteSpace(restaurant) && !_restaurantTypes.Contains(restaurant))
+            {
+                _restaurantTypes.Add(restaurant);
+            }
+        }
+
+        /// <summary>
+        /// clears the restaurant type data
+        /// </summary>
+        public void ClearRestaurantType()
+        {
+            _restaurantTypes.Clear();
         }
     }
 }
