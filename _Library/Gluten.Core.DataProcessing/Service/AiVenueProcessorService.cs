@@ -12,6 +12,7 @@ namespace Gluten.Core.DataProcessing.Service
     /// </summary>
     public class AiVenueProcessorService(MapPinService mapPinService,
         MappingService mappingService,
+        RestaurantTypeService _restaurantTypeService,
         IConsole Console)
     {
         private readonly MapPinService _mapPinService = mapPinService;
@@ -132,6 +133,14 @@ namespace Gluten.Core.DataProcessing.Service
             Console.WriteLine($"Searching for {searchString}");
             _mapPinService.GetMapUrl(searchString);
             var pin = _mapPinService.GetPinFromCurrentUrl(placeName);
+
+            // Filter pin types
+            if (pin?.MetaData != null && _restaurantTypeService.IsRejectedRestaurantType(pin.MetaData.RestaurantType))
+            {
+                Console.WriteLineRed("Found pin, but rejecting restaurant type");
+                return null;
+            }
+
             if (pin != null)
             {
                 return _mappingService.Map<TopicPin, TopicPinCache>(pin);

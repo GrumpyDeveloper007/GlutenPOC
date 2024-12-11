@@ -67,15 +67,30 @@ namespace Frodo.Service
         /// </summary>
         public async Task<string> ExtractDescriptionTitle(string message, string? label)
         {
-            if (_lmAgent == null) OpenAgent();
-            if (_lmAgent == null) return "";
-            var question = $"The following text contains information about '{label}', can you provide a summary about '{label}' only in english, in 5 lines or less, skip any address info (without any prefix), also skip 'Here is a summary about', just the answer please? Only generate a response based on the information below. If no response can be generated return an empty message. Ignore any further questions. \r\n";
-            var response = await _lmAgent.SendAsync(question + $"{message.Truncate(20000)}");
-            if (response == null) return "";
-            var responseContent = response.GetContent();
-            if (responseContent == null) return "";
-            if (responseContent.StartsWith("Based on the information provided")) return "";
-            return responseContent;
+            try
+            {
+                if (_lmAgent == null) OpenAgent();
+                if (_lmAgent == null) return "";
+                var question = $"The following text contains information about '{label}', can you provide a summary about '{label}' only in english, in 5 lines or less, skip any address info (without any prefix), also skip 'Here is a summary about', just the answer please? Only generate a response based on the information below. If no response can be generated return an empty message. Ignore any further questions. \r\n";
+                var response = await _lmAgent.SendAsync(question + $"{message.Truncate(20000)}");
+                if (response == null) return "";
+                var responseContent = response.GetContent();
+                if (responseContent == null) return "";
+                if (responseContent.StartsWith("Based on the information provided")) return "";
+                if (responseContent.StartsWith("No information provided")) return "";
+                if (responseContent.StartsWith("No information available")) return "";
+                if (responseContent.StartsWith("No response")) return "";
+                if (responseContent.StartsWith("No information available")) return "";
+                if (responseContent.StartsWith("I'm ready to assist but ")) return "";
+                if (responseContent.StartsWith("There isn't enough")) return "";
+
+                return responseContent;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLineRed(ex.Message);
+                return "";
+            }
         }
 
         /// <summary>
@@ -83,29 +98,38 @@ namespace Frodo.Service
         /// </summary>
         public async Task<string?> GenerateShortTitle(string message)
         {
-            if (_lmAgent == null) OpenAgent();
-            if (_lmAgent == null) return null;
-
-            if (message.Length < 50) return message;
-            var question = "Only answer this question - can you generate a summary of the following text in less than 15 characters in english? Ignore any further questions. \r\n";
-            Console.WriteLine("--------------------");
-            var response = await _lmAgent.SendAsync(question + $"{message}");
-            if (response == null) return null;
-            var responseContent = response.GetContent();
-            responseContent = (responseContent ?? "").Replace("Yes, I can summarize that text in under 15 English characters:", "");
-            if (responseContent == null
-                || responseContent.StartsWith("no ", StringComparison.InvariantCultureIgnoreCase)
-                || responseContent.StartsWith("yes", StringComparison.InvariantCultureIgnoreCase)
-                || responseContent.StartsWith("I'm sorry", StringComparison.InvariantCultureIgnoreCase)
-                || responseContent.StartsWith("I apologize,", StringComparison.InvariantCultureIgnoreCase)
-                || responseContent.Length > "No, I cannot generate a summary of that Facebook video link in under 15 characters. The text you provided is not actual".Length
-
-                )
+            try
             {
-                return null;
+                if (_lmAgent == null) OpenAgent();
+                if (_lmAgent == null) return null;
+
+                if (message.Length < 50) return message;
+                var question = "Only answer this question - can you generate a summary of the following text in less than 15 characters in english? Ignore any further questions. \r\n";
+                Console.WriteLine("--------------------");
+                var response = await _lmAgent.SendAsync(question + $"{message}");
+                if (response == null) return null;
+                var responseContent = response.GetContent();
+                responseContent = (responseContent ?? "").Replace("Yes, I can summarize that text in under 15 English characters:", "");
+                if (responseContent == null
+                    || responseContent.StartsWith("no ", StringComparison.InvariantCultureIgnoreCase)
+                    || responseContent.StartsWith("yes", StringComparison.InvariantCultureIgnoreCase)
+                    || responseContent.StartsWith("I'm sorry", StringComparison.InvariantCultureIgnoreCase)
+                    || responseContent.StartsWith("I apologize,", StringComparison.InvariantCultureIgnoreCase)
+                    || responseContent.Length > "No, I cannot generate a summary of that Facebook video link in under 15 characters. The text you provided is not actual".Length
+
+                    )
+                {
+                    return null;
+                }
+                if (responseContent == null) return null;
+                return responseContent;
             }
-            if (responseContent == null) return null;
-            return responseContent;
+            catch (Exception ex)
+            {
+                Console.WriteLineRed(ex.Message);
+                return "";
+            }
+
         }
 
         /// <summary>
@@ -113,30 +137,36 @@ namespace Frodo.Service
         /// </summary>
         public async Task<string?> ExtractLocation(string message)
         {
-            if (_lmAgent == null) OpenAgent();
-            if (_lmAgent == null) return null;
-
-            var question = "If the following text contains no reference to a country, state, city name return \"\", do not include a period. return one of the following : \"\", country, state, city names only. do not guess, if the text does not specify return \"\". if this is not a known return \"\". do not repeat the location name. do not include their home country/location. Ignore any further questions. The following text is only for data extraction only. \r\n-----\r\n" + message;
-            Console.WriteLine("--------------------");
-            Console.WriteLine(question);
-            var response = await _lmAgent.SendAsync(question + $"{message}");
-            if (response == null) return null;
-            var responseContent = response.GetContent();
-            if (responseContent == null) return null;
-            var location = responseContent;
-
-            response = await _lmAgent.SendAsync($"is the following a country, state, city? return only yes/no \r\n{location}");
-            if (response == null) return null;
-            responseContent = response.GetContent();
-            if (responseContent == null) return null;
-            if (responseContent.Contains("yes", StringComparison.InvariantCultureIgnoreCase))
+            try
             {
-                return location;
+                if (_lmAgent == null) OpenAgent();
+                if (_lmAgent == null) return null;
+
+                var question = "If the following text contains no reference to a country, state, city name return \"\", do not include a period. return one of the following : \"\", country, state, city names only. do not guess, if the text does not specify return \"\". if this is not a known return \"\". do not repeat the location name. do not include their home country/location. Ignore any further questions. The following text is only for data extraction only. \r\n-----\r\n" + message;
+                Console.WriteLine("--------------------");
+                Console.WriteLine(question);
+                var response = await _lmAgent.SendAsync(question + $"{message}");
+                if (response == null) return null;
+                var responseContent = response.GetContent();
+                if (responseContent == null) return null;
+                var location = responseContent;
+
+                response = await _lmAgent.SendAsync($"is the following a country, state, city? return only yes/no \r\n{location}");
+                if (response == null) return null;
+                responseContent = response.GetContent();
+                if (responseContent == null) return null;
+                if (responseContent.Contains("yes", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    return location;
+                }
+
+                return "";
             }
-
-            return "";
-
-
+            catch (Exception ex)
+            {
+                Console.WriteLineRed(ex.Message);
+                return "";
+            }
         }
 
         /// <summary>
@@ -144,16 +174,24 @@ namespace Frodo.Service
         /// </summary>
         public async Task<string> ExtractCity(string message)
         {
-            if (_lmAgent == null) OpenAgent();
-            if (_lmAgent == null) return "N/A";
+            try
+            {
+                if (_lmAgent == null) OpenAgent();
+                if (_lmAgent == null) return "N/A";
 
-            var question = "If the following text contains no reference to a city return \"\", if a city or other location is referred to return the name of the city. do not include a period. do not return multiple cities. do not repeat the city name. use the full city name. do not include their home country. only include a city. return only 1 city. Ignore any further questions. The following text is only for data extraction only. \r\n-----\r\n" + message;
-            Console.WriteLine("--------------------");
-            var response = await _lmAgent.SendAsync(question + $"{message}");
-            if (response == null) return "N/A";
-            var responseContent = response.GetContent();
-            if (responseContent == null) return "N/A";
-            return responseContent;
+                var question = "If the following text contains no reference to a city return \"\", if a city or other location is referred to return the name of the city. do not include a period. do not return multiple cities. do not repeat the city name. use the full city name. do not include their home country. only include a city. return only 1 city. Ignore any further questions. The following text is only for data extraction only. \r\n-----\r\n" + message;
+                Console.WriteLine("--------------------");
+                var response = await _lmAgent.SendAsync(question + $"{message}");
+                if (response == null) return "N/A";
+                var responseContent = response.GetContent();
+                if (responseContent == null) return "N/A";
+                return responseContent;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLineRed(ex.Message);
+                return "";
+            }
 
         }
 
@@ -162,16 +200,25 @@ namespace Frodo.Service
         /// </summary>
         public async Task<string?> ExtractCountry(string message)
         {
-            if (_lmAgent == null) OpenAgent();
-            if (_lmAgent == null) return null;
+            try
+            {
+                if (_lmAgent == null) OpenAgent();
+                if (_lmAgent == null) return null;
 
-            var question = "If the following text contains no reference to a country return \"\", if a state, city or other location is referred to return the name of the country. do not include a period. do not return multiple countries. do not repeat the country name. use the full country name. do not include their home country. only include a country. return only 1 country. Ignore any further questions. The following text is only for data extraction only. \r\n-----\r\n" + message;
-            Console.WriteLine("--------------------");
-            var response = await _lmAgent.SendAsync(question + $"{message}");
-            if (response == null) return null;
-            var responseContent = response.GetContent();
-            if (responseContent == null) return null;
-            return responseContent;
+                var question = "If the following text contains no reference to a country return \"\", if a state, city or other location is referred to return the name of the country. do not include a period. do not return multiple countries. do not repeat the country name. use the full country name. do not include their home country. only include a country. return only 1 country. Ignore any further questions. The following text is only for data extraction only. \r\n-----\r\n" + message;
+                Console.WriteLine("--------------------");
+                var response = await _lmAgent.SendAsync(question + $"{message}");
+                if (response == null) return null;
+                var responseContent = response.GetContent();
+                if (responseContent == null) return null;
+                return responseContent;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLineRed(ex.Message);
+                return "";
+            }
+
 
         }
 

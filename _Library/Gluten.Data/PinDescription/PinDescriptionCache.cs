@@ -8,7 +8,8 @@ namespace Gluten.Data.PinDescription
 {
     public class PinDescriptionCache
     {
-        public List<string> Nodes { get; set; } = [];
+        public double GeoLongitude { get; set; }
+        public double GeoLatitude { get; set; }
         public string? Description { get; set; }
     }
 }

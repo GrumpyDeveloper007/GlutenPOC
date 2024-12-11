@@ -46,6 +46,7 @@ namespace Gluten.Core.LocationProcessing.Service
             //"Dairy farm",
             "Diagnostic center",
             "Driveshaft shop",
+            "Dry cleaner",
             "E-commerce service",
             "Education center",
             "Electronics manufacturer",
@@ -81,6 +82,7 @@ namespace Gluten.Core.LocationProcessing.Service
             "Island",
             "Karaoke Equipment Hire Service",
             "Laundromat",
+            "Landmark",
             "Language school",
             "Lawn bowls club",
             "Lawn care service",
@@ -122,7 +124,7 @@ namespace Gluten.Core.LocationProcessing.Service
             "Vehicle exporter",
             "Wholesale plant nursery",
             "Wholesaler",
-                        "Train station",
+            "Train station",
             "Airports",
             "airport",
             "Sightseeing tour agency",
@@ -190,8 +192,32 @@ namespace Gluten.Core.LocationProcessing.Service
             "Mobile caterer",
             "Scenic spot",
             "public bath",
-            "Yoga studio"
+            "Yoga studio",
+            "Book publisher",
+            "Caterer",
+            "Photographer",
+            "Student housing center",
+            "Fortress"
             ];
+
+        public bool IsStore(string name)
+        {
+            List<string> storeNames = [
+            "Food products supplier",
+            "Condiments supplier",
+            "Market",
+            "Grocery store",
+            "Catering food and drink supplier"
+            ];
+            if (name.Contains("Condiments supplier", StringComparison.InvariantCultureIgnoreCase)) return true;
+            //Landmark
+            //Food court?
+            //Water park
+            //Golf driving range
+            //Ski resort
+            //Dry cleaner
+            return false;
+        }
 
         /// <summary>
         /// Checks to see if the restaurant type is in the rejection list

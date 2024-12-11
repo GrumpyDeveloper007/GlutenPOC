@@ -4,6 +4,7 @@ using Frodo.Helper;
 using Frodo.Service;
 using Gluten.Core.DataProcessing.Service;
 using Gluten.Core.LocationProcessing.Service;
+using Gluten.Core.Service;
 using Gluten.Data.Access.Service;
 using Microsoft.Extensions.Configuration;
 
@@ -33,6 +34,7 @@ var pinCache = dbLoader.GetPinCache();
 var dataStore = new CloudDataStore(settings.DbEndpointUri, settings.DbPrimaryKey);
 var cityService = new CityService();
 var restaurantTypeService = new RestaurantTypeService();
+var topicDataLoader = new TopicsDataLoaderService();
 
 DataHelper.Console = consoleLogger;
 LabelHelper.Console = consoleLogger;
@@ -43,7 +45,9 @@ consoleLogger.WriteLineRed("Red");
 var ai = new MapPinService(selenium, pinCache, geoService, new MapsMetaExtractorService(restaurantTypeService, consoleLogger), consoleLogger);
 var clientExportFileGenerator = new ClientExportFileGenerator(dbLoader, mapper, pinCache, fbGroupService, geoService, dataStore, consoleLogger);
 var pinCacheSync = new PinCacheSyncService(ai, dbLoader, geoService, pinCache, restaurantTypeService, consoleLogger);
-var service = new DataSyncService(ai, dbLoader, mapper, clientExportFileGenerator, geoService, fbGroupService, pinCache, pinCacheSync, cityService, consoleLogger);
+var aiVenueLocationService = new AiVenueLocationService(ai, dbLoader, mapper, geoService, fbGroupService, pinCache, restaurantTypeService, topicDataLoader, consoleLogger);
+var aiVenueCleanUpService = new AiVenueCleanUpService(geoService, fbGroupService, pinCache, aiVenueLocationService, topicDataLoader, consoleLogger);
+var service = new DataSyncService(ai, dbLoader, mapper, clientExportFileGenerator, geoService, fbGroupService, pinCache, pinCacheSync, cityService, aiVenueLocationService, topicDataLoader, aiVenueCleanUpService, consoleLogger);
 await service.ProcessFile();
 
 selenium.Stop();

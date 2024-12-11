@@ -30,7 +30,7 @@ namespace Gluten.Core.DataProcessing.Service
         private const string PlacenameSkipListFileName = "D:\\Coding\\Gluten\\Database\\PlaceNameSkipList.json";
 
         private readonly List<PinDescriptionCache> _pinDescriptionsCache;
-        MapPinCache _mapPinCache;
+        private readonly MapPinCache _mapPinCache;
 
         /// <summary>
         /// Constructor
@@ -68,24 +68,13 @@ namespace Gluten.Core.DataProcessing.Service
         /// <summary>
         /// Get Pin Description cache
         /// </summary>
-        public PinDescriptionCache? GetPinDescriptionCache(List<string> nodes)
+        public PinDescriptionCache? GetPinDescriptionCache(double geoLongitude, double geoLatitude)
         {
             foreach (var item in _pinDescriptionsCache)
             {
-                if (item.Nodes.Count == nodes.Count)
+                if (item.GeoLatitude == geoLatitude && item.GeoLongitude == geoLongitude)
                 {
-                    var found = true;
-                    for (int i = 0; i < nodes.Count; i++)
-                    {
-                        if (item.Nodes[i] != nodes[i])
-                        {
-                            found = false;
-                        }
-                    }
-                    if (found == true)
-                    {
-                        return item;
-                    }
+                    return item;
                 }
             }
             return null;
@@ -94,29 +83,22 @@ namespace Gluten.Core.DataProcessing.Service
         /// <summary>
         /// Add item to the pin description cache
         /// </summary>
-        public void AddPinDescriptionCache(PinDescriptionCache pinDescriptionsCache)
+        public void AddPinDescriptionCache(string description, double geoLongitude, double geoLatitude)
         {
-            foreach (var item in _pinDescriptionsCache)
+            var item = GetPinDescriptionCache(geoLongitude, geoLatitude);
+            if (item == null)
             {
-                if (item.Nodes.Count == pinDescriptionsCache.Nodes.Count)
+                _pinDescriptionsCache.Add(new PinDescriptionCache
                 {
-                    var found = true;
-                    for (int i = 0; i < pinDescriptionsCache.Nodes.Count; i++)
-                    {
-                        if (item.Nodes[i] != pinDescriptionsCache.Nodes[i])
-                        {
-                            found = false;
-                        }
-                    }
-                    if (found == true)
-                    {
-                        item.Description = pinDescriptionsCache.Description;
-                        return;
-                    }
-                }
+                    GeoLongitude = geoLongitude,
+                    GeoLatitude = geoLatitude,
+                    Description = description
+                });
             }
-
-            _pinDescriptionsCache.Add(pinDescriptionsCache);
+            else
+            {
+                item.Description = description;
+            }
         }
 
         /// <summary>
@@ -156,7 +138,7 @@ namespace Gluten.Core.DataProcessing.Service
         public List<AiVenue> LoadPlaceSkipList()
         {
             var data = TryLoadJson<AiVenue>(PlacenameSkipListFileName);
-            if (data == null) return new List<AiVenue>();
+            if (data == null) return [];
             return data;
         }
 
@@ -174,7 +156,7 @@ namespace Gluten.Core.DataProcessing.Service
         public List<GMapsPin> LoadGMPins()
         {
             var data = TryLoadJson<GMapsPin>(GMPinFileName);
-            if (data == null) return new List<GMapsPin>();
+            if (data == null) return [];
             return data;
         }
         /// <summary>
@@ -216,7 +198,7 @@ namespace Gluten.Core.DataProcessing.Service
         public List<GMapsPin> LoadGMMapPinExport()
         {
             var pins = TryLoadJson<GMapsPin>(GMPinExportDBFileName);
-            pins ??= new List<GMapsPin>();
+            pins ??= [];
             return pins;
         }
 

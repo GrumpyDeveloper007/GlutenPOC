@@ -64,7 +64,7 @@ namespace Smeagol.Services
                             if (string.IsNullOrWhiteSpace(message)) continue;
                             try
                             {
-                                GroupRoot? m = JsonConvert.DeserializeObject<GroupRoot>(message);
+                                var m = JsonConvert.DeserializeObject<SimplifiedGroupRoot>(message);
                                 var nodeId = FbModelHelper.GetNodeId(m);
                                 if (nodeId != null && !_LoadedIds.Contains(nodeId))
                                 {
@@ -116,15 +116,6 @@ namespace Smeagol.Services
         {
             var duplicatedLine = true;
 
-            if (line.StartsWith("{\"data\":"))
-            {
-                if (!LoadSearchRootMessage(line))
-                {
-                    duplicatedLine = false;
-                }
-                return duplicatedLine;
-            }
-
             var messages = line.Split(separator, StringSplitOptions.None);
             foreach (var message in messages)
             {
@@ -132,15 +123,27 @@ namespace Smeagol.Services
                 gr = JsonConvert.DeserializeObject<SimpleGroupRoot>(message) ?? new();
                 if (gr != null && gr.label != null && gr.label.Contains("GroupsCometFeedRegularStories"))
                 {
-
+                    //"GroupsCometFeedRegularStories_paginationGroup$defer$GroupsCometFeedRegularStories_group_group_feed$page_info
                     try
                     {
-                        GroupRoot? m;
-                        m = JsonConvert.DeserializeObject<GroupRoot>(message);
+                        if (message.StartsWith("{\"data\":"))
+                        {
+                            if (!LoadSearchRootMessage(message))
+                            {
+                                duplicatedLine = false;
+                            }
+                        }
+
+
+                        var m = JsonConvert.DeserializeObject<SimplifiedGroupRoot>(message);
                         var nodeId = FbModelHelper.GetNodeId(m);
                         if (nodeId == null)
                         {
-                            //Console.WriteLine($"Unknown Node Id, {message}");
+                            Console.WriteLine($"Unknown Node Id, {m.label}");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"known Node Id,   {m.label}, {nodeId}");
                         }
                         if (nodeId != null && !_LoadedIds.Contains(nodeId))
                         {

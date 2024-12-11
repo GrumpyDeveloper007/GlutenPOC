@@ -1,5 +1,5 @@
-﻿using Gluten.Core.Interface;
-using Gluten.Core.Service;
+﻿using Gluten.Core.Helper;
+using Gluten.Core.Interface;
 using Gluten.Data.TopicModel;
 using Gluten.FBModel;
 using Gluten.FBModel.Helper;
@@ -12,7 +12,6 @@ namespace Frodo.Service
     /// </summary>
     internal class TopicLoaderService(IConsole Console)
     {
-        private readonly TopicHelper _topicHelper = new();
         internal static readonly string[] crlf = ["/r/n"];
 
         /// <summary>
@@ -78,7 +77,7 @@ namespace Frodo.Service
                 var messageText = comet_sectionsStory?.message?.text;
                 // If this is a linked story, ignore
                 if (string.IsNullOrWhiteSpace(messageText)) continue;
-                DetailedTopic? currentTopic = _topicHelper.GetOrCreateTopic(topics, nodeId, messageText);
+                DetailedTopic? currentTopic = TopicHelper.GetOrCreateTopic(topics, nodeId, messageText);
 
                 currentTopic.Title = messageText ?? "";
                 currentTopic.FacebookUrl = comet_sectionsStory?.wwwURL;
@@ -116,7 +115,7 @@ namespace Frodo.Service
                     }
                     return;
                 }
-                DetailedTopic? currentTopic = _topicHelper.GetOrCreateTopic(topics, nodeId, messageText);
+                DetailedTopic? currentTopic = TopicHelper.GetOrCreateTopic(topics, nodeId, messageText);
 
                 UpdateTopicFromStoryNode(node, currentTopic);
             }
@@ -134,7 +133,7 @@ namespace Frodo.Service
                 var d = feedback.comment;
                 if (d.body != null)
                 {
-                    Response currentResponse = _topicHelper.GetOrCreateResponse(currentTopic, feedback.comment.id);
+                    Response currentResponse = TopicHelper.GetOrCreateResponse(currentTopic, feedback.comment.id);
                     currentResponse.Message = d.body.text;
                 }
             }

@@ -136,6 +136,19 @@ namespace Gluten.FBModel.Helper
                     seconds = trackingInfo.page_insights._229495282203436?.post_context?.publish_time ?? 0;
                 else if (trackingInfo.page_insights._247208302148491 != null)
                     seconds = trackingInfo.page_insights._247208302148491?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._9413340041 != null)
+                    seconds = trackingInfo.page_insights._9413340041?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._61561396146483 != null)
+                    seconds = trackingInfo.page_insights._61561396146483?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._100063657099306 != null)
+                    seconds = trackingInfo.page_insights._100063657099306?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._100001051750172 != null)
+                    seconds = trackingInfo.page_insights._100001051750172?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._625162559593528 != null)
+                    seconds = trackingInfo.page_insights._625162559593528?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._195689771214297 != null)
+                    seconds = trackingInfo.page_insights._195689771214297?.post_context?.publish_time ?? 0;
+
                 else
                 {
                     Console.WriteLine($"Unknown message structure {trackingInfoString}");
@@ -177,6 +190,29 @@ namespace Gluten.FBModel.Helper
             return node;
         }
 
+        public static SimplifiedNode? GetStoryNode(SimplifiedGroupRoot? groupRoot)
+        {
+            if (groupRoot == null) return null;
+            if (groupRoot == null || groupRoot.data.node == null) return null;
+
+            var node = groupRoot.data.node;
+
+            if (node.__typename == "Group")
+            {
+                if (node.group_feed.edges.Count > 1)
+                {
+                    Console.WriteLine("multiple edges");
+                }
+                node = node.group_feed.edges[0].node;
+            }
+            else if (node.__typename != "Story")
+            {
+                Console.WriteLine("unknown node");
+            }
+            return node;
+        }
+
+
         /// <summary>
         /// Gets Node Ids contained in a search response
         /// </summary>
@@ -201,7 +237,7 @@ namespace Gluten.FBModel.Helper
         /// <summary>
         /// Get Node Id contained in a group response
         /// </summary>
-        public static string? GetNodeId(GroupRoot? groupRoot)
+        public static string? GetNodeId(SimplifiedGroupRoot? groupRoot)
         {
             if (groupRoot == null)
             {

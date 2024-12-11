@@ -5,17 +5,17 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Gluten.Core.Service
+namespace Gluten.Core.Helper
 {
     /// <summary>
     /// Some helper function for working with topic classes
     /// </summary>
-    public class TopicHelper
+    public static class TopicHelper
     {
         /// <summary>
         /// Checks to see if a response exists for the given nodeId, selects it or creates a new one
         /// </summary>
-        public Response GetOrCreateResponse(DetailedTopic currentTopic, string nodeId)
+        public static Response GetOrCreateResponse(DetailedTopic currentTopic, string nodeId)
         {
             Response? currentResponse = null;
             foreach (var response in currentTopic.ResponsesV2)
@@ -41,7 +41,7 @@ namespace Gluten.Core.Service
         /// <summary>
         /// Checks to see if a topic exists for the given nodeId, selects it or creates a new one
         /// </summary>
-        public DetailedTopic GetOrCreateTopic(List<DetailedTopic> topics, string nodeId, string messageText)
+        public static DetailedTopic GetOrCreateTopic(List<DetailedTopic> topics, string nodeId, string messageText)
         {
             DetailedTopic? currentTopic = null;
             foreach (var topic in topics)

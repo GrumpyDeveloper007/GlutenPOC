@@ -27,7 +27,7 @@ namespace Frodo.Service
     {
         private readonly LocalAiInterfaceService _analyzeDocumentService = new(Console);
         private const string ExportFolder = @"D:\Coding\Gluten\Export\";
-        private ClientExportFileGeneratorGM _exportFileGeneratorGM = new(_databaseLoaderService, _geoService, _dataStore, Console);
+        private readonly ClientExportFileGeneratorGM _exportFileGeneratorGM = new(_databaseLoaderService, _geoService, _dataStore, Console);
 
         /// <summary>
         /// Group data by pin (venue), export to json
@@ -45,41 +45,38 @@ namespace Frodo.Service
             var unknownRestaurantType = 0;
             foreach (var pin in pins)
             {
+                if (pin.Price != null)
+                {
+                    pin.Price = pin.Price.Replace("&nbsp;", " ");
+                    pin.Price = pin.Price.Replace("·", "");
+                }
+                pin.Label = pin.Label.Replace("&amp;", "&");
+
                 if (string.IsNullOrEmpty(pin.Description)
                     || pin.Description?.Contains(pin.Label ?? "", StringComparison.InvariantCultureIgnoreCase) == false)
                 {
                     Console.WriteLine($"Updating descriptions - {ii} of {pins.Count}");
                     var message = "";
-                    if (pin.Topics != null)
+                    foreach (var item in pin.Topics)
                     {
-                        List<string> nodes = [];
-                        foreach (var item in pin.Topics)
-                        {
-                            message += " " + item.Title;
-                            if (item.NodeID != null)
-                                nodes.Add(item.NodeID);
-                        }
+                        message += " " + item.Title;
+                    }
 
-                        var existingCache = _databaseLoaderService.GetPinDescriptionCache(nodes);
-                        if (existingCache == null || pin.Description?.Contains(pin.Label ?? "") == false)
+                    var existingCache = _databaseLoaderService.GetPinDescriptionCache(pin.GeoLongitude, pin.GeoLatitude);
+                    if (existingCache == null)//|| pin.Description?.Contains(pin.Label ?? "") == false
+                    {
+                        pin.Description = await _analyzeDocumentService.ExtractDescriptionTitle(message, pin.Label);
+                        if (!string.IsNullOrWhiteSpace(pin.Description))
                         {
-
-                            pin.Description = await _analyzeDocumentService.ExtractDescriptionTitle(message, pin.Label);
-                            var cache = new PinDescriptionCache()
-                            {
-                                Nodes = nodes,
-                                Description = pin.Description
-                            };
-                            _databaseLoaderService.AddPinDescriptionCache(cache);
+                            _databaseLoaderService.AddPinDescriptionCache(pin.Description, pin.GeoLongitude, pin.GeoLatitude);
                             _databaseLoaderService.SavePinDescriptionCache();
                         }
-                        else
-                        {
-                            pin.Description = existingCache.Description;
-                        }
-                        _databaseLoaderService.SavePinTopics(pins);
-
                     }
+                    else
+                    {
+                        pin.Description = existingCache.Description;
+                    }
+                    _databaseLoaderService.SavePinTopics(pins);
                 }
 
                 if (string.IsNullOrWhiteSpace(pin.RestaurantType))
