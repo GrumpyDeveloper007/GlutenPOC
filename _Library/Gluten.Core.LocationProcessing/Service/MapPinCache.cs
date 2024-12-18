@@ -16,18 +16,45 @@ namespace Gluten.Core.LocationProcessing.Service
     /// Provides caching of pins
     /// </summary>
     public class MapPinCache(
-        Dictionary<string,
-        TopicPinCache> pinCache,
+        Dictionary<string, TopicPinCache> pinCache,
         IConsole Console)
     {
         private Dictionary<string, TopicPinCache> _pinCache = pinCache;
+        private Dictionary<string, PinCacheMetaHtml> _pinCacheMeta = new();
+
+        public void Clean()
+        {
+            foreach (var item in _pinCache.Values)
+            {
+                for (int i = item.SearchStrings.Count - 1; i >= 0; i--)
+                {
+                    if (item.SearchStrings[i].StartsWith("https://www.google.com/maps/place/")
+                        || item.SearchStrings[i].StartsWith("https://www.google.it/maps/place/"))
+                    {
+                        Console.WriteLine($"Removing {item.SearchStrings[i]}");
+                        item.SearchStrings.RemoveAt(i);
+                    }
+
+                    // remove duplicates
+                    for (int t = item.SearchStrings.Count - 1; t >= 0; t--)
+                    {
+                        if (item.SearchStrings[t] == item.SearchStrings[i] && t != i)
+                        {
+                            Console.WriteLine($"Removing {item.SearchStrings[t]}");
+                            item.SearchStrings.RemoveAt(i);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// Tries to get a cached pin based on the place name, with fuzzy logic
         /// </summary>
         public TopicPinCache? TryGetPin(string? placeName, string country)
         {
-            if (placeName == null) return null;
+            if (string.IsNullOrWhiteSpace(placeName)) return null;
             if (_pinCache == null) return null;
             if (_pinCache.TryGetValue(placeName, out var value))
                 return value;
@@ -81,6 +108,36 @@ namespace Gluten.Core.LocationProcessing.Service
             return null;
         }
 
+        public TopicPinCache AddPinCache(TopicPinCache newPin, string searchString)
+        {
+            var oldPin = TryGetPinLatLong(newPin.GeoLatitude, newPin.GeoLongitude);
+            if (oldPin != null)
+            {
+                Console.WriteLineRed($"pin found in cache");
+                oldPin.SearchStrings.Add(searchString);
+                return oldPin;
+            }
+            else
+            {
+                if (_pinCache.Keys.Contains(newPin.Label))
+                {
+                    oldPin = _pinCache[newPin.Label];
+                    Console.WriteLineRed($"Existing cache entry error: {newPin.GeoLatitude}, {newPin.GeoLongitude} old: {oldPin.GeoLatitude},{oldPin.GeoLongitude}");
+                    if (newPin.GeoLatitude == oldPin.GeoLatitude || newPin.GeoLongitude == oldPin.GeoLongitude)
+                    {
+                        return oldPin;
+                    }
+                    _pinCache.Add($"{newPin.Label}{newPin.GeoLatitude}:{newPin.GeoLongitude}", newPin);
+                    return newPin;
+                }
+                else
+                {
+                    _pinCache.Add(newPin.Label, newPin);
+                    return newPin;
+                }
+            }
+        }
+
         /// <summary>
         /// Tries to get a pin based on a url
         /// </summary>
@@ -93,6 +150,14 @@ namespace Gluten.Core.LocationProcessing.Service
                 if (item.MapsUrl != null && item.MapsUrl.StartsWith(url, StringComparison.CurrentCultureIgnoreCase))
                 {
                     return item;
+                }
+
+                foreach (var searchItem in item.SearchStrings)
+                {
+                    if (searchItem == url)
+                    {
+                        return item;
+                    }
                 }
             }
             return null;
@@ -115,6 +180,44 @@ namespace Gluten.Core.LocationProcessing.Service
         }
 
         /// <summary>
+        /// Gets the current state of the Html store database
+        /// </summary>
+        public Dictionary<string, PinCacheMetaHtml> GetCacheHtml()
+        {
+            return _pinCacheMeta;
+        }
+
+        /// <summary>
+        /// Updates the Html Store database 
+        /// </summary>
+        public void SetCacheHtml(Dictionary<string, PinCacheMetaHtml> newCache)
+        {
+            _pinCacheMeta = newCache;
+        }
+
+        public void AddUpdateMetaHtml(string html, string geoLatitude, string geoLongitude)
+        {
+            if (!_pinCacheMeta.TryGetValue($"{geoLatitude}:{geoLongitude}", out var value))
+            {
+                _pinCacheMeta.Add($"{geoLatitude}:{geoLongitude}", new PinCacheMetaHtml
+                {
+                    GeoLatitude = geoLatitude,
+                    GeoLongitude = geoLongitude,
+                    MetaHtml = html
+                });
+            }
+        }
+
+        public string GetMetaHtml(string geoLatitude, string geoLongitude)
+        {
+            if (_pinCacheMeta.TryGetValue($"{geoLatitude}:{geoLongitude}", out var value))
+            {
+                return value.MetaHtml;
+            }
+            return "";
+        }
+
+        /// <summary>
         /// Tries to extract a map location from the geo fields in the url for the centre of the map then tries to location 
         /// the actual location from the data= section
         /// </summary>
@@ -123,30 +226,10 @@ namespace Gluten.Core.LocationProcessing.Service
             if (url == null) return null;
             TopicPinCache? oldPin = TryGetPinByUrl(url);
             url = HttpUtility.UrlDecode(url);
-            if (oldPin != null) return oldPin;
             var newPin = PinHelper.GenerateMapPin(url, searchString, country);
 
-            if (newPin != null)
-            {
-                var existingPin = TryGetPin(newPin.Label, country);
-
-                existingPin ??= TryGetPinLatLong(newPin.GeoLatitude, newPin.GeoLongitude);
-                if (existingPin == null)
-                {
-                    //newPin.Country = country;
-                    if (newPin.Label != null)
-                    {
-                        _pinCache.Add(newPin.Label, newPin);
-                        Console.WriteLine($"Adding cache pin :'{newPin.Label}");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine($"Adding search parameter :'{searchString}' to : '{newPin.Label}'");
-                    existingPin.SearchStrings.Add(searchString);
-                }
-            }
-            return newPin;
+            if (newPin == null) return null;
+            return AddPinCache(newPin, searchString);
         }
 
 

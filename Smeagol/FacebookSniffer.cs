@@ -82,7 +82,7 @@ internal class FacebookSniffer
                 else
                 {
                     Console.WriteLine($"Response skipped {_index}");
-                    System.IO.File.AppendAllText("D:\\Coding\\Gluten\\Database\\RejectedResponses.txt", e.ResponseBody + "\r\n");
+                    //System.IO.File.AppendAllText("D:\\Coding\\Gluten\\Database\\RejectedResponses.txt", e.ResponseBody + "\r\n");
                 }
             }
             catch (Exception ex)

@@ -1,6 +1,5 @@
-﻿using Gluten.Data.TopicModel;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
+﻿using Gluten.Core.Helper;
+using Gluten.Data.TopicModel;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,9 +23,7 @@ namespace Gluten.Core.DataProcessing.Service
             List<DetailedTopic>? topics = null;
             if (File.Exists(DBFileName))
             {
-                string json;
-                json = File.ReadAllText(DBFileName);
-                var tempTopics = JsonConvert.DeserializeObject<List<DetailedTopic>>(json);
+                var tempTopics = JsonHelper.TryLoadJsonList<DetailedTopic>(DBFileName);
                 if (tempTopics != null) { topics = tempTopics; }
             }
             return topics;
@@ -37,9 +34,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public void SaveTopics(List<DetailedTopic> topics)
         {
-            var json = JsonConvert.SerializeObject(topics, Formatting.Indented,
-                [new StringEnumConverter()]);
-            File.WriteAllText(DBFileName, json);
+            JsonHelper.SaveDb(DBFileName, topics);
         }
     }
 }

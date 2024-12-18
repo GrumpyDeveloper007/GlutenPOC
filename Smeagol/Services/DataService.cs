@@ -119,6 +119,14 @@ namespace Smeagol.Services
             var messages = line.Split(separator, StringSplitOptions.None);
             foreach (var message in messages)
             {
+                if (message.StartsWith("{\"data\":"))
+                {
+                    if (!LoadSearchRootMessage(message))
+                    {
+                        duplicatedLine = false;
+                    }
+                }
+
                 SimpleGroupRoot gr;
                 gr = JsonConvert.DeserializeObject<SimpleGroupRoot>(message) ?? new();
                 if (gr != null && gr.label != null && gr.label.Contains("GroupsCometFeedRegularStories"))
@@ -126,15 +134,6 @@ namespace Smeagol.Services
                     //"GroupsCometFeedRegularStories_paginationGroup$defer$GroupsCometFeedRegularStories_group_group_feed$page_info
                     try
                     {
-                        if (message.StartsWith("{\"data\":"))
-                        {
-                            if (!LoadSearchRootMessage(message))
-                            {
-                                duplicatedLine = false;
-                            }
-                        }
-
-
                         var m = JsonConvert.DeserializeObject<SimplifiedGroupRoot>(message);
                         var nodeId = FbModelHelper.GetNodeId(m);
                         if (nodeId == null)

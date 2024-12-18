@@ -13,5 +13,11 @@ namespace Gluten.Data.TopicModel
 
         public TopicPin? Pin { get; set; }
         public bool PinSearchDone { get; set; } = false;
+        public bool IsChain { get; set; } = false;
+
+        public int PinsFound { get; set; } = 0;
+
+        public bool ChainGenerated { get; set; } = false;
+        public bool IsExportable { get; set; } = true;
     }
 }

@@ -1,12 +1,6 @@
 ﻿// Ignore Spelling: Json
 
-using Newtonsoft.Json.Converters;
 using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Gluten.Core.Helper
 {
@@ -18,27 +12,67 @@ namespace Gluten.Core.Helper
         /// <summary>
         /// Tries to load a collection of classes from a Json file
         /// </summary>
-        public static List<classType>? TryLoadJson<classType>(string fileName)
+        public static List<classType>? TryLoadJsonList<classType>(string fileName)
         {
-            List<classType>? topics = null;
+            List<classType>? myObject = null;
             if (File.Exists(fileName))
             {
-                string json;
-                json = File.ReadAllText(fileName);
-                var tempTopics = JsonConvert.DeserializeObject<List<classType>>(json);
-                if (tempTopics != null) { topics = tempTopics; }
+                using StreamReader file = File.OpenText(fileName);
+                JsonSerializer serializer = new();
+                var tempMyObject = serializer.Deserialize(file, typeof(List<classType>));
+                if (tempMyObject != null) { myObject = (List<classType>)tempMyObject; }
+
+                //string json;
+                //json = File.ReadAllText(fileName);
+                //var tempMyObject = JsonConvert.DeserializeObject<List<classType>>(json);
+                //if (tempMyObject != null) { myObject = tempMyObject; }
             }
-            return topics;
+            return myObject;
+        }
+
+        /// <summary>
+        /// Tries to load a collection of classes from a Json file
+        /// </summary>
+        public static Dictionary<string, classType>? TryLoadJsonDictionary<classType>(string fileName)
+        {
+            Dictionary<string, classType>? myObject = null;
+            if (File.Exists(fileName))
+            {
+                using StreamReader file = File.OpenText(fileName);
+                JsonSerializer serializer = new();
+                var tempMyObject = serializer.Deserialize(file, typeof(Dictionary<string, classType>));
+                if (tempMyObject != null) { myObject = (Dictionary<string, classType>)tempMyObject; }
+
+                //string json;
+                //json = File.ReadAllText(fileName);
+                //var tempMyObject = JsonConvert.DeserializeObject<List<classType>>(json);
+                //if (tempMyObject != null) { myObject = tempMyObject; }
+            }
+            return myObject;
         }
 
         /// <summary>
         /// Saves a class structure to a Json file
         /// </summary>
-        public static void SaveDb<typeToSave>(string fileName, typeToSave topics)
+
+        public static void SaveDb<typeToSave>(string fileName, typeToSave objectToSave)
         {
-            var json = JsonConvert.SerializeObject(topics, Formatting.Indented,
-                [new StringEnumConverter()]);
-            File.WriteAllText(fileName, json);
+            using (StreamWriter file = File.CreateText(fileName))
+            {
+                JsonSerializer serializer = new();
+                serializer.Formatting = Formatting.Indented; // Optional: makes the JSON readable
+                serializer.Serialize(file, objectToSave);
+            }
+        }
+
+        public static void SaveDbNoPadding<typeToSave>(string fileName, typeToSave objectToSave)
+        {
+            using (StreamWriter file = File.CreateText(fileName))
+            {
+                JsonSerializer serializer = new();
+                serializer.Formatting = Formatting.None;
+                serializer.Serialize(file, objectToSave);
+            }
         }
     }
 }

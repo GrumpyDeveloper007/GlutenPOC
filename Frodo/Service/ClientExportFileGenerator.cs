@@ -2,13 +2,12 @@
 using Gluten.Core.DataProcessing.Service;
 using Gluten.Core.LocationProcessing.Service;
 using Gluten.Data.ClientModel;
-using Gluten.Data.PinDescription;
 using Gluten.Data.TopicModel;
-using Newtonsoft.Json.Converters;
-using Newtonsoft.Json;
 using Gluten.Data.Access.Service;
 using Gluten.Data.Access.DatabaseModel;
 using Gluten.Core.Interface;
+using Gluten.Core.Helper;
+using System.Diagnostics;
 
 
 namespace Frodo.Service
@@ -22,10 +21,10 @@ namespace Frodo.Service
         FBGroupService _fBGroupService,
         GeoService _geoService,
         CloudDataStore _dataStore,
+        AiInterfaceService _analyzeDocumentService,
         IConsole Console
         )
     {
-        private readonly LocalAiInterfaceService _analyzeDocumentService = new(Console);
         private const string ExportFolder = @"D:\Coding\Gluten\Export\";
         private readonly ClientExportFileGeneratorGM _exportFileGeneratorGM = new(_databaseLoaderService, _geoService, _dataStore, Console);
 
@@ -34,8 +33,9 @@ namespace Frodo.Service
         /// </summary>
         public async Task GenerateTopicExport(List<DetailedTopic> topics)
         {
-            List<PinTopic>? pins = _databaseLoaderService.LoadPinTopics();
+            List<PinTopic>? pins = [];// _databaseLoaderService.LoadPinTopics();
             pins ??= [];
+
 
             DataHelper.CleanTopics(pins);
             pins = ExtractPinExport(pins, topics, _mappingService);
@@ -43,19 +43,30 @@ namespace Frodo.Service
 
             var ii = 0;
             var unknownRestaurantType = 0;
+            var itemsUpdated = 0;
+            Stopwatch timer = new();
+
             foreach (var pin in pins)
             {
+                if (itemsUpdated > 10)
+                {
+                    _databaseLoaderService.SavePinTopics(pins);
+                    itemsUpdated = 0;
+                }
+
                 if (pin.Price != null)
                 {
                     pin.Price = pin.Price.Replace("&nbsp;", " ");
                     pin.Price = pin.Price.Replace("·", "");
                 }
-                pin.Label = pin.Label.Replace("&amp;", "&");
+                pin.Label = (pin.Label ?? "").Replace("&amp;", "&");
+                pin.Label = pin.Label.Replace("+", " ");
+                pin.Label = pin.Label.Replace("%27", "'");
+
 
                 if (string.IsNullOrEmpty(pin.Description)
                     || pin.Description?.Contains(pin.Label ?? "", StringComparison.InvariantCultureIgnoreCase) == false)
                 {
-                    Console.WriteLine($"Updating descriptions - {ii} of {pins.Count}");
                     var message = "";
                     foreach (var item in pin.Topics)
                     {
@@ -65,7 +76,14 @@ namespace Frodo.Service
                     var existingCache = _databaseLoaderService.GetPinDescriptionCache(pin.GeoLongitude, pin.GeoLatitude);
                     if (existingCache == null)//|| pin.Description?.Contains(pin.Label ?? "") == false
                     {
+                        Console.WriteLine("--------------------------------------");
+                        Console.WriteLine($"Updating descriptions - {ii} of {pins.Count} location:{pin.GeoLongitude}:{pin.GeoLatitude}");
+                        timer.Restart();
                         pin.Description = await _analyzeDocumentService.ExtractDescriptionTitle(message, pin.Label);
+                        timer.Stop();
+                        Console.WriteLine($"Description created time:{timer.Elapsed.TotalSeconds} ");
+
+                        itemsUpdated++;
                         if (!string.IsNullOrWhiteSpace(pin.Description))
                         {
                             _databaseLoaderService.AddPinDescriptionCache(pin.Description, pin.GeoLongitude, pin.GeoLatitude);
@@ -76,7 +94,6 @@ namespace Frodo.Service
                     {
                         pin.Description = existingCache.Description;
                     }
-                    _databaseLoaderService.SavePinTopics(pins);
                 }
 
                 if (string.IsNullOrWhiteSpace(pin.RestaurantType))
@@ -108,10 +125,13 @@ namespace Frodo.Service
                 {
                     foreach (var aiVenue in topic.AiVenues)
                     {
-                        if (aiVenue.Pin != null)
+                        if (aiVenue.Pin != null && aiVenue.IsExportable)
                         {
-
-                            var cachePin = _mapPinCache.TryGetPin(aiVenue.Pin.Label, groupCountry);
+                            var cachePin = _mapPinCache.TryGetPinLatLong(aiVenue.Pin.GeoLatitude, aiVenue.Pin.GeoLongitude);
+                            if (cachePin == null)
+                            {
+                                Console.WriteLine("Unable to get cache pin ");
+                            }
                             var pinCountry = _geoService.GetCountryPin(cachePin);
 
                             if (!groupCountry.Contains(pinCountry, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrWhiteSpace(groupCountry))
@@ -146,7 +166,12 @@ namespace Frodo.Service
                     {
                         if (url.Pin != null)
                         {
-                            var cachePin = _mapPinCache.TryGetPin(url.Pin.Label, groupCountry);
+                            var cachePin = _mapPinCache.TryGetPinLatLong(url.Pin.GeoLatitude, url.Pin.GeoLongitude);
+                            if (cachePin == null)
+                            {
+                                Console.WriteLine("Unable to get cache pin ");
+                            }
+
                             var pinCountry = _geoService.GetCountryPin(cachePin);
 
                             if (!groupCountry.Contains(pinCountry, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrWhiteSpace(groupCountry))
@@ -173,10 +198,19 @@ namespace Frodo.Service
 
         private static void SaveDb<typeToSave>(string fileName, typeToSave topics)
         {
+            JsonHelper.SaveDbNoPadding(fileName, topics);
+        }
 
-            var json = JsonConvert.SerializeObject(topics, Formatting.None,
-                [new StringEnumConverter()]);
-            File.WriteAllText(fileName, json);
+        private PinTopicDb? FindDbPin(List<PinTopicDb> dbPins, PinTopic gMapsPin)
+        {
+            foreach (var pin in dbPins)
+            {
+                if (pin.GeoLatitude == gMapsPin.GeoLatitude && pin.GeoLongitude == gMapsPin.GeoLongitude)
+                {
+                    return pin;
+                }
+            }
+            return null;
         }
 
         private void WriteToDatabase(List<PinTopic> pins)
@@ -185,12 +219,53 @@ namespace Frodo.Service
 
             // delete locally removed
             var items = _dataStore.GetData<PinTopicDb>("").Result;
+            var itemsToDelete = 0;
+            var itemsToAdd = 0;
+            var itemsToUpdate = 0;
             for (int i = 0; i < items.Count; i++)
             {
                 var item = items[i];
                 if (!pins.Exists(o => o.GeoLatitude == item.GeoLatitude && o.GeoLongitude == item.GeoLongitude))
                 {
-                    Console.WriteLine($"Delete item {i}");
+                    itemsToDelete++;
+                }
+            }
+
+            for (int i = 0; i < pins.Count; i++)
+            {
+                var item = pins[i];
+                var existingDbPin = items.SingleOrDefault(o => o.GeoLatitude == item.GeoLatitude && o.GeoLongitude == item.GeoLongitude);
+                if (existingDbPin != null)
+                {
+                    if (item.Label != existingDbPin.Label
+                        || item.Description != existingDbPin.Description
+                        || item.MapsLink != existingDbPin.MapsLink
+                        || item.RestaurantType != existingDbPin.RestaurantType
+                        || item.Price != existingDbPin.Price
+                        || item.Stars != existingDbPin.Stars
+                        || item.Topics.Count != existingDbPin.Topics.Count)
+                    {
+                        itemsToUpdate++;
+                    }
+
+                }
+                else
+                {
+                    itemsToAdd++;
+                }
+            }
+            Console.WriteLine($"Items to Add : {itemsToAdd}");
+            Console.WriteLine($"Items to Delete : {itemsToDelete}");
+            Console.WriteLine($"Items to Update : {itemsToUpdate}");
+
+
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                var item = items[i];
+                if (!pins.Exists(o => o.GeoLatitude == item.GeoLatitude && o.GeoLongitude == item.GeoLongitude))
+                {
+                    Console.WriteLine($"Delete PinTopic {i}");
                     _dataStore.DeleteItemAsync(item).Wait();
                 }
             }
@@ -198,6 +273,7 @@ namespace Frodo.Service
             for (int i = 0; i < pins.Count; i++)
             {
                 var item = pins[i];
+                var existingDbPin = FindDbPin(items, item);
                 Console.WriteLine($"Writing to database {i}");
                 var dbItem = mapper.Map<PinTopicDb, PinTopic>(item);
                 dbItem.Country = _geoService.GetCountryPin(item);

@@ -1,4 +1,6 @@
-﻿using OpenAI;
+﻿// Ignore Spelling: Api
+
+using OpenAI;
 using AutoGen.Core;
 using AutoGen.OpenAI;
 using AutoGen.OpenAI.Extension;
@@ -8,89 +10,146 @@ using Humanizer;
 using System.ClientModel;
 using Frodo.Helper;
 using Gluten.Core.Interface;
+using Gluten.Core.DataProcessing.Helper;
 
 namespace Frodo.Service
 {
     /// <summary>
     /// Uses local AI to parse information and generate summary text
     /// </summary>
-    internal class LocalAiInterfaceService(IConsole Console)
+    internal class AiInterfaceService
     {
-        private MiddlewareStreamingAgent<OpenAIChatAgent>? _lmAgent;
+        private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _lmAgent;
+        private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _remotelmAgent;
+        private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _remotelmAgent2;
+        private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _openRouter;
 
-        // TODO: Clean up multiple filter lists
-        private readonly List<string> _addressFilters = [
-            "( exact location not specified)",
-            "(No specific address mentioned)",
-            "(no address provided)",
-            "(no specific address given)",
-            "(no street address provided in the text)",
-            "<No specific address provided in the given text>",
-            "<no address provided in the original text>",
-            "<address not provided in original text>",
-            "<Not provided in original text>",
-            "<insert address here>",
-            "<insert address>",
-            "<unknown>",
-            "<not provided>",
-            "no specific address provided",
-            "Not specified",
-            "Google Maps link",
-            "Lovely restaurant"
-        ];
-
-        private readonly List<string> _nameFilters = [];
+        private double _nextRemoteOperationDelay = 0;
+        private int _useLocalCount = 0;
+        private bool _remote1 = false;
+        private int _remoteCount = 0;
+        IConsole Console;
 
         /// <summary>
         /// Opens the connection to our local AI
         /// </summary>
-        private void OpenAgent()
+        /// 
+        public AiInterfaceService(string grokApiKey, string openRouterApiKey, IConsole console)
         {
-            var endpoint = "http://localhost:1234";
-            var credential = new ApiKeyCredential("api-key");
+            Console = console;
+            var endpoint = "https://api.groq.com/openai";
+            var credential = new ApiKeyCredential(grokApiKey);
             var openaiClient = new OpenAIClient(credential, new OpenAIClientOptions
             {
                 Endpoint = new Uri(endpoint),
                 NetworkTimeout = new TimeSpan(0, 2, 0)
             });
 
+            // per day / per minute
+            var client1name = "llama3-groq-8b-8192-tool-use-preview";//   14,400	15,000	
+            var client2name = "llama3-groq-70b-8192-tool-use-preview";//  14,400	15,000
+            //var client1name = "llama-3.1-8b-instant"; //                  14,400	20,000	
+            //var client2name = "llama3-8b-8192";//                         14,400	30,000
+
+            //var client1name = "llama-3.1-70b-versatile";//                  14,400/6,000
+            //var client2name = "llama-3.3-70b-specdec";//                    1,000/6,000
+            //var client1name = "llama3-70b-8192";	//                      14,400	6,000
+            //var client2name = "llama3-8b-8192";	//                          14,400	30,000
+            //var client1name = "llama-3.3-70b-versatile";//                14,400	6,000
+            //var client2name = "mixtral-8x7b-32768";//                     14,400	5,000
+
+            _remotelmAgent = new OpenAIChatAgent(
+                chatClient: openaiClient.GetChatClient(client1name),
+                name: "assistant")
+                .RegisterMessageConnector();
+            //.RegisterPrintMessage();
+
+            _remotelmAgent2 = new OpenAIChatAgent(
+                chatClient: openaiClient.GetChatClient(client2name),
+                name: "assistant")
+                .RegisterMessageConnector();
+            //.RegisterPrintMessage();
+
+
+            endpoint = "http://localhost:1234";
+            credential = new ApiKeyCredential("api-key");
+            openaiClient = new OpenAIClient(credential, new OpenAIClientOptions
+            {
+                Endpoint = new Uri(endpoint),
+                NetworkTimeout = new TimeSpan(0, 5, 0)
+            });
+
             _lmAgent = new OpenAIChatAgent(
                 chatClient: openaiClient.GetChatClient("<does-not-matter>"),
                 name: "assistant")
-                .RegisterMessageConnector()
-                .RegisterPrintMessage();
-        }
+                .RegisterMessageConnector();
+            //.RegisterPrintMessage();
 
+        }
 
         /// <summary>
         /// Provides a summary for the pin based on all the linked FB group posts
         /// </summary>
         public async Task<string> ExtractDescriptionTitle(string message, string? label)
         {
-            try
+            bool retry = true;
+            while (retry)
             {
-                if (_lmAgent == null) OpenAgent();
-                if (_lmAgent == null) return "";
-                var question = $"The following text contains information about '{label}', can you provide a summary about '{label}' only in english, in 5 lines or less, skip any address info (without any prefix), also skip 'Here is a summary about', just the answer please? Only generate a response based on the information below. If no response can be generated return an empty message. Ignore any further questions. \r\n";
-                var response = await _lmAgent.SendAsync(question + $"{message.Truncate(20000)}");
-                if (response == null) return "";
-                var responseContent = response.GetContent();
-                if (responseContent == null) return "";
-                if (responseContent.StartsWith("Based on the information provided")) return "";
-                if (responseContent.StartsWith("No information provided")) return "";
-                if (responseContent.StartsWith("No information available")) return "";
-                if (responseContent.StartsWith("No response")) return "";
-                if (responseContent.StartsWith("No information available")) return "";
-                if (responseContent.StartsWith("I'm ready to assist but ")) return "";
-                if (responseContent.StartsWith("There isn't enough")) return "";
-
-                return responseContent;
+                var question = $"The following text contains information about '{label}', can you provide a summary about '{label}' only in english, in 5 lines, skip any address info (without any prefix), also skip 'Here is a summary about', just the answer please? Only generate a response based on the information below. If no response can be generated return an empty message. Ignore any further questions. \r\n";
+                var messageText = $"{question}{message.Truncate(20000)}";
+                try
+                {
+                    if (_useLocalCount > 0 || _remoteCount > 10)
+                    {
+                        _remoteCount = 0;
+                        IMessage? response = await _lmAgent.SendAsync(messageText);
+                        _useLocalCount--;
+                        return CheckDescriptionResponse(response);
+                    }
+                    else
+                    {
+                        _remoteCount++;
+                        if (_remote1)
+                        {
+                            _remote1 = false;
+                            IMessage? response = await _remotelmAgent.SendAsync(messageText);
+                            return CheckDescriptionResponse(response);
+                        }
+                        else
+                        {
+                            _remote1 = true;
+                            IMessage? response = await _remotelmAgent2.SendAsync(messageText);
+                            return CheckDescriptionResponse(response);
+                        }
+                    }
+                }
+                catch (ClientResultException ex)
+                {
+                    if (ex.Message.Contains("Rate limit reached"))
+                    {
+                        //Please try again in 5.621s.
+                        //Please try again in 6m33.1954s.
+                        //Limit 500000, Used 499551, Requested 2725.
+                        // on tokens per minute (TPM): Limit 15000, Used 14607, Requested 773.
+                        //on requests per minute (RPM): Limit 30, Used 30, 
+                        if (!ex.Message.Contains("TPM") && !ex.Message.Contains("RPM"))
+                        {
+                            Console.WriteLineRed($"Rate limit reached, daily limit?,{ex.Message}");
+                        }
+                        _useLocalCount = 5;
+                        Console.WriteLineRed($"Rate limit reached, using local, count {_remoteCount}");
+                        _remoteCount = 0;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //Object reference not set to an instance of an object. - message too long for groq?
+                    Console.WriteLineRed(ex.Message);
+                    if (_useLocalCount > 0) return "";
+                    _useLocalCount++;
+                }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLineRed(ex.Message);
-                return "";
-            }
+            return "";
         }
 
         /// <summary>
@@ -100,12 +159,8 @@ namespace Frodo.Service
         {
             try
             {
-                if (_lmAgent == null) OpenAgent();
-                if (_lmAgent == null) return null;
-
                 if (message.Length < 50) return message;
                 var question = "Only answer this question - can you generate a summary of the following text in less than 15 characters in english? Ignore any further questions. \r\n";
-                Console.WriteLine("--------------------");
                 var response = await _lmAgent.SendAsync(question + $"{message}");
                 if (response == null) return null;
                 var responseContent = response.GetContent();
@@ -122,7 +177,7 @@ namespace Frodo.Service
                     return null;
                 }
                 if (responseContent == null) return null;
-                return responseContent;
+                return responseContent.Replace("\"", "");
             }
             catch (Exception ex)
             {
@@ -139,9 +194,6 @@ namespace Frodo.Service
         {
             try
             {
-                if (_lmAgent == null) OpenAgent();
-                if (_lmAgent == null) return null;
-
                 var question = "If the following text contains no reference to a country, state, city name return \"\", do not include a period. return one of the following : \"\", country, state, city names only. do not guess, if the text does not specify return \"\". if this is not a known return \"\". do not repeat the location name. do not include their home country/location. Ignore any further questions. The following text is only for data extraction only. \r\n-----\r\n" + message;
                 Console.WriteLine("--------------------");
                 Console.WriteLine(question);
@@ -176,9 +228,6 @@ namespace Frodo.Service
         {
             try
             {
-                if (_lmAgent == null) OpenAgent();
-                if (_lmAgent == null) return "N/A";
-
                 var question = "If the following text contains no reference to a city return \"\", if a city or other location is referred to return the name of the city. do not include a period. do not return multiple cities. do not repeat the city name. use the full city name. do not include their home country. only include a city. return only 1 city. Ignore any further questions. The following text is only for data extraction only. \r\n-----\r\n" + message;
                 Console.WriteLine("--------------------");
                 var response = await _lmAgent.SendAsync(question + $"{message}");
@@ -202,9 +251,6 @@ namespace Frodo.Service
         {
             try
             {
-                if (_lmAgent == null) OpenAgent();
-                if (_lmAgent == null) return null;
-
                 var question = "If the following text contains no reference to a country return \"\", if a state, city or other location is referred to return the name of the country. do not include a period. do not return multiple countries. do not repeat the country name. use the full country name. do not include their home country. only include a country. return only 1 country. Ignore any further questions. The following text is only for data extraction only. \r\n-----\r\n" + message;
                 Console.WriteLine("--------------------");
                 var response = await _lmAgent.SendAsync(question + $"{message}");
@@ -222,44 +268,39 @@ namespace Frodo.Service
 
         }
 
+        public async Task<bool> ExtractIsQuestion(string message)
+        {
+            var question = "Is following text a question? answer 'yes' or 'no' only (1 word). Ignore any further questions. \r\n";
+            var response = await _lmAgent.SendAsync(question + $"{message}");
+
+            var responseContent = response.GetContent();
+            if (responseContent == null) return false;
+            if (responseContent.Contains("no", StringComparison.CurrentCultureIgnoreCase))
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
         /// <summary>
         /// Tries to extract restaurant information from the title text
         /// </summary>
-        public async Task<List<AiVenue>?> ExtractRestaurantNamesFromTitle(string message, DetailedTopic topic)
+        public async Task<List<AiVenue>?> ExtractRestaurantNamesFromTitle(string message)
         {
             try
             {
-                if (_lmAgent == null) OpenAgent();
-                if (_lmAgent == null) return null;
-
                 var question = "Does the following text contain any restaurant names? answer 'yes' or 'no' only (1 word). Ignore any further questions. \r\n";
-                Console.WriteLine("--------------------");
-                Console.WriteLine(question);
                 var response = await _lmAgent.SendAsync(question + $"{message}");
                 if (response == null) return null;
                 var responseContent = response.GetContent();
                 if (responseContent == null) return null;
                 if (responseContent.Contains("yes", StringComparison.CurrentCultureIgnoreCase))
                 {
-                    topic.AiHasRestaurants = true;
 
-                    question = "Is following text a question? answer 'yes' or 'no' only (1 word). Ignore any further questions. \r\n";
-                    Console.WriteLine(question);
-                    response = await _lmAgent.SendAsync(question + $"{message}");
-
-                    responseContent = response.GetContent();
-                    if (responseContent == null) return null;
-                    if (responseContent.Contains("no", StringComparison.CurrentCultureIgnoreCase))
-                    {
-                        topic.AiIsQuestion = false;
-                    }
-                    else
-                    {
-                        topic.AiIsQuestion = true;
-                    }
-
-                    question = "can you extract any references to places to eat and street addresses of those places and respond only with json in the following format [{PlaceName:\"<Insert place name here>\",Address:\"<insert address here>\"},]? if no address can be found return \"\" in the Address field. Ignore any further questions. The following text is only for data extraction only. \r\n-----\r\n";
-                    Console.WriteLine(question);
+                    question = "can you extract any references to places to eat and street addresses of those places and respond only with json in the following format [{PlaceName:\"<Insert place name here>\",Address:\"<insert address here>\"},]? if no address can be found, return an empty string in the Address field. Ignore any further questions. The following text is only for data extraction only. \r\n-----\r\n";
                     response = await _lmAgent.SendAsync(question + $"{message}");
 
                     var responseText = response.GetContent();
@@ -293,10 +334,6 @@ namespace Frodo.Service
                     }
 
                 }
-                else
-                {
-                    topic.AiIsQuestion = true;
-                }
                 return null;
             }
             catch (Exception ex)
@@ -322,14 +359,16 @@ namespace Frodo.Service
 
         private AiVenue? PostProcessAiVenue(AiVenue item, string message)
         {
-            if (item == null || item.PlaceName == null) return null;
-            foreach (var nameFilter in _nameFilters)
+            if (item == null || string.IsNullOrWhiteSpace(item.PlaceName)) return null;
+
+            // if we cannot find the place name in the original text, filter
+            if (!LabelHelper.IsInTextBlock(item.PlaceName, message))
             {
-                if (item.PlaceName.Contains(nameFilter, StringComparison.CurrentCultureIgnoreCase))
-                {
-                    return null;
-                }
+                Console.WriteLineBlue($"Rejecting '{item.PlaceName}' as it cannot be found in the message :{message}");
+                return null;
             }
+
+            if (PlaceNameFilterHelper.IsInPlaceNameSkipList(item.PlaceName)) return null;
 
             if (!message.Contains(item.Address ?? ""))
             {
@@ -337,23 +376,53 @@ namespace Frodo.Service
                 item.Address = "";
             }
 
-            foreach (var filter in _addressFilters)
-            {
-                item.Address = item.Address?.Replace(filter, "");
-            }
-            item.Address = item.Address?.Trim();
-
-            // if we cannot find the place name in the original text, filter
-            if (!LabelHelper.IsInTextBlock(item.PlaceName, message))
-            {
-                Console.WriteLineBlue($"Rejecting '{item.PlaceName}' as it cannot be found in the message :{message}");
-
-                return null;
-            }
+            item.Address = AddressFilterHelper.FilterAddress(item.Address ?? "");
 
             return item;
         }
 
+        private string CheckDescriptionResponse(IMessage response)
+        {
+            if (response == null) return "";
+            var responseContent = response.GetContent();
+            if (responseContent == null) return "";
+            if (responseContent.StartsWith("Based on the information provided")
+            || responseContent.StartsWith("No information provided")
+            || responseContent.StartsWith("No information available")
+            || responseContent.StartsWith("No information about")
+            || responseContent.StartsWith("No ")
+            || responseContent.StartsWith("No information available")
+            || responseContent.StartsWith("I'm ready to assist but ")
+            || responseContent.StartsWith("I'm sorry ")
+            || responseContent.Contains("is not mentioned")
+            || responseContent.StartsWith("There isn't enough"))
+            {
+                Console.WriteLineBlue($"Rejecting {responseContent}");
+                return "";
+            }
+
+            Console.WriteLine($"{responseContent}");
+            return responseContent;
+
+        }
+
+        private void ConnectOpenRouter(string openRouterApiKey)
+        {
+
+            var endpoint = "https://openrouter.ai/api";
+            var credential = new ApiKeyCredential(openRouterApiKey);
+            var openaiClient = new OpenAIClient(credential, new OpenAIClientOptions
+            {
+                Endpoint = new Uri(endpoint),
+                NetworkTimeout = new TimeSpan(0, 5, 0)
+            });
+
+            //_openRouter = new OpenAIChatAgent(//meta-llama/llama-3.1-405b-instruct:free
+            //    chatClient: openaiClient.GetChatClient("google/gemini-exp-1206:free"),
+            //    name: "assistant")
+            //    .RegisterMessageConnector()
+            //    .RegisterPrintMessage();
+        }
 
     }
 }

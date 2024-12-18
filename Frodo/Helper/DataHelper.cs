@@ -100,6 +100,11 @@ namespace Frodo.Helper
                 if (cachePin != null && !string.IsNullOrWhiteSpace(cachePin.MapsUrl))
                 {
                     newPin.MapsLink = cachePin.MapsUrl;
+                    if (string.IsNullOrWhiteSpace(newPin.MapsLink))
+                    {
+                        Console.WriteLineRed($"Blank maps link :{newPin.Label}");
+                    }
+
                     if (cachePin.MetaData != null)
                     {
                         newPin.RestaurantType = cachePin.MetaData.RestaurantType;
@@ -117,6 +122,11 @@ namespace Frodo.Helper
                 {
                     matchingPinTopic.MapsLink = cachePin.MapsUrl;
                 }
+                if (string.IsNullOrWhiteSpace(matchingPinTopic.MapsLink))
+                {
+                    Console.WriteLineRed($"Blank maps link :{matchingPinTopic.Label}");
+                }
+
                 if (cachePin.MetaData != null)
                 {
                     matchingPinTopic.Stars = cachePin.MetaData.Stars;
@@ -128,6 +138,7 @@ namespace Frodo.Helper
                     System.Console.WriteLine("No meta data found");
                 }
             }
+
 
             // Add topic to the pin - dont add duplicates
             foreach (var existingTopic in matchingPinTopic.Topics)

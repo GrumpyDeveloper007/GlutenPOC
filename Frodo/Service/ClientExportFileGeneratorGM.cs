@@ -3,8 +3,6 @@ using Gluten.Core.LocationProcessing.Service;
 using Gluten.Data.ClientModel;
 using Gluten.Data.MapsModel;
 using Gluten.Data.TopicModel;
-using Newtonsoft.Json.Converters;
-using Newtonsoft.Json;
 using Gluten.Data.Access.Service;
 using Gluten.Data.Access.DatabaseModel;
 using Gluten.Core.Helper;
@@ -58,10 +56,19 @@ namespace Frodo.Service
 
         private static void SaveDb<typeToSave>(string fileName, typeToSave topics)
         {
+            JsonHelper.SaveDbNoPadding(fileName, topics);
+        }
 
-            var json = JsonConvert.SerializeObject(topics, Formatting.None,
-                [new StringEnumConverter()]);
-            File.WriteAllText(fileName, json);
+        private GMapsPinDb? FindDbPin(List<GMapsPinDb> dbPins, GMapsPin gMapsPin)
+        {
+            foreach (var pin in dbPins)
+            {
+                if (pin.GeoLatitude == gMapsPin.GeoLatitude && pin.GeoLongitude == gMapsPin.GeoLongitude)
+                {
+                    return pin;
+                }
+            }
+            return null;
         }
 
         private void WriteToDatabase(List<GMapsPin> gmPins)
@@ -75,7 +82,7 @@ namespace Frodo.Service
                 var item = itemsGm[i];
                 if (!gmPins.Exists(o => o.GeoLatitude == item.GeoLatitude && o.GeoLongitude == item.GeoLongitude))
                 {
-                    Console.WriteLine($"Delete item {i}");
+                    Console.WriteLine($"Delete GMPin {i}");
                     _dataStore.DeleteItemAsync(item).Wait();
                 }
             }
@@ -83,11 +90,23 @@ namespace Frodo.Service
             for (int i = 0; i < gmPins.Count; i++)
             {
                 var item = gmPins[i];
-                item.Description = $"Pin generated from Google maps - {item.Comment}";
-                Console.WriteLine($"Writing to database {i}");
-                var dbItem = mapper.Map<GMapsPinDb, GMapsPin>(item);
-                dbItem.Country = _geoService.GetCountryPin(item);
-                _dataStore.ReplaceItemAsync(dbItem).Wait();
+                var existingDbPin = FindDbPin(itemsGm, item);
+
+                if (existingDbPin == null
+                    || existingDbPin.Label != item.Label
+                    || existingDbPin.MapsUrl != item.MapsUrl
+                    || existingDbPin.RestaurantType != item.RestaurantType
+                    || existingDbPin.Price != item.Price
+                    || existingDbPin.Stars != item.Stars
+                    || existingDbPin.Comment != item.Comment
+                    || existingDbPin.Description != item.Description)
+                {
+                    item.Description = $"Pin generated from Google maps - {item.Comment}";
+                    Console.WriteLine($"Writing to database {i}");
+                    var dbItem = mapper.Map<GMapsPinDb, GMapsPin>(item);
+                    dbItem.Country = _geoService.GetCountryPin(item);
+                    _dataStore.ReplaceItemAsync(dbItem).Wait();
+                }
             }
         }
 

@@ -35,6 +35,8 @@ var dataStore = new CloudDataStore(settings.DbEndpointUri, settings.DbPrimaryKey
 var cityService = new CityService();
 var restaurantTypeService = new RestaurantTypeService();
 var topicDataLoader = new TopicsDataLoaderService();
+var mapMetaExtractor = new MapsMetaExtractorService(consoleLogger);
+var ai = new AiInterfaceService(settings.GroqApiKey, settings.OpenRouterApiKey, consoleLogger);
 
 DataHelper.Console = consoleLogger;
 LabelHelper.Console = consoleLogger;
@@ -42,12 +44,13 @@ LabelHelper.Console = consoleLogger;
 consoleLogger.WriteLineBlue("Blue");
 consoleLogger.WriteLineRed("Red");
 
-var ai = new MapPinService(selenium, pinCache, geoService, new MapsMetaExtractorService(restaurantTypeService, consoleLogger), consoleLogger);
-var clientExportFileGenerator = new ClientExportFileGenerator(dbLoader, mapper, pinCache, fbGroupService, geoService, dataStore, consoleLogger);
-var pinCacheSync = new PinCacheSyncService(ai, dbLoader, geoService, pinCache, restaurantTypeService, consoleLogger);
-var aiVenueLocationService = new AiVenueLocationService(ai, dbLoader, mapper, geoService, fbGroupService, pinCache, restaurantTypeService, topicDataLoader, consoleLogger);
+
+var mapPin = new MapPinService(selenium, pinCache, geoService, mapMetaExtractor, consoleLogger);
+var dataExporter = new ClientExportFileGenerator(dbLoader, mapper, pinCache, fbGroupService, geoService, dataStore, ai, consoleLogger);
+var pinCacheSync = new PinCacheSyncService(mapPin, dbLoader, geoService, pinCache, restaurantTypeService, consoleLogger);
+var aiVenueLocationService = new AiVenueLocationService(mapPin, dbLoader, mapper, geoService, fbGroupService, pinCache, restaurantTypeService, topicDataLoader, consoleLogger);
 var aiVenueCleanUpService = new AiVenueCleanUpService(geoService, fbGroupService, pinCache, aiVenueLocationService, topicDataLoader, consoleLogger);
-var service = new DataSyncService(ai, dbLoader, mapper, clientExportFileGenerator, geoService, fbGroupService, pinCache, pinCacheSync, cityService, aiVenueLocationService, topicDataLoader, aiVenueCleanUpService, consoleLogger);
+var service = new DataSyncService(mapPin, dbLoader, mapper, dataExporter, geoService, fbGroupService, pinCache, pinCacheSync, cityService, aiVenueLocationService, topicDataLoader, aiVenueCleanUpService, ai, consoleLogger);
 await service.ProcessFile();
 
 selenium.Stop();

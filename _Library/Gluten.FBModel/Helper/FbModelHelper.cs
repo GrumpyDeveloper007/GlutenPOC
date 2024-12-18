@@ -148,6 +148,14 @@ namespace Gluten.FBModel.Helper
                     seconds = trackingInfo.page_insights._625162559593528?.post_context?.publish_time ?? 0;
                 else if (trackingInfo.page_insights._195689771214297 != null)
                     seconds = trackingInfo.page_insights._195689771214297?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._629876021246440 != null)
+                    seconds = trackingInfo.page_insights._629876021246440?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._847553335358305 != null)
+                    seconds = trackingInfo.page_insights._847553335358305?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._573768437691444 != null)
+                    seconds = trackingInfo.page_insights._573768437691444?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._1452094601717166 != null)
+                    seconds = trackingInfo.page_insights._1452094601717166?.post_context?.publish_time ?? 0;
 
                 else
                 {
@@ -224,7 +232,7 @@ namespace Gluten.FBModel.Helper
             foreach (var edge in root.data.serpResponse.results.edges)
             {
                 if (edge.relay_rendering_strategy.__typename == "SearchEndOfResultsModuleRenderingStrategy") continue;
-                if (edge.relay_rendering_strategy.view_model.click_model.story != null)
+                if (edge?.relay_rendering_strategy?.view_model?.click_model?.story != null)
                 {
                     var story = edge.relay_rendering_strategy.view_model.click_model.story;
                     results.Add(story.id);

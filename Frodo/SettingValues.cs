@@ -16,6 +16,9 @@ namespace Frodo
         public required string AIApiKey { get; set; }
         public required string DbEndpointUri { get; set; }
         public required string DbPrimaryKey { get; set; }
+
+        public required string GroqApiKey { get; set; }
+        public required string OpenRouterApiKey { get; set; }
     }
 
 }

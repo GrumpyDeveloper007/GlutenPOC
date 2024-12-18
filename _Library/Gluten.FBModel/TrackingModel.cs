@@ -12,7 +12,6 @@ using System.Threading.Tasks;
 
 namespace Gluten.FBModel
 {
-    // Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
     public class _379994195544478
     {
         public string page_id { get; set; }
@@ -136,6 +135,26 @@ namespace Gluten.FBModel
         public _379994195544478 _229495282203436 { get; set; }
         [JsonProperty("247208302148491")]
         public _379994195544478 _247208302148491 { get; set; }
+        [JsonProperty("9413340041")]
+        public _379994195544478 _9413340041 { get; set; }
+        [JsonProperty("61561396146483")]
+        public _379994195544478 _61561396146483 { get; set; }
+        [JsonProperty("100063657099306")]
+        public _379994195544478 _100063657099306 { get; set; }
+        [JsonProperty("100001051750172")]
+        public _379994195544478 _100001051750172 { get; set; }
+        [JsonProperty("625162559593528")]
+        public _379994195544478 _625162559593528 { get; set; }
+        [JsonProperty("195689771214297")]
+        public _379994195544478 _195689771214297 { get; set; }
+        [JsonProperty("629876021246440")]
+        public _379994195544478 _629876021246440 { get; set; }
+        [JsonProperty("847553335358305")]
+        public _379994195544478 _847553335358305 { get; set; }
+        [JsonProperty("573768437691444")]
+        public _379994195544478 _573768437691444 { get; set; }
+        [JsonProperty("1452094601717166")]
+        public _379994195544478 _1452094601717166 { get; set; }
 
 
 

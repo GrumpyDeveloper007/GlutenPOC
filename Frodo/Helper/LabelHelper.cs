@@ -22,7 +22,8 @@ namespace Frodo.Helper
 
         public static void Check()
         {
-            Console.WriteLine(wordMatch);
+
+            Console.WriteLine(string.Join(",", wordMatch));
         }
 
         static string RemoveTextWithinParentheses(string input)

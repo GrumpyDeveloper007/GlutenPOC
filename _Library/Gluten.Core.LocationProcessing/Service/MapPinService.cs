@@ -86,6 +86,11 @@ namespace Gluten.Core.LocationProcessing.Service
                         Thread.Sleep(200);
                         newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
                         newUrl = HttpUtility.UrlDecode(newUrl);
+                        var pageSource = _seleniumMapsUrlProcessor.PageSource();
+                        if (pageSource.Contains("This site can’t be reached"))
+                        {
+                            GoAndWaitForUrlChange(url);
+                        }
                     }
                     if (timeout == 0 && !newUrl.Contains("/@"))
                     {
@@ -217,7 +222,7 @@ namespace Gluten.Core.LocationProcessing.Service
                 {
                     pin.MetaHtml = GetMeta(pin.Label);
                 }
-                if (string.IsNullOrWhiteSpace(pin.MetaHtml))
+                if (!string.IsNullOrWhiteSpace(pin.MetaHtml))
                 {
                     pin.MetaData = _mapsMetaExtractorService.ExtractMeta(pin.MetaHtml);
                 }

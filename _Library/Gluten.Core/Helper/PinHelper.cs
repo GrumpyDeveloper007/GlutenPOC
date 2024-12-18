@@ -22,6 +22,13 @@ namespace Gluten.Core.Helper
             return false;
         }
 
+        public static string GetPlaceNameFromSearchUrl(string url)
+        {
+            var placeStart = url.IndexOf("/search/") + "/search/".Length;
+            var placeEnd = url.IndexOf('/', placeStart);
+            return url.Substring(placeStart, placeEnd - placeStart);
+        }
+
         /// <summary>
         /// Converts a url to a Pin cache data item
         /// </summary>
@@ -46,7 +53,6 @@ namespace Gluten.Core.Helper
             var newPin = new TopicPinCache()
             {
                 Label = label,
-                Address = label,
                 GeoLatitude = lat,
                 GeoLongitude = lon,
                 MapsUrl = mapsUrl,
@@ -54,9 +60,14 @@ namespace Gluten.Core.Helper
                 MetaHtml = "",
                 Country = country,
             };
-            if (searchString != null)
+            if (!string.IsNullOrWhiteSpace(searchString))
             {
                 newPin.SearchStrings.Add(searchString);
+            }
+            else
+            {
+
+                newPin.PlaceName = System.Uri.UnescapeDataString(newPin.Label.Replace("+", " "));
             }
             return newPin;
         }

@@ -1,10 +1,13 @@
 ﻿using Frodo.Helper;
 using Gluten.Core.DataProcessing.Service;
 using Gluten.Core.Interface;
+using Gluten.Core.LocationProcessing.Helper;
 using Gluten.Core.LocationProcessing.Service;
 using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
 using System;
+using System.Diagnostics;
+using System.Linq;
 
 namespace Frodo.Service
 {
@@ -22,19 +25,17 @@ namespace Frodo.Service
         PinCacheSyncService _pinCacheSyncService,
         CityService _cityService,
         AiVenueLocationService _aiVenueLocationService,
-        TopicsDataLoaderService _topicsHelper,
+        TopicsDataLoaderService _topicsLoaderService,
         AiVenueCleanUpService _aiVenueCleanUpService,
+        AiInterfaceService _localAi,
         IConsole Console
         )
     {
         private readonly string _responsefileName = "D:\\Coding\\Gluten\\Database\\Responses.txt";
-        private readonly LocalAiInterfaceService _localAi = new(Console);
-        private readonly TopicLoaderService _topicLoaderService = new(Console);
+        private readonly TopicLoaderService _topicLoaderService = new(_topicsLoaderService, Console);
 
         public List<DetailedTopic> Topics = [];
-        private readonly bool _regeneratePins = false;
-        private List<AiVenue> _placeNameSkipList = [];
-        private readonly int _lastImportedIndex = 0;
+        private readonly bool _regeneratePins = true;
 
         /// <summary>
         /// Processes the file generated from FB, run through many processing stages finally generating an export file for the client app
@@ -42,55 +43,65 @@ namespace Frodo.Service
         public async Task ProcessFile()
         {
             var skipSomeOperationsForDebugging = false;
-            var topics = _topicsHelper.TryLoadTopics();
+            var topics = _topicsLoaderService.TryLoadTopics();
             if (topics != null)
             {
                 Topics = topics;
             }
+            _mapPinCache.Clean();
 
-            //await _localAi.GenerateShortTitle("this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message");
+            var venues = _databaseLoaderService.LoadPlaceSkipList();
+            string temp = "";
+            venues.Sort((x, y) => y.PlaceName.CompareTo(x.PlaceName));
+            foreach (var venue in venues)
+            {
+                if (venue == null) continue;
+                temp += $"\"{venue.PlaceName}\",\n";
+            }
 
-            _placeNameSkipList = _databaseLoaderService.LoadPlaceSkipList();
+            //await _localAi.ExtractDescriptionTitle("this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message", "test");
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nReading captured FB data");
             _topicLoaderService.ReadFileLineByLine(_responsefileName, Topics);
 
             Console.WriteLine("--------------------------------------");
-            Console.WriteLine($"\r\nGenerating country names from topic title");
-            await ScanTopicsUseAiToDetectTopicCountry();
-
-            Console.WriteLine("--------------------------------------");
-            Console.WriteLine($"\r\nProcessing topics, generating short titles");
-            await GenerateShortTitles();
-
-            Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nProcessing information from source");
             UpdateMessageAndResponseUrls();
-
-
-            Console.WriteLine("--------------------------------------");
-            Console.WriteLine($"\r\nFiltering AI pins");
-            _aiVenueCleanUpService.RemoveAiPinsInBadLocations(Topics);
-            _aiVenueCleanUpService.RemoveAiPinsWithBadRestaurantTypes(Topics);
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nStarting AI processing - detecting venue name/address");
             if (!skipSomeOperationsForDebugging)
                 await ScanTopicsUseAiToDetectVenueInfo();
 
+            _aiVenueCleanUpService.RemoveGenericPlaceNames(Topics);
+            _aiVenueCleanUpService.DiscoverMinMessageLength(Topics);
+
+            Console.WriteLine("--------------------------------------");
+            Console.WriteLine($"\r\nGenerating country names from topic title");
+            await ScanTopicsUseAiToDetectTopicCountry();
+
+            Console.WriteLine("--------------------------------------");
+            Console.WriteLine($"\r\nFiltering AI pins");
+            _aiVenueCleanUpService.RemoveNullAiPins(Topics);
+            _aiVenueCleanUpService.TagAiPinsWithNamesInSkipList(Topics);
+            _aiVenueCleanUpService.TagAiPinsWithBadRestaurantTypes(Topics);
+            _aiVenueCleanUpService.TagAiPinsInFoundInDifferentCountry(Topics);
+            _aiVenueCleanUpService.TagAiPinsInNotFoundInOriginalText(Topics);
+
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nUpdating pin information for Ai Venues");
-            _aiVenueLocationService.UpdatePinsForAiVenues(Topics, _regeneratePins, _placeNameSkipList);
+            _aiVenueLocationService.UpdatePinsForAiVenues(Topics, _regeneratePins);
+            //Reprocess function, only needed to fix old data _aiVenueLocationService.UpdateChainGeneratedPins(Topics);
+            _aiVenueLocationService.CheckPinsAreInCache(Topics);
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nExtracting meta info for pins");
             _pinCacheSyncService.ExtractMetaInfoFromPinCache();
 
             Console.WriteLine("--------------------------------------");
-            Console.WriteLine($"\r\nFiltering AI pins");
-            _aiVenueCleanUpService.RemoveAiPinsInBadLocations(Topics);
-
+            Console.WriteLine($"\r\nProcessing topics, generating short titles");
+            await GenerateShortTitles();
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nGenerating data for client application");
@@ -103,23 +114,38 @@ namespace Frodo.Service
         private async Task GenerateShortTitles()
         {
             int shortTitlesAdded = 0;
+            int itemsUpdated = 0;
             for (int i = 0; i < Topics.Count; i++)
             {
-                if (i % 10 == 0)
-                    Console.WriteLine($"Processing {i} of {Topics.Count}");
                 var topic = Topics[i];
-                if (string.IsNullOrWhiteSpace(topic.ShortTitle) && !topic.ShortTitleProcessed)
+                if (itemsUpdated > 50)
+                {
+                    Console.WriteLineBlue("Saving topics");
+                    _topicsLoaderService.SaveTopics(Topics);
+                    itemsUpdated = 0;
+                }
+
+                if (topic.ShortTitleProcessed) continue;
+                if (i % 10 == 0)
+                    Console.WriteLine($"Generating short title {i} of {Topics.Count}");
+
+                if ((topic.AiVenues == null || topic.AiVenues.Count == 0)
+                    && (topic.UrlsV2 == null || topic.UrlsV2.Count == 0)
+                    && (topic.ResponsesV2 == null || topic.ResponsesV2.Count == 0)) continue;
+
+                if (string.IsNullOrWhiteSpace(topic.ShortTitle))//&& !topic.ShortTitleProcessed
                 {
                     topic.ShortTitle = await _localAi.GenerateShortTitle(topic.Title);
                     topic.ShortTitleProcessed = true;
                     if (!string.IsNullOrWhiteSpace(topic.ShortTitle))
                     {
                         shortTitlesAdded++;
+                        itemsUpdated++;
                     }
                 }
             }
 
-            _topicsHelper.SaveTopics(Topics);
+            _topicsLoaderService.SaveTopics(Topics);
             Console.WriteLine($"Added short title : {shortTitlesAdded}");
         }
 
@@ -130,39 +156,90 @@ namespace Frodo.Service
         /// </summary>
         private async Task ScanTopicsUseAiToDetectVenueInfo()
         {
+            bool foundUpdates = false;
+            Stopwatch timer = new();
             for (int i = 0; i < Topics.Count; i++)
             {
-                if ((Topics[i].AiVenues == null && !Topics[i].AiIsQuestion))
-                {
-                    Console.WriteLine($"Processing topic message {i} of {Topics.Count}");
-                    if (i % 100 == 0)
-                    {
-                        _topicsHelper.SaveTopics(Topics);
-                    }
+                DetailedTopic? topic = Topics[i];
+                if (topic.IsAiVenuesSearchDone) continue;
+                if (topic.Title.Contains("Recipe", StringComparison.InvariantCultureIgnoreCase)) continue;
 
-                    DetailedTopic? topic = Topics[i];
-                    var venue = await _localAi.ExtractRestaurantNamesFromTitle(topic.Title, topic);
-                    topic.AiVenues = venue;
+                if (i % 100 == 0 && foundUpdates)
+                {
+                    Console.WriteLineBlue($"Saving topics");
+                    _topicsLoaderService.SaveTopics(Topics);
+                    foundUpdates = false;
+                }
+                timer.Restart();
+                var venue = await _localAi.ExtractRestaurantNamesFromTitle(topic.Title);
+                timer.Stop();
+                Console.WriteLine($"Processing topic message {i} of {Topics.Count} length :{topic.Title.Length} Time: {timer.Elapsed.TotalSeconds}");
+                topic.IsAiVenuesSearchDone = true;
+                if (venue != null && venue.Count > 0)
+                {
+                    if (topic.AiVenues != null)
+                    {
+                        if (venue.Count > topic.AiVenues.Count)
+                        {
+                            Console.WriteLineBlue($"Updating AiVenues, count mismatch");
+                            topic.AiVenues = venue;
+                            foundUpdates = true;
+                        }
+                        else
+                        {
+                            bool updated = false;
+                            for (int t = 0; t < venue.Count; t++)
+                            {
+                                if (topic.AiVenues[t].PlaceName != venue[t].PlaceName)
+                                {
+                                    Console.WriteLineBlue($"Updating AiVenues place name mismatch");
+                                    updated = true;
+                                    topic.AiVenues = venue;
+                                    foundUpdates = true;
+                                    break;
+                                }
+                            }
+                            if (!updated)
+                                Console.WriteLineRed($"Skipping update AiVenues");
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLineBlue($"Adding AiVenues, new data");
+                        topic.AiVenues = venue;
+                        foundUpdates = true;
+                    }
                 }
             }
-            _topicsHelper.SaveTopics(Topics);
+            _topicsLoaderService.SaveTopics(Topics);
         }
 
         private async Task ScanTopicsUseAiToDetectTopicCountry()
         {
             var countries = _geoService.GetCountries();
+            var unknownCities = new List<string>();
+            var itemsUpdated = 0;
 
             for (int i = 0; i < Topics.Count; i++)
             {
-                if (i < 31129) continue;
+                DetailedTopic? topic = Topics[i];
+
+                if (topic.AiVenues == null || topic.AiVenues.Count == 0) continue;
                 if (!string.IsNullOrWhiteSpace(Topics[i].TitleCountry)) continue;
+                if (topic.CitySearchDone) continue;
+                if (itemsUpdated > 100)
+                {
+                    Console.WriteLineBlue("Saving Topics");
+                    _topicsLoaderService.SaveTopics(Topics);
+                    itemsUpdated = 0;
+                }
 
                 Console.WriteLine($"Extracting city/country names {i} of {Topics.Count}");
-                DetailedTopic? topic = Topics[i];
 
                 if (string.IsNullOrWhiteSpace(topic.TitleCity))
                 {
                     var city = await _localAi.ExtractCity(topic.Title);
+                    topic.CitySearchDone = true;
                     if (topic.Title.Contains(city))
                     {
                         if (_cityService.IsCity(city))
@@ -172,6 +249,8 @@ namespace Frodo.Service
                         else
                         {
                             Console.WriteLine($"Unknown city {city}");
+                            if (!unknownCities.Exists(o => o == city))
+                                unknownCities.Add(city);
                         }
                     }
                     else
@@ -180,16 +259,49 @@ namespace Frodo.Service
                     }
                 }
 
+                // todo: remove me
+                if (!_fBGroupService.IsGenericGroup(topic.GroupId)) continue;
+
                 var country = await _localAi.ExtractCountry(topic.Title) ?? "";
                 country = country.Replace("United States of America", "United States");
+                country = country.Replace("USA", "United States");
                 country = country.Replace("UK", "United Kingdom");
+                country = country.Replace("Wales", "United Kingdom");
                 country = country.Replace("The Netherlands", "Netherlands");
                 country = country.Replace("Nederland", "Netherlands");
                 country = country.Replace("SPAIN", "Spain");
                 country = country.Replace("\"", "");
                 country = country.Replace("Suid Afrika", "South Africa");
                 country = country.Replace("Türkiye", "Turkey");
+                country = country.Replace("Saint Lucia", "St. Lucia");
+                country = country.Replace("Bahamas", "The Bahamas");
+                country = country.Replace("Turks and Caicos Islands", "Turks & Caicos Is.");
+                country = country.Replace("Grand Cayman", "Cayman Is.");
+                country = country.Replace("Saint Kitts and Nevis", "St.Kitts & Nevis");
+                country = country.Replace("Cayman Islands", "Cayman Is.");
+                country = country.Replace("Giappone", "Japan");
+                country = country.Replace("Japón", "Japan");
+                country = country.Replace("Hong Kong", "China");
+                country = country.Replace("VIETNAM", "Vietnam");
+                country = country.Replace("Viet Nam", "Vietnam");
+                country = country.Replace("ไทย", "Thailand");
+                country = country.Replace("ประเทศThailand", "Thailand");
+                country = country.Replace("Kingdom of Thailand", "Thailand");
+                country = country.Replace("Gambia", "The Gambia");
+                country = country.Replace("Antigua", "Antigua & Barbuda");
+                country = country.Replace("Bosnia and Herzegovina", "Bosnia & Herzegovina");
+                country = country.Replace("North Macedonia", "Macedonia");
+                country = country.Replace("ICELAND", "Iceland");
+                country = country.Replace("Ελλάδα", "Greece");
+                country = country.Replace("Mallorca", "Spain");
 
+
+
+                country = country.Replace("Bali", "Indonesia");
+                country = country.Replace("Czechia", "Czech Republic");
+                country = country.Replace("Peru", "Peru(Peruvian point of view)");
+                if (country.StartsWith("Korea"))
+                    country = country.Replace("Korea", "South Korea");
 
                 if (string.IsNullOrWhiteSpace(country)) continue;
                 if (country.Contains("\r\n")) continue;
@@ -197,14 +309,38 @@ namespace Frodo.Service
 
                 if (!countries.Exists(o => o == country)
                     && !countries.Exists(o => o == country.Replace("é", "e"))
-                    && country != "Peru")
+                    && country != "Asia"
+                    && country != "Europe" && country != "European Union" && country != "European"
+                    && country != "South America"
+                    )
                 {
                     Console.WriteLineRed($"Unknown country {country}");
                     continue;
                 }
                 topic.TitleCountry = country.Replace("é", "e");
+
+                if (topic.TitleCity != null)
+                {
+                    var countryForCity = _cityService.CityToCountry(topic.TitleCity);
+                    var groupCountry = _fBGroupService.GetCountryName(topic.GroupId);
+                    if (string.IsNullOrWhiteSpace(groupCountry)) groupCountry = topic.TitleCountry ?? "";
+                    if (!string.IsNullOrWhiteSpace(countryForCity) && !countryForCity.Contains(groupCountry, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        Console.WriteLineRed($"Group Country :{groupCountry}, city country :{countryForCity}");
+                    }
+                }
+                itemsUpdated++;
+
             }
-            _topicsHelper.SaveTopics(Topics);
+
+            Console.WriteLineBlue("Unknown cities");
+            foreach (var city in unknownCities)
+            {
+                Console.WriteLineBlue(city);
+            }
+
+
+            _topicsLoaderService.SaveTopics(Topics);
         }
 
         /// <summary>
@@ -212,15 +348,18 @@ namespace Frodo.Service
         /// </summary>
         private void UpdateMessageAndResponseUrls()
         {
-            int linkCount = 0;
             int mapsLinkCount = 0;
-            int responseLinkCount = 0;
-            int responseMapsLinkCount = 0;
             int mapsCallCount = 0;
+            int searchesDone = 0;
             for (int i = 0; i < Topics.Count; i++)
             {
-                if (i < _lastImportedIndex) continue;
-                Console.WriteLine($"Processing {i} of {Topics.Count}");
+                if (i < 55663) continue;
+                Console.WriteLine($"Processing {i} of {Topics.Count} updating embedded urls");
+                if (searchesDone > 50)
+                {
+                    _databaseLoaderService.SavePinDB();
+                    searchesDone = 0;
+                }
                 var topic = Topics[i];
                 if (string.IsNullOrWhiteSpace(topic.GroupId))
                 {
@@ -242,22 +381,22 @@ namespace Frodo.Service
                 }
 
                 // Check for links in topics
-                if (topic.HasLink()) linkCount++;
                 for (int t = 0; t < topic.UrlsV2.Count; t++)
                 {
                     var url = topic.UrlsV2[t].Url;
+                    if (!MapPinHelper.IsMapsUrl(url)) continue;
 
                     if (topic.UrlsV2[t].Pin == null || _regeneratePins)
                     {
-                        var newUrl = _mapPinService.CheckUrlForMapLinks(url);
-                        topic.UrlsV2[t].Url = newUrl;
-                        var cachePin = _mapPinService.TryToGenerateMapPin(newUrl, url, groupCountry);
+                        var cachePin = _mapPinService.TryToGenerateMapPin(url, url, groupCountry);
+                        if (cachePin == null)
+                        {
+                            searchesDone++;
+                            var newUrl = _mapPinService.CheckUrlForMapLinks(url);
+                            cachePin = _mapPinService.TryToGenerateMapPin(newUrl, url, groupCountry);
+                        }
                         if (cachePin != null)
                         {
-                            if (string.IsNullOrWhiteSpace(cachePin.MetaHtml))
-                            {
-                                cachePin.MetaHtml = _mapPinService.GetMeta(cachePin.Label);
-                            }
                             var newPin = _mappingService.Map<TopicPin, TopicPinCache>(cachePin);
                             topic.UrlsV2[t].Pin = newPin;
                         }
@@ -285,18 +424,20 @@ namespace Frodo.Service
                         for (int t = 0; t < links.Count; t++)
                         {
                             var url = links[t].Url;
+                            if (!MapPinHelper.IsMapsUrl(url)) continue;
+
 
                             if (links[t].Pin == null || _regeneratePins)
                             {
-                                var newUrl = _mapPinService.CheckUrlForMapLinks(url);
-                                links[t].Url = newUrl;
-                                var cachePin = _mapPinService.TryToGenerateMapPin(newUrl, url, groupCountry);
+                                var cachePin = _mapPinService.TryToGenerateMapPin(url, url, groupCountry);
+                                if (cachePin == null)
+                                {
+                                    searchesDone++;
+                                    var newUrl = _mapPinService.CheckUrlForMapLinks(url);
+                                    cachePin = _mapPinService.TryToGenerateMapPin(newUrl, url, groupCountry);
+                                }
                                 if (cachePin != null)
                                 {
-                                    if (string.IsNullOrWhiteSpace(cachePin.MetaHtml))
-                                    {
-                                        cachePin.MetaHtml = _mapPinService.GetMeta(cachePin.Label);
-                                    }
                                     var newPin = _mappingService.Map<TopicPin, TopicPinCache>(cachePin);
                                     links[t].Pin = newPin;
                                 }
@@ -308,15 +449,11 @@ namespace Frodo.Service
                     }
                 }
 
-                if (topic.ResponseHasLink) responseLinkCount++;
-                if (topic.ResponseHasMapLink) responseMapsLinkCount++;
             }
 
-            _topicsHelper.SaveTopics(Topics);
-            Console.WriteLine($"Has Links : {linkCount}");
+            _databaseLoaderService.SavePinDB();
+            _topicsLoaderService.SaveTopics(Topics);
             Console.WriteLine($"Has Maps Links : {mapsLinkCount}");
-            Console.WriteLine($"Has Response Links : {responseLinkCount}");
-            Console.WriteLine($"Has Response Maps Links : {responseMapsLinkCount}");
         }
 
 

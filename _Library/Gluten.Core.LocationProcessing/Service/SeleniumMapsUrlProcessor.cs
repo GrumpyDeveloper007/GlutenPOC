@@ -105,5 +105,13 @@ namespace Gluten.Core.LocationProcessing.Service
             var elements = _driver.FindElements(By.CssSelector("[aria-label]"));
             _currentSearchResults = elements;
         }
+
+        /// <summary>
+        /// Gets the current page source
+        /// </summary>
+        public string PageSource()
+        {
+            return _driver.PageSource;
+        }
     }
 }

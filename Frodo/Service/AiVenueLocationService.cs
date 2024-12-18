@@ -31,117 +31,236 @@ internal class AiVenueLocationService(MapPinService _mapPinService,
     /// <summary>
     /// Scan generated Ai Venues and try to generate any missing pins
     /// </summary>
-    public void UpdatePinsForAiVenues(List<DetailedTopic> Topics, bool regeneratePins, List<AiVenue> _placeNameSkipList)
+    public void UpdatePinsForAiVenues(List<DetailedTopic> Topics, bool regeneratePins)
     {
+        var placeNameSkipList = _databaseLoaderService.LoadPlaceSkipList();
+
         var aiPinService = new AiVenueProcessorService(_mapPinService, _mappingService, _restaurantTypeService, Console);
+        var pinsAdded = 0;
 
         for (int i = 0; i < Topics.Count; i++)
         {
             DetailedTopic? topic = Topics[i];
-            var groupCountry = _fBGroupService.GetCountryName(topic.GroupId);
-            if (string.IsNullOrWhiteSpace(groupCountry)) groupCountry = topic.TitleCountry ?? "";
-
-            // Skip if the country and city cannot be identified
-            if (string.IsNullOrWhiteSpace(groupCountry) && string.IsNullOrWhiteSpace(topic.TitleCity)) continue;
-
             if (topic.AiVenues == null || topic.AiVenues.Count == 0) continue;
-
-            Console.WriteLine($"Update Pins For AI Venues {i} of {Topics.Count} : {StringHelper.Truncate(topic.Title, 75).Replace("\n", "")}");
 
             // Remove any duplicated pins
             AiVenueDataHelper.RemoveDuplicatedVenues(topic.AiVenues);
 
-            var chainUrls = new List<string>();
-            if (topic.AiVenues == null) continue;
+            if (pinsAdded > 50)
+            {
+                _topicsDataLoaderService.SaveTopics(Topics);
+                _databaseLoaderService.SavePlaceSkipList(placeNameSkipList);
+                _databaseLoaderService.SavePinDB();
+                pinsAdded = 0;
+            }
+
+            // Skip if the country and city cannot be identified
+            var groupCountry = _fBGroupService.GetCountryName(topic.GroupId);
+            if (string.IsNullOrWhiteSpace(groupCountry)) groupCountry = topic.TitleCountry ?? "";
+            if (string.IsNullOrWhiteSpace(groupCountry) && string.IsNullOrWhiteSpace(topic.TitleCity)) continue;
+
+            var delayedConsoleLine = $"Update Pins For AI Venues {i} of {Topics.Count} : {StringHelper.Truncate(topic.Title, 75).Replace("\n", "")}";
+            if (i % 1000 == 0)
+                Console.WriteLine($"Update Pins For AI Venues {i} of {Topics.Count} ");
 
             for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
             {
                 AiVenue? ai = topic.AiVenues[t];
-                // Only process unprocessed pins
 
-                if (TryGetFromCache(ai, groupCountry)) continue;
-
-                if (ai.Pin == null && !ai.PinSearchDone
-                    || regeneratePins)
+                if (ai.IsChain) continue;
+                if (!ai.IsExportable) continue;
+                if (SearchCacheUpdatePin(ai, groupCountry))
                 {
-                    if (ai.PlaceName != null
-                        && ai.Address != null
-                        && _placeNameSkipList.Exists(o =>
-                        ((o.PlaceName ?? "").Contains(ai.PlaceName, StringComparison.InvariantCultureIgnoreCase)
-                        && o.Address != null && o.Address.Contains(ai.Address, StringComparison.InvariantCultureIgnoreCase))))
+                    //Console.WriteLine($"Cached pin : {topic.AiVenues[t].PlaceName}");
+                    continue;
+                }
+                if (ai.Pin != null && !regeneratePins) continue;
+
+                // Only process unprocessed pins
+                if (!ai.PinSearchDone || regeneratePins)
+                {
+                    if (!string.IsNullOrWhiteSpace(delayedConsoleLine))
                     {
-                        Console.WriteLine($"Skipping : {topic.AiVenues[t].PlaceName}");
+                        Console.WriteLine(delayedConsoleLine);
+                        delayedConsoleLine = null;
+                    }
+
+                    if (IsInSkipList(ai, placeNameSkipList))
+                    {
+                        Console.WriteLineBlue($"Skipping : {topic.AiVenues[t].PlaceName}");
                     }
                     else
                     {
                         if (ai.Pin == null || regeneratePins)
                         {
-                            aiPinService.GetMapPinForPlaceName(ai, groupCountry, topic.TitleCity, chainUrls);
+                            var chainUrls = new List<string>();
+                            var city = topic.TitleCity;
+                            if (string.IsNullOrWhiteSpace(city)) _fBGroupService.GetCityName(topic.GroupId);
+                            aiPinService.GetMapPinForPlaceName(ai, groupCountry, topic.TitleCity, chainUrls, true);
+
+                            // Add any chain urls detected earlier (searches that have multiple results)
+                            foreach (var url in chainUrls)
+                            {
+                                var pin = PinHelper.GenerateMapPin(url, "", groupCountry);
+                                if (pin != null)
+                                {
+                                    _mapPinCache.AddPinCache(pin, pin.Label);
+                                    // Add pin to AiGenerated
+                                    var newVenue = new AiVenue
+                                    {
+                                        PlaceName = pin.PlaceName,
+                                        Pin = _mappingService.Map<TopicPin, TopicPinCache>(pin),
+                                        ChainGenerated = true
+                                    };
+                                    if (!DataHelper.IsInList(topic.AiVenues, newVenue, -1))
+                                    {
+                                        topic.AiVenues.Add(newVenue);
+                                        Console.WriteLine($"Adding chain url {pin.Label}");
+                                    }
+                                }
+                            }
+
+
                         }
                         if (ai.Pin == null)
                         {
                             // drop pin
                             if (!string.IsNullOrWhiteSpace(topic.AiVenues[t].PlaceName)
-                                && chainUrls.Count == 0)
+                                && !ai.IsChain)
                             {
-                                _placeNameSkipList.Add(topic.AiVenues[t]);
-                                Console.WriteLine($"Tagging pin as skippable : {topic.AiVenues[t].PlaceName}");
+
+                                if (!topic.AiVenues[t].PlaceName.Contains("Hotel"))
+                                {
+                                    Console.WriteLineRed($"Tagging pin as skippable : {topic.AiVenues[t].PlaceName}");
+                                    placeNameSkipList.Add(topic.AiVenues[t]);
+                                }
                             }
                         }
                         else
                         {
-                            Console.WriteLine($"Found pin : {topic.AiVenues[t].PlaceName}");
-
+                            Console.WriteLine($"Found pin : {topic.AiVenues[t].PlaceName} : {pinsAdded}");
+                            pinsAdded++;
                         }
                     }
 
                 }
 
-                if (ai.Pin != null)
-                {
-                    if (!IsPinInGroupCountry(ai.Pin, topic))
-                    {
-                        Console.WriteLineRed($"Removing pin due to country : {topic.AiVenues[t].PlaceName}");
-                        ai.Pin = null;
-                    }
-                }
                 ai.PinSearchDone = true;
             }
-
-            // Remove any pins that dont have names
-            for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
-            {
-                if (string.IsNullOrWhiteSpace(topic.AiVenues[t].PlaceName))
-                {
-                    topic.AiVenues.RemoveAt(t);
-                }
-            }
-
-            // Add any chain urls detected earlier (searches that have multiple results)
-            foreach (var url in chainUrls)
-            {
-                var pin = PinHelper.GenerateMapPin(url, "", groupCountry);
-                if (pin != null)
-                {
-                    // Add pin to AiGenerated
-                    var newVenue = new AiVenue
-                    {
-                        Pin = _mappingService.Map<TopicPin, TopicPinCache>(pin),
-                    };
-                    if (!DataHelper.IsInList(topic.AiVenues, newVenue, -1))
-                    {
-                        topic.AiVenues.Add(newVenue);
-                        Console.WriteLine($"Adding chain url {pin.Label}");
-                    }
-                }
-            }
-
-
         }
+
         _topicsDataLoaderService.SaveTopics(Topics);
         _databaseLoaderService.SavePinDB();
-        _databaseLoaderService.SavePlaceSkipList(_placeNameSkipList);
+        _databaseLoaderService.SavePlaceSkipList(placeNameSkipList);
     }
+
+    public void UpdateChainGeneratedPins(List<DetailedTopic> Topics)
+    {
+        var placeNameSkipList = _databaseLoaderService.LoadPlaceSkipList();
+
+        var aiPinService = new AiVenueProcessorService(_mapPinService, _mappingService, _restaurantTypeService, Console);
+        var pinsAdded = 1;
+
+        for (int i = 0; i < Topics.Count; i++)
+        {
+            DetailedTopic? topic = Topics[i];
+            if (topic.AiVenues == null || topic.AiVenues.Count == 0) continue;
+
+            if (pinsAdded > 50)
+            {
+                _topicsDataLoaderService.SaveTopics(Topics);
+                _databaseLoaderService.SavePlaceSkipList(placeNameSkipList);
+                _databaseLoaderService.SavePinDB();
+                pinsAdded = 0;
+            }
+
+            // Skip if the country and city cannot be identified
+            var groupCountry = _fBGroupService.GetCountryName(topic.GroupId);
+            if (string.IsNullOrWhiteSpace(groupCountry)) groupCountry = topic.TitleCountry ?? "";
+            if (string.IsNullOrWhiteSpace(groupCountry) && string.IsNullOrWhiteSpace(topic.TitleCity)) continue;
+
+            if (i % 1000 == 0)
+                Console.WriteLine($"Update Pins For AI Venues {i} of {Topics.Count} ");
+
+            for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
+            {
+                AiVenue? ai = topic.AiVenues[t];
+
+                if (ai.IsChain) continue;
+                if (ai.Pin == null) continue;
+                if (SearchCacheUpdatePin(ai, groupCountry)) continue;
+
+                // Only process unprocessed pins
+                Console.WriteLine($"Update Pins For AI Venues {i} of {Topics.Count} : {StringHelper.Truncate(topic.Title, 75).Replace("\n", "")}");
+
+                var chainUrls = new List<string>();
+                var city = topic.TitleCity;
+                if (string.IsNullOrWhiteSpace(city)) _fBGroupService.GetCityName(topic.GroupId);
+                if (!aiPinService.GetMapPinForPlaceName(ai, groupCountry, topic.TitleCity, chainUrls, false))
+                    break;
+            }
+        }
+
+        _topicsDataLoaderService.SaveTopics(Topics);
+        _databaseLoaderService.SavePinDB();
+        _databaseLoaderService.SavePlaceSkipList(placeNameSkipList);
+    }
+
+
+    public void CheckPinsAreInCache(List<DetailedTopic> Topics)
+    {
+
+        var aiPinService = new AiVenueProcessorService(_mapPinService, _mappingService, _restaurantTypeService, Console);
+        var pinsAdded = 1;
+
+        for (int i = 0; i < Topics.Count; i++)
+        {
+            DetailedTopic? topic = Topics[i];
+            if (topic.AiVenues == null || topic.AiVenues.Count == 0) continue;
+
+            // Remove any duplicated pins
+            AiVenueDataHelper.RemoveDuplicatedVenues(topic.AiVenues);
+
+            if (pinsAdded > 20)
+            {
+                _topicsDataLoaderService.SaveTopics(Topics);
+                _databaseLoaderService.SavePinDB();
+                pinsAdded = 0;
+            }
+
+            // Skip if the country and city cannot be identified
+            var groupCountry = _fBGroupService.GetCountryName(topic.GroupId);
+            if (string.IsNullOrWhiteSpace(groupCountry)) groupCountry = topic.TitleCountry ?? "";
+            if (string.IsNullOrWhiteSpace(groupCountry) && string.IsNullOrWhiteSpace(topic.TitleCity)) continue;
+
+            if (i % 1000 == 0)
+                Console.WriteLine($"Update Pins For AI Venues {i} of {Topics.Count} ");
+
+            for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
+            {
+                AiVenue? ai = topic.AiVenues[t];
+
+                if (ai.IsChain) continue;
+                if (!ai.IsExportable) continue;
+                if (SearchCacheUpdatePin(ai, groupCountry)) continue;
+                if (ai.Pin == null) continue;
+
+                // Only process unprocessed pins
+                Console.WriteLine($"Update Pins For AI Venues {i} of {Topics.Count} : {StringHelper.Truncate(topic.Title, 75).Replace("\n", "")}");
+
+                var chainUrls = new List<string>();
+                var city = topic.TitleCity;
+                if (string.IsNullOrWhiteSpace(city)) _fBGroupService.GetCityName(topic.GroupId);
+                if (!aiPinService.GetMapPinForPlaceName(ai, groupCountry, topic.TitleCity, chainUrls, false))
+                    break;
+            }
+        }
+
+        _topicsDataLoaderService.SaveTopics(Topics);
+        _databaseLoaderService.SavePinDB();
+    }
+
+
 
     public bool IsPinInGroupCountry(TopicPin? pin, DetailedTopic topic)
     {
@@ -167,42 +286,42 @@ internal class AiVenueLocationService(MapPinService _mapPinService,
         return true;
     }
 
-    private bool TryGetFromCache(AiVenue? ai, string groupCountry)
+    private bool IsInSkipList(AiVenue? ai, List<AiVenue> placeNameSkipList)
     {
-        if (ai == null) return false;
-        var cachedPin = _mapPinCache.TryGetPin(ai.PlaceName, groupCountry);
-
-        if (cachedPin != null)
+        if (ai.PlaceName != null
+    && ai.Address != null
+    && placeNameSkipList.Exists(o =>
+    ((o?.PlaceName ?? "").Contains(ai.PlaceName, StringComparison.InvariantCultureIgnoreCase)
+    && o.Address != null && o.Address.Contains(ai.Address, StringComparison.InvariantCultureIgnoreCase))))
         {
-            // Filter pin types
-            if (cachedPin.MetaData != null && _restaurantTypeService.IsRejectedRestaurantType(cachedPin.MetaData.RestaurantType))
-            {
-                Console.WriteLineRed("Found pin, but rejecting restaurant type");
-                return false;
-            }
-
-            ai.Pin = _mappingService.Map<TopicPin, TopicPinCache>(cachedPin);
             return true;
         }
+        return false;
+    }
 
-        // alternate search
+    private bool SearchCacheUpdatePin(AiVenue? ai, string groupCountry)
+    {
+        if (ai == null) return false;
+
+        TopicPinCache? cachedPin;
         if (ai.Pin != null)
         {
-            cachedPin = _mapPinCache.TryGetPin(ai.Pin.Label, groupCountry);
+            cachedPin = _mapPinCache.TryGetPinLatLong(ai.Pin.GeoLatitude, ai.Pin.GeoLongitude);
             if (cachedPin != null)
             {
-
-                // Filter pin types
-                if (cachedPin.MetaData != null && _restaurantTypeService.IsRejectedRestaurantType(cachedPin.MetaData.RestaurantType))
-                {
-                    Console.WriteLineRed("Found pin, but rejecting restaurant type");
-                    return false;
-                }
-
                 ai.Pin = _mappingService.Map<TopicPin, TopicPinCache>(cachedPin);
                 return true;
             }
         }
+
+        // alternate search
+        cachedPin = _mapPinCache.TryGetPin(ai.PlaceName, groupCountry);
+        if (cachedPin != null)
+        {
+            ai.Pin = _mappingService.Map<TopicPin, TopicPinCache>(cachedPin);
+            return true;
+        }
+
         return false;
     }
 

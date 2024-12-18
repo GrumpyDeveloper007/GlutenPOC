@@ -1,4 +1,5 @@
 ﻿using Frodo.Helper;
+using Gluten.Core.DataProcessing.Helper;
 using Gluten.Core.DataProcessing.Service;
 using Gluten.Core.Helper;
 using Gluten.Core.Interface;
@@ -20,49 +21,23 @@ internal class AiVenueCleanUpService(
     TopicsDataLoaderService _topicsService,
     IConsole Console)
 {
-    public void RemoveAiPinsInBadLocations(List<DetailedTopic> Topics)
+    public void TagAiPinsInFoundInDifferentCountry(List<DetailedTopic> topics)
     {
-        Console.Clear();
         LabelHelper.Reset();
         var invalidGeo = 0;
         var unmatchedLabels = 0;
-        for (int i = 0; i < Topics.Count; i++)
+        Console.WriteLine("--------------------------------------");
+        for (int i = 0; i < topics.Count; i++)
         {
-            DetailedTopic? topic = Topics[i];
-            if (i % 100 == 0)
-                Console.WriteLine($"Looking for invalid AI pins {i} of {Topics.Count}");
+            DetailedTopic? topic = topics[i];
+            if (i % 1000 == 0)
+                Console.WriteLine($"Looking for invalid pins due to country {i} of {topics.Count}");
 
             if (topic.AiVenues == null) continue;
             for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
             {
                 var venue = topic.AiVenues[t];
                 var pin = venue.Pin;
-                if (venue.PlaceName == "Vegan restaurant")
-                {
-                    topic.AiVenues.RemoveAt(t);
-                }
-
-                // Try to filter out invalid pins
-                if (!LabelHelper.IsInTextBlock(venue.PlaceName, topic.Title))
-                {
-                    if (pin != null)
-                    {
-                        if (!LabelHelper.IsInTextBlock(pin.Label, topic.Title))
-                        {
-                            //Console.WriteLine($"Removing pin {t} in topic {i}");
-                            Console.WriteLine($"missing label in title, label :{venue.PlaceName} pin:{pin.Label}  :{topic.Title}");
-                            //topic.AiVenues.RemoveAt(t);
-                            unmatchedLabels++;
-                        }
-                    }
-                    else
-                    {
-                        //Console.WriteLine($"missing label in title, label :{venue.PlaceName}  :{topic.Title}");
-                        Console.WriteLine($"Removing pin {t} in topic {i}");
-                        //topic.AiVenues.RemoveAt(t);
-                        unmatchedLabels++;
-                    }
-                }
 
                 if (pin == null) continue;
 
@@ -76,15 +51,63 @@ internal class AiVenueCleanUpService(
 
                     var country = _geoService.GetCountryPin(cachePin);
                     invalidGeo++;
-                    Console.WriteLine($"Removing pin {t} in topic {i} - country mismatch {groupCountry}, {country}");
-                    topic.AiVenues.RemoveAt(t);
+                    Console.WriteLine($"Tagging pin {t} in topic {i} - country mismatch {groupCountry}, {country}");
+                    venue.IsExportable = false;
                     continue;
                 }
                 if (cachePin.MetaData != null && cachePin.MetaData.PermanentlyClosed)
                 {
-                    Console.WriteLine($"Removing pin {t} in topic {i} - PermanentlyClosed");
-                    topic.AiVenues.RemoveAt(t);
+                    Console.WriteLine($"Tagging pin {t} in topic {i} - PermanentlyClosed");
+                    venue.IsExportable = false;
                 }
+            }
+        }
+
+        LabelHelper.Check();
+        Console.WriteLine($"Unmatched labels {unmatchedLabels}");
+        Console.WriteLine($"Invalid pins {invalidGeo}");
+        _topicsService.SaveTopics(topics);
+    }
+
+    public void TagAiPinsInNotFoundInOriginalText(List<DetailedTopic> topics)
+    {
+        LabelHelper.Reset();
+        var invalidGeo = 0;
+        var unmatchedLabels = 0;
+        Console.WriteLine("--------------------------------------");
+        for (int i = 0; i < topics.Count; i++)
+        {
+            DetailedTopic? topic = topics[i];
+            if (i % 1000 == 0)
+                Console.WriteLine($"Looking for pins not found in topic text {i} of {topics.Count}");
+
+            if (topic.AiVenues == null) continue;
+            for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
+            {
+                var venue = topic.AiVenues[t];
+                var pin = venue.Pin;
+
+                // Try to filter out invalid pins
+                if (!LabelHelper.IsInTextBlock(venue.PlaceName, topic.Title) && !venue.ChainGenerated)
+                {
+                    if (pin != null)
+                    {
+                        if (!LabelHelper.IsInTextBlock(pin.Label, topic.Title))
+                        {
+                            //Console.WriteLine($"Removing pin {t} in topic {i}");
+                            Console.WriteLine($"missing label in title, label :{venue.PlaceName} pin:{pin.Label}  :{topic.Title}");
+                            venue.IsExportable = false;
+                            unmatchedLabels++;
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Tagging pin {t} in topic {i}");
+                        venue.IsExportable = false;
+                        unmatchedLabels++;
+                    }
+                }
+
             }
 
         }
@@ -92,18 +115,143 @@ internal class AiVenueCleanUpService(
         LabelHelper.Check();
         Console.WriteLine($"Unmatched labels {unmatchedLabels}");
         Console.WriteLine($"Invalid pins {invalidGeo}");
-        _topicsService.SaveTopics(Topics);
+        _topicsService.SaveTopics(topics);
     }
 
-    public void RemoveAiPinsWithBadRestaurantTypes(List<DetailedTopic> Topics)
+    public void DiscoverMinMessageLength(List<DetailedTopic> topics)
+    {
+        var minLengthNoVenue = 9999;
+        var topicId = 0;
+        var noDataTopics = new List<string>();
+        LabelHelper.Reset();
+        Console.WriteLine("--------------------------------------");
+        for (int i = 0; i < topics.Count; i++)
+        {
+            DetailedTopic? topic = topics[i];
+            if (topic.AiVenues == null)
+            {
+                if (topic.Title.Contains("?")) noDataTopics.Add(topic.Title);
+                continue;
+            }
+            if (i % 10000 == 0)
+                Console.WriteLine($"Data collection {i} of {topics.Count}");
+
+            if (minLengthNoVenue > topic.Title.Length)
+            {
+                topicId = i;
+                minLengthNoVenue = topic.Title.Length;
+            }
+
+        }
+        Console.WriteLine($"Min message length with AI discovery {minLengthNoVenue} : {topics[topicId].Title} ");
+        //_topicsService.SaveTopics(Topics);
+    }
+
+
+    public void RemoveGenericPlaceNames(List<DetailedTopic> topics)
+    {
+        Console.WriteLine("--------------------------------------");
+        for (int i = 0; i < topics.Count; i++)
+        {
+            DetailedTopic? topic = topics[i];
+            if (topic.AiVenues == null) continue;
+            for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
+            {
+                var venue = topic.AiVenues[t];
+                if (PlaceNameFilterHelper.IsInPlaceNameSkipList(venue.PlaceName))
+                {
+                    if (venue.Pin != null) Console.WriteLineBlue($"Generic place with pin {venue.PlaceName}");
+                    Console.WriteLine($"Removing {venue.PlaceName}");
+                    topic.AiVenues.RemoveAt(t);
+                }
+            }
+        }
+        _topicsService.SaveTopics(topics);
+    }
+
+    public void RemoveNullAiPins(List<DetailedTopic> topics)
+    {
+        Console.WriteLine("--------------------------------------");
+        for (int i = 0; i < topics.Count; i++)
+        {
+            DetailedTopic? topic = topics[i];
+
+            if (topic.AiVenues == null) continue;
+            for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
+            {
+                var venue = topic.AiVenues[t];
+                if (topic.AiVenues[t] == null) topic.AiVenues.RemoveAt(t);
+            }
+        }
+        _topicsService.SaveTopics(topics);
+    }
+
+    public void RemoveChainGeneratedAiPins(List<DetailedTopic> topics)
+    {
+        Console.WriteLine("--------------------------------------");
+        int actionCount = 0;
+        for (int i = 0; i < topics.Count; i++)
+        {
+            DetailedTopic? topic = topics[i];
+
+            if (topic.AiVenues == null) continue;
+            for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
+            {
+                var venue = topic.AiVenues[t];
+                if (venue.Pin == null) continue;
+
+                if (topic.AiVenues[t].ChainGenerated)
+                {
+                    Console.WriteLineRed($"Removed {actionCount} chain generated pins");
+                    topic.AiVenues.RemoveAt(t);
+                    actionCount++;
+                }
+            }
+        }
+        if (actionCount > 0)
+        {
+            Console.WriteLineRed($"Removed {actionCount} chain generated pins");
+        }
+        _topicsService.SaveTopics(topics);
+    }
+
+
+    public void TagAiPinsWithNamesInSkipList(List<DetailedTopic> topics)
+    {
+
+        var restaurantService = new RestaurantTypeService();
+        var invalid = 0;
+        Console.WriteLine("--------------------------------------");
+        for (int i = 0; i < topics.Count; i++)
+        {
+            DetailedTopic? topic = topics[i];
+
+            if (topic.AiVenues == null) continue;
+            for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
+            {
+                var venue = topic.AiVenues[t];
+                var pin = venue.Pin;
+                if (pin == null) continue;
+                if (PlaceNameFilterHelper.IsInPlaceNameSkipList(venue.PlaceName))
+                {
+                    Console.WriteLineRed($"Tagging pin {t} in topic {i} - {venue.PlaceName}");
+                    venue.IsExportable = false;
+                    invalid++;
+                }
+            }
+        }
+        _topicsService.SaveTopics(topics);
+    }
+
+
+    public void TagAiPinsWithBadRestaurantTypes(List<DetailedTopic> topics)
     {
         var restaurantService = new RestaurantTypeService();
         var invalid = 0;
-        for (int i = 0; i < Topics.Count; i++)
+        Console.WriteLine("--------------------------------------");
+        for (int i = 0; i < topics.Count; i++)
         {
-            DetailedTopic? topic = Topics[i];
-            if (i % 100 == 0)
-                Console.WriteLine($"Processing AI pins {i} of {Topics.Count}");
+            DetailedTopic? topic = topics[i];
 
             if (topic.AiVenues == null) continue;
             for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
@@ -115,13 +263,13 @@ internal class AiVenueCleanUpService(
                 if (cachePin == null) continue;
                 if (restaurantService.IsRejectedRestaurantType(cachePin.MetaData?.RestaurantType))
                 {
-                    Console.WriteLine($"Removing pin {t} in topic {i} - {cachePin.MetaData?.RestaurantType}");
-                    topic.AiVenues.RemoveAt(t);
+                    Console.WriteLineRed($"Tagging pin {t} in topic {i} - {cachePin.MetaData?.RestaurantType}");
+                    venue.IsExportable = false;
                     invalid++;
                 }
             }
         }
-        _topicsService.SaveTopics(Topics);
+        _topicsService.SaveTopics(topics);
     }
 
 }

@@ -6,8 +6,6 @@ using Gluten.Data.MapsModel;
 using Gluten.Data.PinCache;
 using Gluten.Data.PinDescription;
 using Gluten.Data.TopicModel;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,6 +20,7 @@ namespace Gluten.Core.DataProcessing.Service
     public class DatabaseLoaderService
     {
         private readonly string PinCacheDBFileName = "D:\\Coding\\Gluten\\Database\\pinCache.json";
+        private readonly string PinCacheHtmlDBFileName = "D:\\Coding\\Gluten\\Database\\pinCacheHtml.json";
         private readonly string ExportDBFileName = "D:\\Coding\\Gluten\\Database\\TopicsExport.json";
         private readonly string GMPinExportDBFileName = "D:\\Coding\\Gluten\\Database\\GMPinExport.json";
         private readonly string RestaurantsFileName = "D:\\Coding\\Gluten\\Database\\Restaurant.txt";
@@ -37,12 +36,13 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public DatabaseLoaderService()
         {
-            string json;
             Dictionary<string, TopicPinCache>? pins = null;
             if (File.Exists(PinCacheDBFileName))
             {
-                json = File.ReadAllText(PinCacheDBFileName);
-                pins = JsonConvert.DeserializeObject<Dictionary<string, TopicPinCache>>(json);
+                //json = File.ReadAllText(PinCacheDBFileName);
+                //pins = JsonConvert.DeserializeObject<Dictionary<string, TopicPinCache>>(json);
+
+                pins = JsonHelper.TryLoadJsonDictionary<TopicPinCache>(PinCacheDBFileName);
             }
             if (pins != null)
             {
@@ -54,8 +54,7 @@ namespace Gluten.Core.DataProcessing.Service
             }
             if (File.Exists(PinDescriptionCacheFileName))
             {
-                json = File.ReadAllText(PinDescriptionCacheFileName);
-                var pdc = JsonConvert.DeserializeObject<List<PinDescriptionCache>>(json);
+                var pdc = JsonHelper.TryLoadJsonList<PinDescriptionCache>(PinDescriptionCacheFileName);
                 if (pdc != null)
                 {
                     _pinDescriptionsCache = pdc;
@@ -106,7 +105,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public void SavePinDescriptionCache()
         {
-            SaveDb(PinDescriptionCacheFileName, _pinDescriptionsCache);
+            JsonHelper.SaveDb(PinDescriptionCacheFileName, _pinDescriptionsCache);
         }
 
         /// <summary>
@@ -129,7 +128,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public void SavePlaceSkipList(List<AiVenue> data)
         {
-            SaveDb(PlacenameSkipListFileName, data);
+            JsonHelper.SaveDb(PlacenameSkipListFileName, data);
         }
 
         /// <summary>
@@ -137,7 +136,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public List<AiVenue> LoadPlaceSkipList()
         {
-            var data = TryLoadJson<AiVenue>(PlacenameSkipListFileName);
+            var data = JsonHelper.TryLoadJsonList<AiVenue>(PlacenameSkipListFileName);
             if (data == null) return [];
             return data;
         }
@@ -147,7 +146,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public void SaveGMPins(List<GMapsPin> data)
         {
-            SaveDb<List<GMapsPin>>(GMPinFileName, data);
+            JsonHelper.SaveDb<List<GMapsPin>>(GMPinFileName, data);
         }
 
         /// <summary>
@@ -155,7 +154,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public List<GMapsPin> LoadGMPins()
         {
-            var data = TryLoadJson<GMapsPin>(GMPinFileName);
+            var data = JsonHelper.TryLoadJsonList<GMapsPin>(GMPinFileName);
             if (data == null) return [];
             return data;
         }
@@ -173,7 +172,15 @@ namespace Gluten.Core.DataProcessing.Service
         public void SavePinDB()
         {
             var pinCache = _mapPinCache.GetCache();
-            SaveDb(PinCacheDBFileName, pinCache);
+            JsonHelper.SaveDb(PinCacheDBFileName, pinCache);
+            SavePinHtmlDB();
+        }
+
+        public void SavePinHtmlDB()
+        {
+            var data = _mapPinCache.GetCacheHtml();
+            JsonHelper.SaveDb(PinCacheHtmlDBFileName, data);
+
         }
 
         /// <summary>
@@ -181,7 +188,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public List<PinTopic>? LoadPinTopics()
         {
-            return TryLoadJson<PinTopic>(ExportDBFileName);
+            return JsonHelper.TryLoadJsonList<PinTopic>(ExportDBFileName);
         }
 
         /// <summary>
@@ -189,7 +196,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public void SavePinTopics(List<PinTopic> pins)
         {
-            SaveDb(ExportDBFileName, pins);
+            JsonHelper.SaveDb(ExportDBFileName, pins);
         }
 
         /// <summary>
@@ -197,7 +204,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public List<GMapsPin> LoadGMMapPinExport()
         {
-            var pins = TryLoadJson<GMapsPin>(GMPinExportDBFileName);
+            var pins = JsonHelper.TryLoadJsonList<GMapsPin>(GMPinExportDBFileName);
             pins ??= [];
             return pins;
         }
@@ -207,27 +214,8 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public void SaveGMMapPinExport(List<GMapsPin> pins)
         {
-            SaveDb(GMPinExportDBFileName, pins);
+            JsonHelper.SaveDb(GMPinExportDBFileName, pins);
         }
 
-        private static List<classType>? TryLoadJson<classType>(string fileName)
-        {
-            List<classType>? topics = null;
-            if (File.Exists(fileName))
-            {
-                string json;
-                json = File.ReadAllText(fileName);
-                var tempTopics = JsonConvert.DeserializeObject<List<classType>>(json);
-                if (tempTopics != null) { topics = tempTopics; }
-            }
-            return topics;
-        }
-
-        private static void SaveDb<typeToSave>(string fileName, typeToSave topics)
-        {
-            var json = JsonConvert.SerializeObject(topics, Formatting.Indented,
-                [new StringEnumConverter()]);
-            File.WriteAllText(fileName, json);
-        }
     }
 }

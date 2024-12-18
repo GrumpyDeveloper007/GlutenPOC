@@ -1,4 +1,5 @@
-﻿using Gluten.Core.Helper;
+﻿using Gluten.Core.DataProcessing.Service;
+using Gluten.Core.Helper;
 using Gluten.Core.Interface;
 using Gluten.Data.TopicModel;
 using Gluten.FBModel;
@@ -10,7 +11,7 @@ namespace Frodo.Service
     /// <summary>
     /// Processes the data captured from FB groups
     /// </summary>
-    internal class TopicLoaderService(IConsole Console)
+    internal class TopicLoaderService(TopicsDataLoaderService _topicsLoaderService, IConsole Console)
     {
         internal static readonly string[] crlf = ["/r/n"];
 
@@ -19,6 +20,7 @@ namespace Frodo.Service
         /// </summary>
         public void ReadFileLineByLine(string filePath, List<DetailedTopic> topics)
         {
+            if (!File.Exists(filePath)) return;
             // Open the file and read each line
             using StreamReader sr = new(filePath);
             string? line;
@@ -55,6 +57,8 @@ namespace Frodo.Service
                     }
                 }
             }
+            _topicsLoaderService.SaveTopics(topics);
+
         }
 
         private void ProcessSearchRootMessage(string message, List<DetailedTopic> topics)
@@ -65,7 +69,7 @@ namespace Frodo.Service
             foreach (var edge in sr.data.serpResponse.results.edges)
             {
                 if (edge.relay_rendering_strategy.__typename == "SearchEndOfResultsModuleRenderingStrategy") continue;
-                if (edge.relay_rendering_strategy.view_model.click_model.story == null) continue;
+                if (edge.relay_rendering_strategy?.view_model?.click_model?.story == null) continue;
 
                 var story = edge.relay_rendering_strategy.view_model.click_model.story;
                 var comet_sectionsStory = story.comet_sections.content.story;

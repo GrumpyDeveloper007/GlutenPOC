@@ -7,6 +7,7 @@ namespace Gluten.Data.TopicModel
         public string? TitleCountry { get; set; }
 
         public string? TitleCity { get; set; }
+        public bool CitySearchDone { get; set; } = false;
         public required string Title { get; set; }
         public string? ShortTitle { get; set; }
         public bool ShortTitleProcessed { get; set; } = false;
@@ -15,6 +16,7 @@ namespace Gluten.Data.TopicModel
         public string? NodeID { get; set; }
 
         public List<AiVenue>? AiVenues { get; set; }
+        public bool IsAiVenuesSearchDone { get; set; } = false;
 
         public List<TopicLink>? UrlsV2 { get; set; }
 
@@ -24,57 +26,5 @@ namespace Gluten.Data.TopicModel
         public DateTimeOffset? PostCreated { get; set; }
 
         public bool AiIsQuestion { get; set; }
-
-        public bool AiHasRestaurants { get; set; }
-
-        public bool HasMapPin()
-        {
-            if (UrlsV2 == null) return false;
-            foreach (var url in UrlsV2)
-            {
-                if (url.Pin != null) return true;
-            }
-            return false;
-        }
-
-        public bool HasLink()
-        {
-            if (Title == null) return false;
-            return Title.Contains("https://", StringComparison.CurrentCultureIgnoreCase);
-        }
-
-        public bool HasMapLink()
-        {
-            if (Title == null) return false;
-            return Title.Contains("https://maps", StringComparison.CurrentCultureIgnoreCase);
-        }
-
-        public bool ResponseHasLink
-        {
-            get
-            {
-                foreach (var response in ResponsesV2)
-                {
-                    if (response.Message == null) return false;
-                    if (response.Message.Contains("https://", StringComparison.CurrentCultureIgnoreCase))
-                        return true;
-                }
-                return false;
-            }
-        }
-
-        public bool ResponseHasMapLink
-        {
-            get
-            {
-                foreach (var response in ResponsesV2)
-                {
-                    if (response.Message == null) return false;
-                    if (response.Message.Contains("https://maps", StringComparison.CurrentCultureIgnoreCase))
-                        return true;
-                }
-                return false;
-            }
-        }
     }
 }

@@ -15,7 +15,6 @@ namespace Gluten.FBModel
     {
         public string label { get; set; }
     }
-    // Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
     public class ActionLink
     {
         public string __typename { get; set; }

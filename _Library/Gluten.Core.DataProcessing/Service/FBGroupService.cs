@@ -20,6 +20,8 @@ namespace Gluten.Core.DataProcessing.Service
         {
             {"806902313439614","Thailand" }, // not gf group
             {"769136475365475","NA" }, // dales gf map
+            {"573768437691444","NA" },
+
 
             {"379994195544478","Japan" },//Gluten-Free in Japan!
             {"182984958515029","Singapore" },//Gluten Free Singapore - Support Group
@@ -45,6 +47,7 @@ namespace Gluten.Core.DataProcessing.Service
             {"1025248344200757","Australia" }, //Gluten Free Eating Out Sydney & New South Wales, Australia
             {"9413340041","United Kingdom" },      //Coeliacs Eat Out Too UK
 
+            {"847553335358305","" },//Gluten Free Travel Around the World
             {"292593134198337","" },//Coeliacs Eat Abroad - only back to july
             {"195689771214297","" },//Celiac Travel
             {"798810970466035","" },//Celiac Travel Group
@@ -57,6 +60,7 @@ namespace Gluten.Core.DataProcessing.Service
             {"1452094601717166","Australia" },//Gluten Free Melbourne
             {"307872078321","Australia" },//Gluten Free Tasmania
             {"625162559593528","Australia" },//Gluten Free Brisbane
+            {"629876021246440","Australia" },//Where Coeliacs Eat - Australia
 
             // Not active
             {"450713908359721","Cambodia" },//Cambodia
@@ -66,24 +70,85 @@ namespace Gluten.Core.DataProcessing.Service
             {"1587317368127948","Thailand" },//Thailand
             {"403103165372802","Cambodia" },//Cambodia,
             {"361337232353766","Vietnam" }, // not active
-
+            
             {"286367932803894","Cambodia" },//Cambodia Travel
             {"1300758866697297","Cambodia/Vietnam" },//Cambodia & Vietnam Travel Tips
             {"309301445942480","Cambodia" },//Cambodia Travels & Tips
             
             {"342422672937608","Indonesia" },//Gluten Free Bali
-
+            
+            {"187020706020686","Australia" },//Gold Coast Gluten Free							public group
+            {"1535703166696570","United States" },//Coeliac and Gluten Free York			public group
+            
+            //searchable gluten groups -
+            {"974429813510442","Cambodia" },        //Cambodia travel
+            {"147347329055","Cambodia" },           //Cambodia Expats Club
+            {"517665179677444","Cambodia" },        //Cambodia travelers
+            {"3061458170649280","Cambodia" },       //Siem Reap Expat Connection
+            {"161220651105962","Cambodia" },        //Expats & Locals in Kampot & Kep
             
             //{"","" },
         };
+
+        private readonly Dictionary<string, string> _groupIdToCity = new()
+        {
+            {"3087018218214300","Bali" },//Gluten Free in Bali
+            {"422262581142441","Hong Kong" },//Gluten Free in Hong Kong
+            {"660915839470807","Ho Chi Minh City" },//Gluten Free Saigon (Ho Chi Minh City)
+            {"823200180025057","Hội An " },//Gluten-free Hội An Community
+            {"353439621914938","Taipei" }, //Gluten free Taipei
+            {"319517678837045","Hanoi" },//Gluten Free Hanoi
+            {"1015752345220391","Chiang Mai" },//Gluten Free Chiang Mai
+
+            {"488425731191722","Kuala Lumpur" },//Off The Wheaten Path In Kuala Lumpur (Gluten Free Tips, Recipes & Findings)
+
+            {"1025248344200757","New South Wales" }, //Gluten Free Eating Out Sydney & New South Wales, Australia
+
+            {"1452094601717166","Melbourne" },//Gluten Free Melbourne
+            {"307872078321","Tasmania" },//Gluten Free Tasmania
+            {"625162559593528","Brisbane" },//Gluten Free Brisbane
+            
+            
+            {"342422672937608","Bali" },//Gluten Free Bali
+            
+            {"187020706020686","Gold Coast " },//Gold Coast Gluten Free							public group
+            {"1535703166696570","New York" },//Coeliac and Gluten Free York			public group
+            
+            {"3061458170649280","Siem" },       //Siem Reap Expat Connection
+        };
+
+
+
+        public bool IsGenericGroup(string groupId)
+        {
+            return string.IsNullOrWhiteSpace(GetCountryName(groupId));
+        }
+
+        public string GetCityName(string groupId)
+        {
+            if (_groupIdToCity.TryGetValue(groupId, out var value))
+            {
+                return value;
+            }
+            return "";
+        }
 
         /// <summary>
         /// Get a country name based on what group the message was posted in (groupId)
         /// </summary>
         public string GetCountryName(string groupId)
         {
-            if (!_knownGroupIds.ContainsKey(groupId)) Console.WriteLine($"Unknown group :{groupId}");
-            return _knownGroupIds[groupId];
+            try
+            {
+                if (!_knownGroupIds.ContainsKey(groupId)) Console.WriteLine($"Unknown group :{groupId}");
+                return _knownGroupIds[groupId];
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLineRed(ex.Message);
+                return "NA";
+            }
+
         }
 
         /// <summary>
