@@ -8,6 +8,7 @@ using Gluten.Data.TopicModel;
 using System;
 using System.Diagnostics;
 using System.Linq;
+using TimeSpanParserUtil;
 
 namespace Frodo.Service
 {
@@ -59,6 +60,8 @@ namespace Frodo.Service
                 temp += $"\"{venue.PlaceName}\",\n";
             }
 
+            _aiVenueCleanUpService.ResetIsExportable(Topics);
+
             //await _localAi.ExtractDescriptionTitle("this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message", "test");
 
             Console.WriteLine("--------------------------------------");
@@ -74,8 +77,6 @@ namespace Frodo.Service
             if (!skipSomeOperationsForDebugging)
                 await ScanTopicsUseAiToDetectVenueInfo();
 
-            _aiVenueCleanUpService.RemoveGenericPlaceNames(Topics);
-            _aiVenueCleanUpService.DiscoverMinMessageLength(Topics);
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nGenerating country names from topic title");
@@ -83,17 +84,36 @@ namespace Frodo.Service
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nFiltering AI pins");
+            _aiVenueCleanUpService.RemoveGenericPlaceNames(Topics);
+            _aiVenueCleanUpService.DiscoverMinMessageLength(Topics);
+            _aiVenueLocationService.RemoveDuplicatedPins(Topics);
             _aiVenueCleanUpService.RemoveNullAiPins(Topics);
-            _aiVenueCleanUpService.TagAiPinsWithNamesInSkipList(Topics);
+            //_aiVenueCleanUpService.TagGenericPlaceNames(Topics);
             _aiVenueCleanUpService.TagAiPinsWithBadRestaurantTypes(Topics);
             _aiVenueCleanUpService.TagAiPinsInFoundInDifferentCountry(Topics);
             _aiVenueCleanUpService.TagAiPinsInNotFoundInOriginalText(Topics);
+            _aiVenueCleanUpService.CountPins(Topics);
+
+            Console.WriteLine("--------------------------------------");
+            Console.WriteLine($"\r\nRebuilding chain pins");
+            //Enable if we have better filtering
+            //_aiVenueCleanUpService.RemoveChainGeneratedAiPins(Topics);
+            //_aiVenueLocationService.UpdateChainGeneratedPins(Topics);
+
+            //_aiVenueLocationService.CheckNonExportable(Topics);
+            _aiVenueCleanUpService.CountPins(Topics);
+
+            Console.WriteLine("--------------------------------------");
+            await CategoriseTopic();
+            _aiVenueCleanUpService.CountPins(Topics);
+
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nUpdating pin information for Ai Venues");
-            _aiVenueLocationService.UpdatePinsForAiVenues(Topics, _regeneratePins);
-            //Reprocess function, only needed to fix old data _aiVenueLocationService.UpdateChainGeneratedPins(Topics);
             _aiVenueLocationService.CheckPinsAreInCache(Topics);
+            _aiVenueLocationService.UpdatePinsForAiVenues(Topics, _regeneratePins);
+            _aiVenueLocationService.CheckPinsAreInCache(Topics);
+
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nExtracting meta info for pins");
@@ -342,6 +362,45 @@ namespace Frodo.Service
 
             _topicsLoaderService.SaveTopics(Topics);
         }
+
+        private async Task CategoriseTopic()
+        {
+            var itemsUpdated = 0;
+
+            for (int i = 0; i < Topics.Count; i++)
+            {
+                DetailedTopic? topic = Topics[i];
+
+                if (!string.IsNullOrWhiteSpace(topic.TitleCategory)) continue;
+                if (itemsUpdated > 100)
+                {
+                    Console.WriteLineBlue("Saving Topics");
+                    _topicsLoaderService.SaveTopics(Topics);
+                    itemsUpdated = 0;
+                }
+
+
+                var category = await _localAi.CategoriseMessage(topic.Title);
+                Console.WriteLine($"Categorise topics {i} of {Topics.Count} : {category}");
+                if (category == "DESCRIBE" || category == "QUESTION" || category == "UNKNOWN")
+                {
+                    topic.TitleCategory = category;
+                }
+                else if (category.Contains("DESCRIBE"))
+                {
+                    topic.TitleCategory = "DESCRIBE";
+                }
+                else
+                {
+                    Console.WriteLineRed($"Failed to categorise :{category}");
+                }
+
+                itemsUpdated++;
+            }
+
+            _topicsLoaderService.SaveTopics(Topics);
+        }
+
 
         /// <summary>
         /// Scan detected urls, try to generate pin information

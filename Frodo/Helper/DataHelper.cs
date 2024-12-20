@@ -58,7 +58,7 @@ namespace Frodo.Helper
         /// <summary>
         /// is specified venue in the list (duplicated)?
         /// </summary>
-        public static bool IsInList(List<AiVenue> venues, AiVenue venue, int newVenueIndex)
+        public static bool IsInList(List<AiVenue> venues, AiVenue venue, int newVenueIndex, bool ignoreChains)
         {
             for (int i = 0; i < venues.Count; i++)
             {
@@ -66,7 +66,8 @@ namespace Frodo.Helper
                 if (i != newVenueIndex
                     && item.Pin != null && venue.Pin != null
                     && item.Pin.GeoLongitude == venue.Pin.GeoLongitude
-                    && item.Pin.GeoLatitude == venue.Pin.GeoLatitude)
+                    && item.Pin.GeoLatitude == venue.Pin.GeoLatitude
+                    && (ignoreChains == false || !item.IsChain))
                 {
                     return true;
                 }

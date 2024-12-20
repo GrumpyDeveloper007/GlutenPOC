@@ -36,7 +36,7 @@ var cityService = new CityService();
 var restaurantTypeService = new RestaurantTypeService();
 var topicDataLoader = new TopicsDataLoaderService();
 var mapMetaExtractor = new MapsMetaExtractorService(consoleLogger);
-var ai = new AiInterfaceService(settings.GroqApiKey, settings.OpenRouterApiKey, consoleLogger);
+var ai = new AiInterfaceService(settings.GroqApiKey, consoleLogger);
 
 DataHelper.Console = consoleLogger;
 LabelHelper.Console = consoleLogger;

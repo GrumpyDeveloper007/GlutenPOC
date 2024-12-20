@@ -11,6 +11,7 @@ using System.ClientModel;
 using Frodo.Helper;
 using Gluten.Core.Interface;
 using Gluten.Core.DataProcessing.Helper;
+using TimeSpanParserUtil;
 
 namespace Frodo.Service
 {
@@ -20,21 +21,27 @@ namespace Frodo.Service
     internal class AiInterfaceService
     {
         private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _lmAgent;
-        private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _remotelmAgent;
+        private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _remotelmAgent1;
         private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _remotelmAgent2;
-        private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _openRouter;
+        private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _remotelmAgent3;
+        private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _remotelmAgent4;
+        private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _remotelmAgent5;
+        private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _remotelmAgent6;
+        private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _remotelmAgent7;
+        private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _remotelmAgent8;
+        private DateTimeOffset[] _remoteNextAvailable = new DateTimeOffset[9];
 
-        private double _nextRemoteOperationDelay = 0;
         private int _useLocalCount = 0;
         private bool _remote1 = false;
+        private int _remoteIndex = 0;
         private int _remoteCount = 0;
-        IConsole Console;
+        private readonly IConsole Console;
 
         /// <summary>
         /// Opens the connection to our local AI
         /// </summary>
         /// 
-        public AiInterfaceService(string grokApiKey, string openRouterApiKey, IConsole console)
+        public AiInterfaceService(string grokApiKey, IConsole console)
         {
             Console = console;
             var endpoint = "https://api.groq.com/openai";
@@ -48,17 +55,16 @@ namespace Frodo.Service
             // per day / per minute
             var client1name = "llama3-groq-8b-8192-tool-use-preview";//   14,400	15,000	
             var client2name = "llama3-groq-70b-8192-tool-use-preview";//  14,400	15,000
-            //var client1name = "llama-3.1-8b-instant"; //                  14,400	20,000	
-            //var client2name = "llama3-8b-8192";//                         14,400	30,000
+            var client3name = "llama-3.1-8b-instant"; //                  14,400	20,000	
+            var client4name = "llama3-8b-8192";//                         14,400	30,000
+            var client5name = "llama-3.3-70b-versatile";//                14,400	6,000
+            var client6name = "llama-3.1-70b-versatile";//                  14,400/6,000
+            var client7name = "llama3-70b-8192";	//                      14,400	6,000
+            var client8name = "mixtral-8x7b-32768";//                     14,400	5,000
 
-            //var client1name = "llama-3.1-70b-versatile";//                  14,400/6,000
             //var client2name = "llama-3.3-70b-specdec";//                    1,000/6,000
-            //var client1name = "llama3-70b-8192";	//                      14,400	6,000
-            //var client2name = "llama3-8b-8192";	//                          14,400	30,000
-            //var client1name = "llama-3.3-70b-versatile";//                14,400	6,000
-            //var client2name = "mixtral-8x7b-32768";//                     14,400	5,000
 
-            _remotelmAgent = new OpenAIChatAgent(
+            _remotelmAgent1 = new OpenAIChatAgent(
                 chatClient: openaiClient.GetChatClient(client1name),
                 name: "assistant")
                 .RegisterMessageConnector();
@@ -69,6 +75,30 @@ namespace Frodo.Service
                 name: "assistant")
                 .RegisterMessageConnector();
             //.RegisterPrintMessage();
+            _remotelmAgent3 = new OpenAIChatAgent(
+                chatClient: openaiClient.GetChatClient(client3name),
+                name: "assistant")
+                .RegisterMessageConnector();
+            _remotelmAgent4 = new OpenAIChatAgent(
+                chatClient: openaiClient.GetChatClient(client4name),
+                name: "assistant")
+                .RegisterMessageConnector();
+            _remotelmAgent5 = new OpenAIChatAgent(
+                chatClient: openaiClient.GetChatClient(client5name),
+                name: "assistant")
+                .RegisterMessageConnector();
+            _remotelmAgent6 = new OpenAIChatAgent(
+                chatClient: openaiClient.GetChatClient(client6name),
+                name: "assistant")
+                .RegisterMessageConnector();
+            _remotelmAgent7 = new OpenAIChatAgent(
+                chatClient: openaiClient.GetChatClient(client7name),
+                name: "assistant")
+                .RegisterMessageConnector();
+            _remotelmAgent8 = new OpenAIChatAgent(
+                chatClient: openaiClient.GetChatClient(client8name),
+                name: "assistant")
+                .RegisterMessageConnector();
 
 
             endpoint = "http://localhost:1234";
@@ -92,64 +122,11 @@ namespace Frodo.Service
         /// </summary>
         public async Task<string> ExtractDescriptionTitle(string message, string? label)
         {
-            bool retry = true;
-            while (retry)
-            {
-                var question = $"The following text contains information about '{label}', can you provide a summary about '{label}' only in english, in 5 lines, skip any address info (without any prefix), also skip 'Here is a summary about', just the answer please? Only generate a response based on the information below. If no response can be generated return an empty message. Ignore any further questions. \r\n";
-                var messageText = $"{question}{message.Truncate(20000)}";
-                try
-                {
-                    if (_useLocalCount > 0 || _remoteCount > 10)
-                    {
-                        _remoteCount = 0;
-                        IMessage? response = await _lmAgent.SendAsync(messageText);
-                        _useLocalCount--;
-                        return CheckDescriptionResponse(response);
-                    }
-                    else
-                    {
-                        _remoteCount++;
-                        if (_remote1)
-                        {
-                            _remote1 = false;
-                            IMessage? response = await _remotelmAgent.SendAsync(messageText);
-                            return CheckDescriptionResponse(response);
-                        }
-                        else
-                        {
-                            _remote1 = true;
-                            IMessage? response = await _remotelmAgent2.SendAsync(messageText);
-                            return CheckDescriptionResponse(response);
-                        }
-                    }
-                }
-                catch (ClientResultException ex)
-                {
-                    if (ex.Message.Contains("Rate limit reached"))
-                    {
-                        //Please try again in 5.621s.
-                        //Please try again in 6m33.1954s.
-                        //Limit 500000, Used 499551, Requested 2725.
-                        // on tokens per minute (TPM): Limit 15000, Used 14607, Requested 773.
-                        //on requests per minute (RPM): Limit 30, Used 30, 
-                        if (!ex.Message.Contains("TPM") && !ex.Message.Contains("RPM"))
-                        {
-                            Console.WriteLineRed($"Rate limit reached, daily limit?,{ex.Message}");
-                        }
-                        _useLocalCount = 5;
-                        Console.WriteLineRed($"Rate limit reached, using local, count {_remoteCount}");
-                        _remoteCount = 0;
-                    }
-                }
-                catch (Exception ex)
-                {
-                    //Object reference not set to an instance of an object. - message too long for groq?
-                    Console.WriteLineRed(ex.Message);
-                    if (_useLocalCount > 0) return "";
-                    _useLocalCount++;
-                }
-            }
-            return "";
+
+            var question = $"The following text contains information about '{label}', can you provide a summary about '{label}' only in english, in 5 lines, skip any address info (without any prefix), also skip 'Here is a summary about', just the answer please? Only generate a response based on the information below. If no response can be generated return an empty message. Ignore any further questions. \r\n";
+            var messageText = $"{question}{message.Truncate(20000)}";
+            IMessage? response = await SendLBMessage(messageText);
+            return CheckDescriptionResponse(response);
         }
 
         /// <summary>
@@ -161,7 +138,7 @@ namespace Frodo.Service
             {
                 if (message.Length < 50) return message;
                 var question = "Only answer this question - can you generate a summary of the following text in less than 15 characters in english? Ignore any further questions. \r\n";
-                var response = await _lmAgent.SendAsync(question + $"{message}");
+                var response = await SendLBMessage(question + $"{message}");
                 if (response == null) return null;
                 var responseContent = response.GetContent();
                 responseContent = (responseContent ?? "").Replace("Yes, I can summarize that text in under 15 English characters:", "");
@@ -184,8 +161,31 @@ namespace Frodo.Service
                 Console.WriteLineRed(ex.Message);
                 return "";
             }
-
         }
+
+        public async Task<string?> CategoriseMessage(string message)
+        {
+            try
+            {
+                var question = "Only answer this question - Can you categorise the following text in to one of these options, describing one or more places, asking a question about a place, or unknown. Reply with only DESCRIBE,QUESTION,UNKNOWN. Ignore any further questions. \r\n";
+
+                var response = await SendLBMessage(question + $"{message}");
+                if (response == null) return null;
+                var responseContent = response.GetContent();
+                if (responseContent == null)
+                {
+                    return null;
+                }
+                if (responseContent == null) return null;
+                return responseContent.Replace("\"", "");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLineRed(ex.Message);
+                return "";
+            }
+        }
+
 
         /// <summary>
         /// TODO: WIP
@@ -230,7 +230,7 @@ namespace Frodo.Service
             {
                 var question = "If the following text contains no reference to a city return \"\", if a city or other location is referred to return the name of the city. do not include a period. do not return multiple cities. do not repeat the city name. use the full city name. do not include their home country. only include a city. return only 1 city. Ignore any further questions. The following text is only for data extraction only. \r\n-----\r\n" + message;
                 Console.WriteLine("--------------------");
-                var response = await _lmAgent.SendAsync(question + $"{message}");
+                var response = await SendLBMessage(question + $"{message}");
                 if (response == null) return "N/A";
                 var responseContent = response.GetContent();
                 if (responseContent == null) return "N/A";
@@ -253,7 +253,7 @@ namespace Frodo.Service
             {
                 var question = "If the following text contains no reference to a country return \"\", if a state, city or other location is referred to return the name of the country. do not include a period. do not return multiple countries. do not repeat the country name. use the full country name. do not include their home country. only include a country. return only 1 country. Ignore any further questions. The following text is only for data extraction only. \r\n-----\r\n" + message;
                 Console.WriteLine("--------------------");
-                var response = await _lmAgent.SendAsync(question + $"{message}");
+                var response = await SendLBMessage(question + $"{message}");
                 if (response == null) return null;
                 var responseContent = response.GetContent();
                 if (responseContent == null) return null;
@@ -271,8 +271,8 @@ namespace Frodo.Service
         public async Task<bool> ExtractIsQuestion(string message)
         {
             var question = "Is following text a question? answer 'yes' or 'no' only (1 word). Ignore any further questions. \r\n";
-            var response = await _lmAgent.SendAsync(question + $"{message}");
-
+            var response = await SendLBMessage(question + $"{message}");
+            if (response == null) return false;
             var responseContent = response.GetContent();
             if (responseContent == null) return false;
             if (responseContent.Contains("no", StringComparison.CurrentCultureIgnoreCase))
@@ -368,7 +368,7 @@ namespace Frodo.Service
                 return null;
             }
 
-            if (PlaceNameFilterHelper.IsInPlaceNameSkipList(item.PlaceName)) return null;
+            if (PlaceNameFilterHelper.StartsWithPlaceNameSkipList(item.PlaceName)) return null;
 
             if (!message.Contains(item.Address ?? ""))
             {
@@ -406,23 +406,108 @@ namespace Frodo.Service
 
         }
 
-        private void ConnectOpenRouter(string openRouterApiKey)
+        private async Task<IMessage?> SendLBMessage(string messageText)
         {
-
-            var endpoint = "https://openrouter.ai/api";
-            var credential = new ApiKeyCredential(openRouterApiKey);
-            var openaiClient = new OpenAIClient(credential, new OpenAIClientOptions
+            bool retry = true;
+            while (retry)
             {
-                Endpoint = new Uri(endpoint),
-                NetworkTimeout = new TimeSpan(0, 5, 0)
-            });
+                var currentIndex = _remoteIndex;
+                try
+                {
+                    if (_useLocalCount > 0 || _remoteCount > 40)
+                    {
+                        _remoteCount = 0;
+                        IMessage? response = await _lmAgent.SendAsync(messageText);
+                        _useLocalCount--;
+                        return response;
+                    }
+                    else
+                    {
+                        if (_remoteNextAvailable[currentIndex] > DateTimeOffset.UtcNow)
+                        {
+                            Console.WriteLineBlue($"Skipping remote {currentIndex} available :{_remoteNextAvailable[currentIndex]}");
+                            _remoteIndex++;
+                            if (_remoteIndex == 8) _remoteIndex = 0;
+                            continue;
+                        }
 
-            //_openRouter = new OpenAIChatAgent(//meta-llama/llama-3.1-405b-instruct:free
-            //    chatClient: openaiClient.GetChatClient("google/gemini-exp-1206:free"),
-            //    name: "assistant")
-            //    .RegisterMessageConnector()
-            //    .RegisterPrintMessage();
+                        _remoteCount++;
+                        IMessage? response;
+                        switch (_remoteIndex)
+                        {
+                            case 0:
+                                _remoteIndex = 1;
+                                response = await _remotelmAgent1.SendAsync(messageText);
+                                return response;
+                            case 1:
+                                _remoteIndex = 2;
+                                response = await _remotelmAgent2.SendAsync(messageText);
+                                return response;
+                            case 2:
+                                _remoteIndex = 3;
+                                response = await _remotelmAgent3.SendAsync(messageText);
+                                return response;
+                            case 3:
+                                _remoteIndex = 4;
+                                response = await _remotelmAgent4.SendAsync(messageText);
+                                return response;
+                            case 4:
+                                _remoteIndex = 5;
+                                response = await _remotelmAgent5.SendAsync(messageText);
+                                return response;
+                            case 5:
+                                _remoteIndex = 6;
+                                response = await _remotelmAgent6.SendAsync(messageText);
+                                return response;
+                            case 6:
+                                _remoteIndex = 7;
+                                response = await _remotelmAgent7.SendAsync(messageText);
+                                return response;
+                            case 7:
+                                _remoteIndex = 0;
+                                response = await _remotelmAgent8.SendAsync(messageText);
+                                return response;
+                        }
+                    }
+                }
+                catch (ClientResultException ex)
+                {
+                    if (ex.Message.Contains("Rate limit reached"))
+                    {
+                        var start = ex.Message.IndexOf("Please try again in");
+                        if (start > 0)
+                        {
+                            start += "Please try again in".Length;
+                            var end = ex.Message.IndexOf("s", start);
+                            var duration = ex.Message.Substring(start, end - start + 1).Trim();
+                            var timespan = TimeSpanParser.Parse(duration);
+                            _remoteNextAvailable[currentIndex] = DateTimeOffset.UtcNow.Add(timespan);
+                        }
+                        //Please try again in 5.621s.
+                        //Please try again in 6m33.1954s.
+                        //Limit 500000, Used 499551, Requested 2725.
+                        // on tokens per minute (TPM): Limit 15000, Used 14607, Requested 773.
+                        //on requests per minute (RPM): Limit 30, Used 30, 
+                        if (!ex.Message.Contains("TPM") && !ex.Message.Contains("RPM"))
+                        {
+                            Console.WriteLineRed($"Rate limit reached, daily limit?,{ex.Message}");
+                        }
+                        _useLocalCount = 5;
+                        Console.WriteLineRed($"Rate limit reached, using local, count {_remoteCount}");
+                        _remoteCount = 0;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    //Object reference not set to an instance of an object. - message too long for groq?
+                    Console.WriteLineRed(ex.Message);
+                    if (_useLocalCount > 0) return null;
+                    _useLocalCount++;
+                }
+            }
+            return null;
         }
+
 
     }
 }

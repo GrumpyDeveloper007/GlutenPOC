@@ -19,5 +19,7 @@ namespace Gluten.Data.TopicModel
 
         public bool ChainGenerated { get; set; } = false;
         public bool IsExportable { get; set; } = true;
+        public bool PermanentlyClosed { get; set; } = false;
+        public bool RejectedRestaurantType { get; set; } = false;
     }
 }

@@ -22,7 +22,6 @@ namespace Gluten.Core.DataProcessing.Service
             {"769136475365475","NA" }, // dales gf map
             {"573768437691444","NA" },
 
-
             {"379994195544478","Japan" },//Gluten-Free in Japan!
             {"182984958515029","Singapore" },//Gluten Free Singapore - Support Group
             {"3087018218214300","Indonesia" },//Gluten Free in Bali
@@ -86,6 +85,8 @@ namespace Gluten.Core.DataProcessing.Service
             {"517665179677444","Cambodia" },        //Cambodia travelers
             {"3061458170649280","Cambodia" },       //Siem Reap Expat Connection
             {"161220651105962","Cambodia" },        //Expats & Locals in Kampot & Kep
+            // new
+            {"167644913804569","France" },          //Gluten Free Anglophones in France
             
             //{"","" },
         };
@@ -108,13 +109,10 @@ namespace Gluten.Core.DataProcessing.Service
             {"307872078321","Tasmania" },//Gluten Free Tasmania
             {"625162559593528","Brisbane" },//Gluten Free Brisbane
             
-            
             {"342422672937608","Bali" },//Gluten Free Bali
             
             {"187020706020686","Gold Coast " },//Gold Coast Gluten Free							public group
             {"1535703166696570","New York" },//Coeliac and Gluten Free York			public group
-            
-            {"3061458170649280","Siem" },       //Siem Reap Expat Connection
         };
 
 

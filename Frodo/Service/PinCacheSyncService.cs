@@ -44,7 +44,7 @@ namespace Frodo.Service
                     item.Value.Country = _geoService.GetCountryPin(item.Value);
                 }
 
-                if (updateCount > 20)
+                if (updateCount > 5)
                 {
                     _databaseLoaderService.SavePinDB();
                     updateCount = 0;
@@ -59,6 +59,7 @@ namespace Frodo.Service
                     var url2 = _mapPinService.GoAndWaitForUrlChange(item.Value.MapsUrl);
                     url2 = _mapPinService.GetCurrentUrl();
                     url2 = HttpUtility.UrlDecode(url2);
+                    updateCount++;
 
                     var newPin = PinHelper.GenerateMapPin(url2, item.Value.Label, "");
                     if (newPin != null)
@@ -86,7 +87,6 @@ namespace Frodo.Service
 
                     if (string.IsNullOrWhiteSpace(item.Value.MetaHtml))
                     {
-                        updateCount++;
                         var url = _mapPinService.GetMapUrl(item.Value.Label ?? "");
                         var placeNames = _mapPinService.GetMapPlaceNames();
                         if (placeNames.Count > 0)
@@ -124,7 +124,9 @@ namespace Frodo.Service
                     item.Value.MetaData = _mapsMetaExtractorService.ExtractMeta(item.Value.MetaHtml);
                 }
 
-                if (!string.IsNullOrWhiteSpace(item.Value.MetaData.RestaurantType))
+
+                if (item.Value?.MetaData?.RestaurantType != null &&
+                    !string.IsNullOrWhiteSpace(item.Value.MetaData.RestaurantType))
                 {
                     _restaurantTypeService.AddRestaurantType(item.Value.MetaData.RestaurantType);
                     if (!string.IsNullOrWhiteSpace(item.Value.MetaData.Price) && !prices.Contains(item.Value.MetaData.Price))

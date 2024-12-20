@@ -119,7 +119,7 @@ namespace Gluten.Core.LocationProcessing.Service
             }
             else
             {
-                if (_pinCache.Keys.Contains(newPin.Label))
+                if (_pinCache.ContainsKey(newPin.Label))
                 {
                     oldPin = _pinCache[newPin.Label];
                     Console.WriteLineRed($"Existing cache entry error: {newPin.GeoLatitude}, {newPin.GeoLongitude} old: {oldPin.GeoLatitude},{oldPin.GeoLongitude}");

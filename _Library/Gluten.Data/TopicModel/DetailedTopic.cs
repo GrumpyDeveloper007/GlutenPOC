@@ -7,6 +7,7 @@ namespace Gluten.Data.TopicModel
         public string? TitleCountry { get; set; }
 
         public string? TitleCity { get; set; }
+        public string TitleCategory { get; set; } = "";
         public bool CitySearchDone { get; set; } = false;
         public required string Title { get; set; }
         public string? ShortTitle { get; set; }

@@ -74,7 +74,7 @@ namespace Gluten.Core.LocationProcessing.Service
                     minSpanCount = root.Spans.Count;
 
                 var hasPriceRange = root.Spans.Exists(o => CurrencyHelper.StartsWithCurrencySymbol(o) || CurrencyHelper.EndsWithCurrencySymbol(o));
-                var hasReviews = root.Spans.Exists(o => o.StartsWith("(") || o.EndsWith(")"));
+                var hasReviews = root.Spans.Exists(o => o.StartsWith('(') || o.EndsWith(')'));
 
                 int startingIndex = 0;
                 if (!hasReviews && !hasPriceRange)
@@ -87,11 +87,11 @@ namespace Gluten.Core.LocationProcessing.Service
                 for (int t = startingIndex; t < root.Spans.Count; t++)
                 {
                     var item = root.Spans[t];
-                    if (item.StartsWith("")) continue;
-                    if (item.StartsWith("")) continue;
-                    if (item.StartsWith("")) continue;
-                    if (item.StartsWith("")) continue;
-                    if (item.StartsWith("·")) continue;
+                    if (item.StartsWith('')) continue;
+                    if (item.StartsWith('')) continue;
+                    if (item.StartsWith('')) continue;
+                    if (item.StartsWith('')) continue;
+                    if (item.StartsWith('·')) continue;
 
                     if (item.StartsWith(previousInfo)
                         && StartsWithNumber(item.Substring(1, 1)))
@@ -137,10 +137,10 @@ namespace Gluten.Core.LocationProcessing.Service
 
         private bool StartsWithNumber(string item)
         {
-            if (item.StartsWith("0") || item.StartsWith("1") || item.StartsWith("2")
-    || item.StartsWith("3") || item.StartsWith("4") || item.StartsWith("5")
-    || item.StartsWith("6") || item.StartsWith("7") || item.StartsWith("8")
-    || item.StartsWith("9"))
+            if (item.StartsWith('0') || item.StartsWith('1') || item.StartsWith('2')
+    || item.StartsWith('3') || item.StartsWith('4') || item.StartsWith('5')
+    || item.StartsWith('6') || item.StartsWith('7') || item.StartsWith('8')
+    || item.StartsWith('9'))
                 return true;
             return false;
         }

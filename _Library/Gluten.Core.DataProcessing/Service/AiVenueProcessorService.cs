@@ -28,7 +28,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public bool IsPlaceNameAChain(List<string> chainUrls, string placeName)
         {
-            if (!PlaceNameFilterHelper.IsInPlaceNameSkipList(placeName)
+            if (!PlaceNameFilterHelper.StartsWithPlaceNameSkipList(placeName)
                 && !string.IsNullOrWhiteSpace(placeName))
             {
                 //_mapPinService.GetMapUrl(placeName + $", {fBGroupService.GetCountryName(groupId)}");
@@ -65,13 +65,13 @@ namespace Gluten.Core.DataProcessing.Service
             string placeName = venue.PlaceName ?? "";
 
             // Don't process if it is in the skip list
-            if (PlaceNameFilterHelper.IsInPlaceNameSkipList(placeName)
+            if (PlaceNameFilterHelper.StartsWithPlaceNameSkipList(placeName)
                 || string.IsNullOrWhiteSpace(placeName)) return false;
 
             // TODO: Add parsing of name for spelling errors?
             // TODO: Remove restaurant types from place name?
             placeName = RemoveTextInBrackets(placeName);
-            placeName = PlaceNameAdjusterHelper.FixUserErrorsInPlaceNames(placeName);
+            placeName = PlaceNameAdjusterHelper.FixUserErrorsInPlaceNames(placeName, country);
 
             if (venue == null) return false;
 
@@ -111,6 +111,7 @@ namespace Gluten.Core.DataProcessing.Service
             {
                 Console.WriteLine($"Found pin :{searchString}");
                 venue.Pin = newPin;
+                venue.IsChain = false;
                 return true;
             }
             venue.PinsFound = _mapPinService.GetMapUrls().Count;

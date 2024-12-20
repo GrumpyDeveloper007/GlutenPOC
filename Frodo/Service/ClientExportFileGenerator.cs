@@ -130,7 +130,7 @@ namespace Frodo.Service
                             var cachePin = _mapPinCache.TryGetPinLatLong(aiVenue.Pin.GeoLatitude, aiVenue.Pin.GeoLongitude);
                             if (cachePin == null)
                             {
-                                Console.WriteLine("Unable to get cache pin ");
+                                Console.WriteLine($"Unable to get cache pin {aiVenue.PlaceName} ");
                             }
                             var pinCountry = _geoService.GetCountryPin(cachePin);
 
@@ -169,7 +169,7 @@ namespace Frodo.Service
                             var cachePin = _mapPinCache.TryGetPinLatLong(url.Pin.GeoLatitude, url.Pin.GeoLongitude);
                             if (cachePin == null)
                             {
-                                Console.WriteLine("Unable to get cache pin ");
+                                Console.WriteLine($"Unable to get cache pin {url.Pin.Label}");
                             }
 
                             var pinCountry = _geoService.GetCountryPin(cachePin);
@@ -201,7 +201,7 @@ namespace Frodo.Service
             JsonHelper.SaveDbNoPadding(fileName, topics);
         }
 
-        private PinTopicDb? FindDbPin(List<PinTopicDb> dbPins, PinTopic gMapsPin)
+        private static PinTopicDb? FindDbPin(List<PinTopicDb> dbPins, PinTopic gMapsPin)
         {
             foreach (var pin in dbPins)
             {
@@ -227,6 +227,7 @@ namespace Frodo.Service
                 var item = items[i];
                 if (!pins.Exists(o => o.GeoLatitude == item.GeoLatitude && o.GeoLongitude == item.GeoLongitude))
                 {
+                    Console.WriteLine($"Marked for deletion : {item.Label}");
                     itemsToDelete++;
                 }
             }
@@ -265,7 +266,8 @@ namespace Frodo.Service
                 var item = items[i];
                 if (!pins.Exists(o => o.GeoLatitude == item.GeoLatitude && o.GeoLongitude == item.GeoLongitude))
                 {
-                    Console.WriteLine($"Delete PinTopic {i}");
+                    if (i % 10 == 0)
+                        Console.WriteLine($"Delete PinTopic {i}");
                     _dataStore.DeleteItemAsync(item).Wait();
                 }
             }
@@ -274,7 +276,8 @@ namespace Frodo.Service
             {
                 var item = pins[i];
                 var existingDbPin = FindDbPin(items, item);
-                Console.WriteLine($"Writing to database {i}");
+                if (i % 100 == 0)
+                    Console.WriteLine($"Writing to database {i}");
                 var dbItem = mapper.Map<PinTopicDb, PinTopic>(item);
                 dbItem.Country = _geoService.GetCountryPin(item);
                 _dataStore.ReplaceItemAsync(dbItem).Wait();
