@@ -12,6 +12,28 @@ namespace Gluten.Core.DataProcessing.Helper
     /// </summary>
     public static class PlaceNameFilterHelper
     {
+        private static readonly List<string> _exactNameFilters = [
+            "cafe",
+            "Pub",
+            "GF",
+            "Daniels",
+            "James St",
+            "Conifer Dr",
+            "Goldfinch Ln",
+            "Beaches Resort",
+            "Indian",
+            "Mexican",
+            "Crepes",
+            "Daniels",
+            "Vietnamese",
+            "Shibuya",
+            "Free!",
+            "Restaurants",
+            "Restaurant",
+            "Shop",
+            ];
+
+
 
         private static readonly List<string> _nameFilters = [
             "Groceries",
@@ -911,17 +933,29 @@ namespace Gluten.Core.DataProcessing.Helper
             "Hotel",
             "Le corts apts",
             "GF shop",
-            "Restaurants",
-            "Restaurant",
             "Italian",
             "Sinani Restaurant",
-            "Shop",
             "M&S",
             "gf Italian Bakery",
             "coffee place",
-            "Mexican",
-            "Crepes"
+            "Plant-a-garden",
+            "Barcelona",
+            "Thai Airways",
+            "Qantas",
+            "NYC",
+            "Restaurants are fine",
+            "Sal Airport",
+            "Albana",
+            "Tblisi",
+            "Schär",
+            "Yokohama Drivers Licensing Office",
+            "Miyajima island",
+            "Night Safari",
+            "Food Street Causeway Bay",
+            "Friends Cafe & Tearoom",
              ];
+
+
 
 
         /// <summary>
@@ -939,6 +973,14 @@ namespace Gluten.Core.DataProcessing.Helper
                     return true;
                 }
             }
+            foreach (var nameFilter in _exactNameFilters)
+            {
+                if (placeName == nameFilter)
+                {
+                    return true;
+                }
+            }
+
             return false;
         }
 

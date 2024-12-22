@@ -5,6 +5,7 @@ using Gluten.Core.LocationProcessing.Service;
 using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
 using System;
+using System.Diagnostics.Metrics;
 using System.Text.RegularExpressions;
 using System.Web;
 
@@ -15,7 +16,6 @@ namespace Gluten.Core.DataProcessing.Service
     /// </summary>
     public class AiVenueProcessorService(MapPinService mapPinService,
         MappingService mappingService,
-        RestaurantTypeService _restaurantTypeService,
         IConsole Console)
     {
         private readonly MapPinService _mapPinService = mapPinService;
@@ -54,6 +54,14 @@ namespace Gluten.Core.DataProcessing.Service
             return false;
         }
 
+        public string FilterPlaceName(string placeName, string country)
+        {
+            // TODO: Add parsing of name for spelling errors?
+            // TODO: Remove restaurant types from place name?
+            placeName = RemoveTextInBrackets(placeName);
+            placeName = PlaceNameAdjusterHelper.FixUserErrorsInPlaceNames(placeName, country);
+            return placeName;
+        }
 
 
         /// <summary>
@@ -84,9 +92,8 @@ namespace Gluten.Core.DataProcessing.Service
                 searchString = $"{placeName} {address}, {country}";
                 if (SearchForPlace(venue, searchString, placeName, chainUrls, $" {address}, {country}", enableChainMatch)) return true;
             }
-
             // search with city/country
-            if (!string.IsNullOrWhiteSpace(city))
+            else if (!string.IsNullOrWhiteSpace(city))
             {
                 searchString = $"{placeName}, {city}, {country}";
                 if (SearchForPlace(venue, searchString, placeName, chainUrls, $" {city}, {country}", enableChainMatch)) return true;
@@ -106,10 +113,10 @@ namespace Gluten.Core.DataProcessing.Service
 
         private bool SearchForPlace(AiVenue venue, string searchString, string placeName, List<string> chainUrls, string suffix, bool enableChainMatch)
         {
-            var newPin = SearchForPin(searchString, placeName);
+            var newPin = SearchForPin(searchString, placeName, venue.PlaceName);
             if (newPin != null)
             {
-                Console.WriteLine($"Found pin :{searchString}");
+                //Console.WriteLine($"Found pin :{searchString}");
                 venue.Pin = newPin;
                 venue.IsChain = false;
                 return true;
@@ -121,8 +128,6 @@ namespace Gluten.Core.DataProcessing.Service
             // If we are unable to get a specific pin, generate chain urls, to add later
             if (IsPlaceNameAChain(chainUrls, placeName))
             {
-                Console.WriteLine($"Tagging chain pin");
-                venue.IsChain = true;
                 return true;
             }
 
@@ -131,19 +136,17 @@ namespace Gluten.Core.DataProcessing.Service
             mapPin = mapPin.Replace(suffix, "");
             if (IsPlaceNameAChain(chainUrls, mapPin))
             {
-                Console.WriteLine($"Tagging chain pin");
-                venue.IsChain = true;
                 return true;
             }
             return false;
         }
 
-        private TopicPin? SearchForPin(string searchString, string placeName)
+        private TopicPin? SearchForPin(string searchString, string placeName, string originalPlaceName)
         {
             searchString = searchString.Replace("_", " ");
-            Console.WriteLine($"Searching for {searchString}");
+            //Console.WriteLine($"Searching for {searchString}");
             _mapPinService.GetMapUrl(searchString);
-            var pin = _mapPinService.GetPinFromCurrentUrl(placeName);
+            var pin = _mapPinService.GetPinFromCurrentUrl(placeName, originalPlaceName);
 
             if (pin != null)
             {

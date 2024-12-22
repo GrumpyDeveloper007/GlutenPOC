@@ -8,7 +8,7 @@ namespace Gluten.Data.TopicModel
 {
     public class AiVenue
     {
-        public string? PlaceName { get; set; }
+        public required string PlaceName { get; set; }
         public string? Address { get; set; }
 
         public TopicPin? Pin { get; set; }
@@ -21,5 +21,6 @@ namespace Gluten.Data.TopicModel
         public bool IsExportable { get; set; } = true;
         public bool PermanentlyClosed { get; set; } = false;
         public bool RejectedRestaurantType { get; set; } = false;
+        public bool InvalidGeo { get; set; } = false;
     }
 }

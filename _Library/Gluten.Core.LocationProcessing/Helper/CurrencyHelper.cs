@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -64,6 +65,7 @@ namespace Gluten.Core.LocationProcessing.Helper
                 || text.Contains("AED")
                 || text.Contains("ALL")
                 || text.Contains("SAR")
+                || text.Contains("DOP")
                 || text.Contains("RM")
                 || text.Contains("R$")
                 || text.Contains("Rp")
@@ -76,6 +78,8 @@ namespace Gluten.Core.LocationProcessing.Helper
                 || text.Contains("Q&")
                 || text.Contains("K&")
                 || text.Contains("QAR")
+                || text.Contains("UZS")
+
                 || text.Contains('฿')
                 || text.Contains('₱')
                 || text.Contains('₩')
@@ -88,6 +92,7 @@ namespace Gluten.Core.LocationProcessing.Helper
                 || text.Contains('₪')
                 || text.Contains('₺')
                 || text.Contains('₾')
+                || text.Contains('₡')
                 || text.Contains("zł")
 )
             {
@@ -121,6 +126,8 @@ namespace Gluten.Core.LocationProcessing.Helper
                 || text.StartsWith("AED")
                 || text.StartsWith("ALL")
                 || text.StartsWith("SAR")
+                || text.StartsWith("DOP")
+                || text.StartsWith("UZS")
                 || text.StartsWith("RM")
                 || text.StartsWith("R$")
                 || text.StartsWith("Rp")
@@ -145,6 +152,7 @@ namespace Gluten.Core.LocationProcessing.Helper
                 || text.StartsWith('₺')
                 || text.StartsWith('₾')
                 || text.StartsWith('$')
+                || text.StartsWith('₡')
                 || text.StartsWith("zł")
 )
             {
@@ -178,6 +186,8 @@ namespace Gluten.Core.LocationProcessing.Helper
                 || text.EndsWith("AED")
                 || text.EndsWith("ALL")
                 || text.EndsWith("SAR")
+                || text.EndsWith("DOP")
+                || text.EndsWith("UZS")
                 || text.EndsWith("RM")
                 || text.EndsWith("R$")
                 || text.EndsWith("Rp")
@@ -202,6 +212,7 @@ namespace Gluten.Core.LocationProcessing.Helper
                 || text.EndsWith('₺')
                 || text.EndsWith('₾')
                 || text.EndsWith('$')
+                || text.EndsWith('₡')
                 || text.EndsWith("zł")
 )
             {

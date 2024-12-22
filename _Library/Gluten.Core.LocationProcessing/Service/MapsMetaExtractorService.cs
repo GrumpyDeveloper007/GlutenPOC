@@ -67,6 +67,10 @@ namespace Gluten.Core.LocationProcessing.Service
             {
                 result.Stars = root.Spans[2].Replace(",", ".") + " stars";
             }
+            if (result.Stars.Contains("Actions"))
+            {
+                result.Stars = "";
+            }
 
             if (result.RestaurantType != "Hotel" && root.Spans.Count > 0)
             {
@@ -108,11 +112,17 @@ namespace Gluten.Core.LocationProcessing.Service
                     if (item.Contains("Photos")) break;
                     if (item.Contains("Questions") || item.Contains("Contact"))
                     {
-                        if (startingIndex > 0)
+                        if (startingIndex > 0 && !root.Spans[t - 1].Contains("Questions"))
                             result.RestaurantType = root.Spans[t - 1];
                         break;
                     }
                     if (item.Contains("month")) break;
+                    if (item.Contains("Opens")) break;
+                    if (item.Contains("reviews")) break;
+                    if (item.Contains("1 review")) break;
+                    if (item.Contains("Permanently closed")) break;
+
+
                     result.RestaurantType = item;
                     break;
                 }
@@ -135,7 +145,7 @@ namespace Gluten.Core.LocationProcessing.Service
             return result;
         }
 
-        private bool StartsWithNumber(string item)
+        private static bool StartsWithNumber(string item)
         {
             if (item.StartsWith('0') || item.StartsWith('1') || item.StartsWith('2')
     || item.StartsWith('3') || item.StartsWith('4') || item.StartsWith('5')
@@ -155,7 +165,7 @@ namespace Gluten.Core.LocationProcessing.Service
         }
 
 
-        private string RemoveSpacers(string text)
+        private static string RemoveSpacers(string text)
         {
             return text.Replace(".", "").Replace("·", "").Replace("", "").Replace("", "");
         }

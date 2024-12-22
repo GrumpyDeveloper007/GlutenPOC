@@ -8,79 +8,83 @@ using System.Threading.Tasks;
 
 namespace Gluten.Core.DataProcessing.Helper
 {
-    internal static class PlaceNameAdjusterHelper
+    public static class PlaceNameAdjusterHelper
     {
         public static string FixUserErrorsInPlaceNames(string placeName, string country)
         {
 
 
-            if (country == "France")
+            if (country == "France" || country == "")
             {
                 placeName = placeName.Replace("Bananas", "La Bananas");
             }
-            if (country == "Italy")
+            if (country == "Italy" || country == "")
             {
                 placeName = placeName.Replace("Cafe Roma", "Caffè Roma");
                 placeName = placeName.Replace("Graffe", "La graffa");
                 if (!placeName.Contains("Pizzeria Vesi")) placeName = placeName.Replace("Vesi", "Pizzeria Vesi");
 
             }
-            if (country == "United Kingdom")
+            if (country == "United Kingdom" || country == "")
             {
                 placeName = placeName.Replace("Sardi", "Sarti");
                 placeName = placeName.Replace("Nonna Rosa's", "Nonna Rosa");
                 placeName = placeName.Replace("Venchi Chocolate and Gelato", "Venchi");
             }
-            if (country == "Indonesia")
+            if (country == "Indonesia" || country == "")
             {
                 placeName = placeName.Replace("Belle Italian", "Bella Italia");
                 placeName = placeName.Replace("Hotel Mexicola", "Motel Mexicola");
             }
-            if (country == "Spain")
+            if (country == "Spain" || country == "")
             {
                 placeName = placeName.Replace("Chök bakery", "Chök");
                 placeName = placeName.Replace("L’Ancora", "Restaurant L'Àncora");
                 placeName = placeName.Replace("Nico's Restaurant", "Niko’s");
             }
-            if (country == "Poland")
+            if (country == "Poland" || country == "")
             {
                 placeName = placeName.Replace("MooMoo Steak and Wine", "Moo Moo");
                 placeName = placeName.Replace("Moo Moo Steak Restaurants", "Moo Moo");
 
             }
-            if (country == "Croatia")
+            if (country == "Croatia" || country == "")
             {
                 placeName = placeName.Replace("Salt House", "SALT Gluten-Free House");
             }
-            if (country == "Germany")
+            if (country == "Germany" || country == "")
             {
                 placeName = placeName.Replace("Izabella's", "Isabella Gluten");
             }
-            if (country == "Canada")
+            if (country == "Canada" || country == "")
             {
                 placeName = placeName.Replace("My Fries", "myFRIES");
                 placeName = placeName.Replace("Old Spaghetti Factory", "The Old Spaghetti Factory");
             }
-            if (country == "Malaysia")
+            if (country == "Malaysia" || country == "")
             {
             }
-            if (country == "United Arab Emirates")
+            if (country == "Hungary" || country == "")
+            {
+                if (placeName == "Lemonade") placeName = placeName.Replace("Lemonade", "Pink Lemonade Bar");
+            }
+            if (country == "United Arab Emirates" || country == "")
             {
                 placeName = placeName.Replace("Pizza Express", "PizzaExpress");
                 placeName = placeName.Replace("Mani's Cafe", "Mani’s Cafe");
             }
-            if (country == "United States")
+            if (country == "United States" || country == "")
             {
                 placeName = placeName.Replace("Wholefoods", "Whole Foods Market");
             }
 
-
-
-
             // TODO: Add parsing of name for spelling errors?
             // TODO: Remove restaurant types from place name?
             // TODO: Apply fuzzy logic or spell check?
-            //
+
+            placeName = placeName.Replace("Becky Boos", "Beccy Boos Bar");
+            placeName = placeName.Replace("Woolies", "Woolworths");
+            placeName = placeName.Replace("Hola Guacamole", "Holy Guacamole");
             placeName = placeName.Replace("Nandos", "Nando's");
             placeName = placeName.Replace("Cheesecake Factory", "The Cheesecake Factory");
             placeName = placeName.Replace("Sushi-ichi", "Sushiichi");
@@ -98,14 +102,16 @@ namespace Gluten.Core.DataProcessing.Helper
             placeName = placeName.Replace("MacDonald's", "McDonald's");
             placeName = placeName.Replace("Macca's", "McDonald's");
             placeName = placeName.Replace("McD's", "McDonald's");
-
-
-
+            placeName = placeName.Replace("McDs", "McDonald's");
+            placeName = placeName.Replace("Mc Ds", "McDonald's");
+            placeName = placeName.Replace("Gonoachi", "Gonpachi");
+            placeName = placeName.Replace("Menbakka", "Menbaka");
+            placeName = placeName.Replace("Ikispari", "Ikspiari");
 
             placeName = placeName.Replace("Mie by me", "BY-MIE NOODLES HOUSE");
             placeName = placeName.Replace("The Hard Rock Cafe", "Hard Rock Cafe Bali");
-
-
+            placeName = placeName.Replace("Gluten Free T's", "Gluten Free T’s Kitchen");
+            placeName = placeName.Replace("gluten free Ts", "Gluten Free T’s Kitchen");
 
 
             placeName = placeName.Replace("Samurai Ramen", "Samurai");
@@ -269,14 +275,6 @@ namespace Gluten.Core.DataProcessing.Helper
             placeName = placeName.Replace("Baskin Robins", "Baskin Robbins");
             placeName = placeName.Replace("Long John Silvers", "Long John Silver's");
             placeName = placeName.Replace("Ciacho Bakery", "Ciacho");
-
-
-
-
-
-
-
-
 
             placeName = placeName.Replace("restaurant", "");
             placeName = placeName.Trim();

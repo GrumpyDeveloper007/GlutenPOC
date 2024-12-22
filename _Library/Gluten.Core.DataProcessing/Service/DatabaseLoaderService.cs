@@ -37,20 +37,22 @@ namespace Gluten.Core.DataProcessing.Service
         public DatabaseLoaderService()
         {
             Dictionary<string, TopicPinCache>? pins = null;
+            Dictionary<string, PinCacheMetaHtml> pinsHtml = null;
             if (File.Exists(PinCacheDBFileName))
             {
-                //json = File.ReadAllText(PinCacheDBFileName);
-                //pins = JsonConvert.DeserializeObject<Dictionary<string, TopicPinCache>>(json);
-
                 pins = JsonHelper.TryLoadJsonDictionary<TopicPinCache>(PinCacheDBFileName);
+            }
+            if (File.Exists(PinCacheHtmlDBFileName))
+            {
+                pinsHtml = JsonHelper.TryLoadJsonDictionary<PinCacheMetaHtml>(PinCacheHtmlDBFileName);
             }
             if (pins != null)
             {
-                _mapPinCache = new MapPinCache(pins, new DummyConsole());
+                _mapPinCache = new MapPinCache(pins, pinsHtml, new DummyConsole());
             }
             else
             {
-                _mapPinCache = new MapPinCache([], new DummyConsole());
+                _mapPinCache = new MapPinCache([], [], new DummyConsole());
             }
             if (File.Exists(PinDescriptionCacheFileName))
             {
@@ -120,6 +122,15 @@ namespace Gluten.Core.DataProcessing.Service
                 fileText += $"'{item}',\r\n";
             }
             File.WriteAllText(RestaurantsFileName, fileText);
+            fileText = "";
+
+            // export for future filter list
+            foreach (var item in restaurants)
+            {
+                if (item.Contains("Restaurant", StringComparison.InvariantCultureIgnoreCase)) continue;
+                if (item.Contains("Pub", StringComparison.InvariantCultureIgnoreCase)) continue;
+                fileText += $"'{item}',\r\n";
+            }
             File.WriteAllText(RestaurantsFileName + ".txt", fileText.Replace("'", "\""));
         }
 
@@ -173,7 +184,11 @@ namespace Gluten.Core.DataProcessing.Service
         {
             var pinCache = _mapPinCache.GetCache();
             JsonHelper.SaveDb(PinCacheDBFileName, pinCache);
-            SavePinHtmlDB();
+            if (_mapPinCache.SavePinCacheHtml)
+            {
+                _mapPinCache.SavePinCacheHtml = false;
+                SavePinHtmlDB();
+            }
         }
 
         public void SavePinHtmlDB()

@@ -57,7 +57,6 @@ namespace Gluten.Core.Helper
                 GeoLongitude = lon,
                 MapsUrl = mapsUrl,
                 PlaceName = searchString,
-                MetaHtml = "",
                 Country = country,
             };
             if (!string.IsNullOrWhiteSpace(searchString))

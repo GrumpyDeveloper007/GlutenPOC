@@ -62,6 +62,11 @@ namespace Frodo.Service
 
             _aiVenueCleanUpService.ResetIsExportable(Topics);
 
+            _pinCacheSyncService.MakeSureIndexIsInSearchString();
+            _pinCacheSyncService.CheckRestaurantTypes();
+            _pinCacheSyncService.CheckPriceExtraction();
+
+
             //await _localAi.ExtractDescriptionTitle("this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message", "test");
 
             Console.WriteLine("--------------------------------------");
@@ -85,13 +90,14 @@ namespace Frodo.Service
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nFiltering AI pins");
             _aiVenueCleanUpService.RemoveGenericPlaceNames(Topics);
+            //_aiVenueCleanUpService.CheckForPlaceNamesPinMisMatch(Topics);
             _aiVenueCleanUpService.DiscoverMinMessageLength(Topics);
             _aiVenueLocationService.RemoveDuplicatedPins(Topics);
             _aiVenueCleanUpService.RemoveNullAiPins(Topics);
-            //_aiVenueCleanUpService.TagGenericPlaceNames(Topics);
+            _aiVenueCleanUpService.TagGenericPlaceNames(Topics);
             _aiVenueCleanUpService.TagAiPinsWithBadRestaurantTypes(Topics);
-            _aiVenueCleanUpService.TagAiPinsInFoundInDifferentCountry(Topics);
-            _aiVenueCleanUpService.TagAiPinsInNotFoundInOriginalText(Topics);
+            _aiVenueCleanUpService.TagAiPinsFoundInDifferentCountry(Topics);
+            _aiVenueCleanUpService.TagAiPinsNotFoundInOriginalText(Topics);
             _aiVenueCleanUpService.CountPins(Topics);
 
             Console.WriteLine("--------------------------------------");
@@ -110,8 +116,7 @@ namespace Frodo.Service
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nUpdating pin information for Ai Venues");
-            _aiVenueLocationService.CheckPinsAreInCache(Topics);
-            _aiVenueLocationService.UpdatePinsForAiVenues(Topics, _regeneratePins);
+            _aiVenueLocationService.ProcessNewPins(Topics);
             _aiVenueLocationService.CheckPinsAreInCache(Topics);
 
 
@@ -447,12 +452,12 @@ namespace Frodo.Service
 
                     if (topic.UrlsV2[t].Pin == null || _regeneratePins)
                     {
-                        var cachePin = _mapPinService.TryToGenerateMapPin(url, url, groupCountry);
+                        var cachePin = _mapPinService.TryToGenerateMapPin(url, url, groupCountry, "");
                         if (cachePin == null)
                         {
                             searchesDone++;
                             var newUrl = _mapPinService.CheckUrlForMapLinks(url);
-                            cachePin = _mapPinService.TryToGenerateMapPin(newUrl, url, groupCountry);
+                            cachePin = _mapPinService.TryToGenerateMapPin(newUrl, url, groupCountry, "");
                         }
                         if (cachePin != null)
                         {
@@ -488,12 +493,12 @@ namespace Frodo.Service
 
                             if (links[t].Pin == null || _regeneratePins)
                             {
-                                var cachePin = _mapPinService.TryToGenerateMapPin(url, url, groupCountry);
+                                var cachePin = _mapPinService.TryToGenerateMapPin(url, url, groupCountry, "");
                                 if (cachePin == null)
                                 {
                                     searchesDone++;
                                     var newUrl = _mapPinService.CheckUrlForMapLinks(url);
-                                    cachePin = _mapPinService.TryToGenerateMapPin(newUrl, url, groupCountry);
+                                    cachePin = _mapPinService.TryToGenerateMapPin(newUrl, url, groupCountry, "");
                                 }
                                 if (cachePin != null)
                                 {

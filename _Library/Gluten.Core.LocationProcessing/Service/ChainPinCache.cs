@@ -8,8 +8,7 @@ using System.Threading.Tasks;
 
 namespace Gluten.Core.LocationProcessing.Service
 {
-    internal class ChainPinCache(List<ChainPinCache> _pinCache,
-        IConsole Console)
+    internal class ChainPinCache(List<ChainPinCache> _pinCache)
     {
         public TopicPinCache? TryGetPin(string? placeName, string country)
         {

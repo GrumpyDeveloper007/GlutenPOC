@@ -1,4 +1,6 @@
-﻿using Frodo.Helper;
+﻿// Ignore Spelling: Mis
+
+using Frodo.Helper;
 using Gluten.Core.DataProcessing.Helper;
 using Gluten.Core.DataProcessing.Service;
 using Gluten.Core.Helper;
@@ -10,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 
 namespace Frodo.Service;
 
@@ -21,7 +24,7 @@ internal class AiVenueCleanUpService(
     TopicsDataLoaderService _topicsService,
     IConsole Console)
 {
-    public void TagAiPinsInFoundInDifferentCountry(List<DetailedTopic> topics)
+    public void TagAiPinsFoundInDifferentCountry(List<DetailedTopic> topics)
     {
         LabelHelper.Reset();
         var invalidGeo = 0;
@@ -42,7 +45,7 @@ internal class AiVenueCleanUpService(
 
                 if (pin == null) continue;
 
-                var cachePin = _mapPinCache.TryGetPinLatLong(pin.GeoLatitude, pin.GeoLongitude);
+                var cachePin = _mapPinCache.TryGetPinLatLong(pin.GeoLatitude, pin.GeoLongitude, venue.PlaceName ?? "");
                 if (cachePin == null) continue;
 
                 if (!_aiVenueLocationService.IsPinInGroupCountry(pin, topic))
@@ -64,6 +67,7 @@ internal class AiVenueCleanUpService(
                         invalidGeo++;
                     }
                     venue.IsExportable = false;
+                    venue.InvalidGeo = true;
                 }
 
                 // Sync PermanentlyClosed status
@@ -108,7 +112,7 @@ internal class AiVenueCleanUpService(
 
 
 
-    public void TagAiPinsInNotFoundInOriginalText(List<DetailedTopic> topics)
+    public void TagAiPinsNotFoundInOriginalText(List<DetailedTopic> topics)
     {
         LabelHelper.Reset();
         var unmatchedLabels = 0;
@@ -207,6 +211,46 @@ internal class AiVenueCleanUpService(
         _topicsService.SaveTopics(topics);
     }
 
+    public void CheckForPlaceNamesPinMisMatch(List<DetailedTopic> topics)
+    {
+        Console.Clear();
+        Console.WriteLine("--------------------------------------");
+        int count = 0;
+        for (int i = 0; i < topics.Count; i++)
+        {
+            DetailedTopic? topic = topics[i];
+            if (topic.AiVenues == null) continue;
+            for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
+            {
+                var venue = topic.AiVenues[t];
+
+                if (venue.Pin == null) continue;
+                if (venue.ChainGenerated) continue;
+                var label = PlaceNameAdjusterHelper.FixUserErrorsInPlaceNames(venue.Pin.Label ?? "", "");
+                var placeName = PlaceNameAdjusterHelper.FixUserErrorsInPlaceNames(venue.PlaceName ?? "", "");
+
+                label = HttpUtility.UrlDecode(label).Replace("’", "").Replace("'", "");
+                placeName = HttpUtility.UrlDecode(placeName).Replace("’", "").Replace("'", "");
+
+                if (!label.Contains(placeName, StringComparison.InvariantCultureIgnoreCase)
+                    && !placeName.Contains(label, StringComparison.InvariantCultureIgnoreCase)
+                    && !LabelHelper.IsInTextBlock(label, placeName))
+                {
+                    if (placeName == "Gluten Free Ts Kitchen")
+                    {
+                        Console.WriteLine($"Found {placeName}, {label} ({venue.PlaceName})");
+                    }
+                    Console.WriteLine($"Found {placeName}, {label} ({venue.PlaceName})");
+                    count++;
+                    //venue.PinSearchDone = false;
+                    //venue.Pin = null;
+                }
+            }
+        }
+        Console.WriteLine($"Total mismatched label names to place name {count}");
+        _topicsService.SaveTopics(topics);
+    }
+
     public void RemoveNullAiPins(List<DetailedTopic> topics)
     {
         Console.WriteLine("--------------------------------------");
@@ -276,7 +320,6 @@ internal class AiVenueCleanUpService(
                 if (PlaceNameFilterHelper.StartsWithPlaceNameSkipList(venue.PlaceName))
                 {
                     venue.IsExportable = false;
-
                     invalid++;
                 }
             }
@@ -315,8 +358,11 @@ internal class AiVenueCleanUpService(
             {
                 if (!ai.IsExportable)
                 {
-                    if (ai.ChainGenerated) notExportableChain++;
-                    else notExportable++;
+                    if (!ai.RejectedRestaurantType && !ai.PermanentlyClosed)
+                    {
+                        if (ai.ChainGenerated) notExportableChain++;
+                        else notExportable++;
+                    }
                 }
                 if (ai.IsExportable && !ai.ChainGenerated && !ai.IsChain && !ai.PermanentlyClosed && !ai.RejectedRestaurantType) count++;
 
@@ -362,7 +408,7 @@ internal class AiVenueCleanUpService(
                 var venue = topic.AiVenues[t];
                 var pin = venue.Pin;
                 if (pin == null) continue;
-                var cachePin = _mapPinCache.TryGetPinLatLong(pin.GeoLatitude, pin.GeoLongitude);
+                var cachePin = _mapPinCache.TryGetPinLatLong(pin.GeoLatitude, pin.GeoLongitude, venue.PlaceName ?? "");
                 if (cachePin == null) continue;
                 if (restaurantService.IsRejectedRestaurantType(cachePin.MetaData?.RestaurantType))
                 {

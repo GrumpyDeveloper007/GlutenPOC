@@ -127,7 +127,7 @@ namespace Frodo.Service
                     {
                         if (aiVenue.Pin != null && aiVenue.IsExportable)
                         {
-                            var cachePin = _mapPinCache.TryGetPinLatLong(aiVenue.Pin.GeoLatitude, aiVenue.Pin.GeoLongitude);
+                            var cachePin = _mapPinCache.TryGetPinLatLong(aiVenue.Pin.GeoLatitude, aiVenue.Pin.GeoLongitude, aiVenue.PlaceName);
                             if (cachePin == null)
                             {
                                 Console.WriteLine($"Unable to get cache pin {aiVenue.PlaceName} ");
@@ -166,7 +166,7 @@ namespace Frodo.Service
                     {
                         if (url.Pin != null)
                         {
-                            var cachePin = _mapPinCache.TryGetPinLatLong(url.Pin.GeoLatitude, url.Pin.GeoLongitude);
+                            var cachePin = _mapPinCache.TryGetPinLatLong(url.Pin.GeoLatitude, url.Pin.GeoLongitude, "");
                             if (cachePin == null)
                             {
                                 Console.WriteLine($"Unable to get cache pin {url.Pin.Label}");
@@ -222,12 +222,18 @@ namespace Frodo.Service
             var itemsToDelete = 0;
             var itemsToAdd = 0;
             var itemsToUpdate = 0;
+            Dictionary<string, int> deleteByCountry = new();
             for (int i = 0; i < items.Count; i++)
             {
                 var item = items[i];
                 if (!pins.Exists(o => o.GeoLatitude == item.GeoLatitude && o.GeoLongitude == item.GeoLongitude))
                 {
-                    Console.WriteLine($"Marked for deletion : {item.Label}");
+                    Console.WriteLine($"Marked for deletion : {item.Label}, {item.Country}");
+                    if (!deleteByCountry.ContainsKey(item.Country))
+                    {
+                        deleteByCountry.Add(item.Country, 0);
+                    }
+                    deleteByCountry[item.Country] += 1;
                     itemsToDelete++;
                 }
             }
@@ -255,6 +261,11 @@ namespace Frodo.Service
                     itemsToAdd++;
                 }
             }
+
+            foreach (var item in deleteByCountry)
+            {
+                Console.WriteLine($"Items to Add : {item.Key} = {item.Value}");
+            }
             Console.WriteLine($"Items to Add : {itemsToAdd}");
             Console.WriteLine($"Items to Delete : {itemsToDelete}");
             Console.WriteLine($"Items to Update : {itemsToUpdate}");
@@ -280,7 +291,37 @@ namespace Frodo.Service
                     Console.WriteLine($"Writing to database {i}");
                 var dbItem = mapper.Map<PinTopicDb, PinTopic>(item);
                 dbItem.Country = _geoService.GetCountryPin(item);
-                _dataStore.ReplaceItemAsync(dbItem).Wait();
+
+                var topicsDifferent = false;
+                if (existingDbPin != null && item.Topics.Count == existingDbPin.Topics.Count)
+                {
+                    for (int t = 0; t < item.Topics.Count; t++)
+                    {
+                        PinLinkInfo? topic = item.Topics[t];
+                        var existingTopic = existingDbPin.Topics[t];
+                        if (topic.FacebookUrl != existingTopic.FacebookUrl
+                            || topic.NodeID != existingTopic.NodeID
+                            || topic.Title != existingTopic.Title
+                            || topic.ShortTitle != existingTopic.ShortTitle
+                            || topic.PostCreated != existingTopic.PostCreated)
+                        {
+                            topicsDifferent = true;
+                        }
+                    }
+                }
+
+                if (existingDbPin == null
+                    || item.Label != existingDbPin.Label
+                    || item.Description != existingDbPin.Description
+                    || item.MapsLink != existingDbPin.MapsLink
+                    || item.RestaurantType != existingDbPin.RestaurantType
+                    || item.Price != existingDbPin.Price
+                    || item.Stars != existingDbPin.Stars
+                    || item.Topics.Count != existingDbPin.Topics.Count
+                    || topicsDifferent)
+                {
+                    _dataStore.ReplaceItemAsync(dbItem).Wait();
+                }
             }
 
         }

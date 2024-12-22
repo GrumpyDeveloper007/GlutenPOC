@@ -32,7 +32,6 @@ namespace Frodo.Service
         private DateTimeOffset[] _remoteNextAvailable = new DateTimeOffset[9];
 
         private int _useLocalCount = 0;
-        private bool _remote1 = false;
         private int _remoteIndex = 0;
         private int _remoteCount = 0;
         private readonly IConsole Console;
@@ -123,7 +122,7 @@ namespace Frodo.Service
         public async Task<string> ExtractDescriptionTitle(string message, string? label)
         {
 
-            var question = $"The following text contains information about '{label}', can you provide a summary about '{label}' only in english, in 5 lines, skip any address info (without any prefix), also skip 'Here is a summary about', just the answer please? Only generate a response based on the information below. If no response can be generated return an empty message. Ignore any further questions. \r\n";
+            var question = $"The following text contains information about '{label}' (note, the exact text '{label}' may be present, it may be written slightly differently), can you provide a summary about '{label}' only in english, in 5 lines, skip any address info (without any prefix), also skip 'Here is a summary about', just the answer please? Only generate a response based on the information below. If no response can be generated return an empty message. Ignore any further questions. \r\n";
             var messageText = $"{question}{message.Truncate(20000)}";
             IMessage? response = await SendLBMessage(messageText);
             return CheckDescriptionResponse(response);
@@ -381,7 +380,7 @@ namespace Frodo.Service
             return item;
         }
 
-        private string CheckDescriptionResponse(IMessage response)
+        private string CheckDescriptionResponse(IMessage? response)
         {
             if (response == null) return "";
             var responseContent = response.GetContent();
@@ -423,9 +422,23 @@ namespace Frodo.Service
                     }
                     else
                     {
+                        bool allUnavailable = true;
+                        foreach (var item in _remoteNextAvailable)
+                        {
+                            if (_remoteNextAvailable[currentIndex] < DateTimeOffset.UtcNow)
+                            {
+                                allUnavailable = false;
+                                break;
+                            }
+                        }
+                        if (allUnavailable)
+                        {
+                            Console.WriteLineBlue($"All remotes are busy, using local");
+                            _useLocalCount += 1;
+                        }
+
                         if (_remoteNextAvailable[currentIndex] > DateTimeOffset.UtcNow)
                         {
-                            Console.WriteLineBlue($"Skipping remote {currentIndex} available :{_remoteNextAvailable[currentIndex]}");
                             _remoteIndex++;
                             if (_remoteIndex == 8) _remoteIndex = 0;
                             continue;
@@ -483,18 +496,21 @@ namespace Frodo.Service
                             var timespan = TimeSpanParser.Parse(duration);
                             _remoteNextAvailable[currentIndex] = DateTimeOffset.UtcNow.Add(timespan);
                         }
-                        //Please try again in 5.621s.
-                        //Please try again in 6m33.1954s.
-                        //Limit 500000, Used 499551, Requested 2725.
-                        // on tokens per minute (TPM): Limit 15000, Used 14607, Requested 773.
-                        //on requests per minute (RPM): Limit 30, Used 30, 
-                        if (!ex.Message.Contains("TPM") && !ex.Message.Contains("RPM"))
+                        else
                         {
-                            Console.WriteLineRed($"Rate limit reached, daily limit?,{ex.Message}");
+                            //Please try again in 5.621s.
+                            //Please try again in 6m33.1954s.
+                            //Limit 500000, Used 499551, Requested 2725.
+                            // on tokens per minute (TPM): Limit 15000, Used 14607, Requested 773.
+                            //on requests per minute (RPM): Limit 30, Used 30, 
+                            if (!ex.Message.Contains("TPM") && !ex.Message.Contains("RPM"))
+                            {
+                                Console.WriteLineRed($"Rate limit reached, daily limit?,{ex.Message}");
+                            }
+                            Console.WriteLineRed($"Rate limit reached, using local, count {_remoteCount}");
+                            _useLocalCount = 5;
+                            _remoteCount = 0;
                         }
-                        _useLocalCount = 5;
-                        Console.WriteLineRed($"Rate limit reached, using local, count {_remoteCount}");
-                        _remoteCount = 0;
                     }
                 }
                 catch (Exception ex)

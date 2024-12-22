@@ -198,38 +198,38 @@ namespace Gluten.Core.LocationProcessing.Service
         /// <summary>
         /// Tries to get a pin from the currently displayed page
         /// </summary>
-        public TopicPinCache? GetPinFromCurrentUrl(string restaurantName)
+        public TopicPinCache? GetPinFromCurrentUrl(string restaurantName, string originalPlaceName)
         {
             var newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
-            return TryToGenerateMapPin(newUrl, restaurantName, "");
+            return TryToGenerateMapPin(newUrl, restaurantName, "", originalPlaceName);
         }
 
         /// <summary>
         /// Tries to convert the specified url in to a map pin
         /// </summary>
-        public TopicPinCache? TryToGenerateMapPin(string url, string searchString, string country)
+        public TopicPinCache? TryToGenerateMapPin(string url, string searchString, string country, string originalPlaceName)
         {
-            var pin = _mapPinCache.TryToGenerateMapPin(url, searchString, country);
+            var pin = _mapPinCache.TryToGenerateMapPin(url, searchString, country, originalPlaceName);
 
             if (pin != null)
             {
                 pin.Country = _geoService.GetCountryPin(pin);
-            }
-
-            if (pin != null && string.IsNullOrWhiteSpace(pin.MetaHtml))
-            {
-                if (string.IsNullOrWhiteSpace(pin.MetaHtml))
+                var metaHtml = _mapPinCache.GetMetaHtml(pin.GeoLatitude, pin.GeoLongitude);
+                if (string.IsNullOrWhiteSpace(metaHtml))
                 {
-                    pin.MetaHtml = GetMeta(pin.Label);
-                }
-                if (!string.IsNullOrWhiteSpace(pin.MetaHtml))
-                {
-                    pin.MetaData = _mapsMetaExtractorService.ExtractMeta(pin.MetaHtml);
+                    if (string.IsNullOrWhiteSpace(metaHtml))
+                    {
+                        metaHtml = GetMeta(pin.Label);
+                        _mapPinCache.AddUpdateMetaHtml(metaHtml, pin.GeoLatitude, pin.GeoLongitude);
+                    }
+                    if (!string.IsNullOrWhiteSpace(metaHtml))
+                    {
+                        pin.MetaData = _mapsMetaExtractorService.ExtractMeta(metaHtml);
+                    }
                 }
             }
 
             return pin;
-
         }
     }
 }
