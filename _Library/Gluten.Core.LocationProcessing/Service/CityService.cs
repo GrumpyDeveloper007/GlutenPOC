@@ -83,7 +83,9 @@ namespace Gluten.Core.LocationProcessing.Service
         {
             List<string> cities = ["Krakow", "Reykjavik", "Cancun", "New York", "Rhodes",
                 "Penang", "Tenerife","Frankfurt","Sydney","Melbourne","Zurich","Quebec City",
-                "Nuremberg","Münich"];
+                "Nuremberg","Münich","Shibuya","Asakusa","Ueno" , "Nara","Magome","Roppongi",
+                "ikebukuro","Nozawa Onsen","Niseko","Shinjuku","Hiroo","Harajuku","Ginza"
+                ,"Itsukushima","Shimokitazawa","Tendo city"];
             if (_cityList.Any(o => o.name.ToLower() == city.ToLower())) return true;
             if (cities.Any(o => o == city)) return true;
             return false;

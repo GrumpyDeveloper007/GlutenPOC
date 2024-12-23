@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -101,6 +102,9 @@ namespace Gluten.Core.DataProcessing.Helper
         public static string? FilterAddress(string? address)
         {
             if (address == null) return null;
+            if (address.Contains("train stops")) return null;
+            if (address.Contains("train station")) return null;
+
             foreach (var filter in _addressFilters)
             {
                 if (address.StartsWith(filter, StringComparison.InvariantCultureIgnoreCase))

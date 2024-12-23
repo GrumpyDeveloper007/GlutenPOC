@@ -87,6 +87,8 @@ namespace Gluten.Core.DataProcessing.Service
             {"161220651105962","Cambodia" },        //Expats & Locals in Kampot & Kep
             // new
             {"167644913804569","France" },          //Gluten Free Anglophones in France
+            {"938709760910143","" },                //Sun, Sea and Gluten Free 💗
+            
             
             //{"","" },
         };

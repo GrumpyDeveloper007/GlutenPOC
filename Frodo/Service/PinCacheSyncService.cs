@@ -178,6 +178,7 @@ namespace Frodo.Service
                 if (item.Value.MetaData == null)
                 {
                     Console.WriteLine($"Unable to get meta for {item.Value.Label}");
+                    cache.Remove(item.Key);
                 }
 
                 item.Value.MetaProcessed = true;

@@ -31,11 +31,34 @@ namespace Gluten.Core.DataProcessing.Helper
             "Restaurants",
             "Restaurant",
             "Shop",
+            "Ryokan style hotels",
+            "opposite Tokyo Station",
+            "Akita airport French fries (terminal 2 second floor)",
+            "Hot Pot",
+            "customs",
+            "Sake breweries",
+            "The American Pharmacy",
+            "place with rice and pork",
+            "fluffy pancake place",
+            "Cafe at the base of monkey park",
+            "Airplane food",
+            "Gluten Free Ramen",
+            "Yakitori food truck",
+            "upmarket deli type feel to it",
+            "Gluten-free cafe",
+            "International deli shop",
+            "Vegetarian Ramen",
+            "Just Bop",
+            "Gourmet Market",
+            "Bake",
+            "THE BEACH",
+            "Malay satay stall"
             ];
 
 
 
         private static readonly List<string> _nameFilters = [
+            "opposite ",
             "Groceries",
             "Train Station",
             "Tokyo Station",

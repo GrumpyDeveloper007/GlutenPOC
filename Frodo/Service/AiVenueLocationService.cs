@@ -1,4 +1,6 @@
-﻿using Frodo.Helper;
+﻿using AutoMapper.Configuration.Conventions;
+using Frodo.Helper;
+using Gluten.Core.DataProcessing.Helper;
 using Gluten.Core.DataProcessing.Service;
 using Gluten.Core.Helper;
 using Gluten.Core.Interface;
@@ -59,8 +61,10 @@ internal class AiVenueLocationService
 
         for (int i = 0; i < topics.Count; i++)
         {
+            if (i < 16539) continue; // TODO: Manual review point 
             DetailedTopic? topic = topics[i];
             if (topic.AiVenues == null || topic.AiVenues.Count == 0) continue;
+            if (IsRecipe(topic)) continue;
             if (IsTopicAQuestion(topic)) continue;
 
             // Skip if the country and city cannot be identified
@@ -68,7 +72,7 @@ internal class AiVenueLocationService
             var city = GetCity(topic);
             if (string.IsNullOrWhiteSpace(groupCountry) && string.IsNullOrWhiteSpace(city)) continue;
 
-            if (pinsAdded > 50)
+            if (pinsAdded > 10)
             {
                 _topicsDataLoaderService.SaveTopics(topics);
                 _databaseLoaderService.SavePlaceSkipList(_placeNameSkipList);
@@ -87,10 +91,10 @@ internal class AiVenueLocationService
 
                 if (ai.IsChain) continue;
                 if (!ai.IsExportable) continue;
+                if (ai.RejectedRestaurantType) continue;
                 if (GetCachePin(ai, groupCountry) != null) continue;
                 if (ai.Pin != null) continue;
-                if (ai.PinSearchDone) continue;
-                if (ai.RejectedRestaurantType) continue;
+                if (ai.PinSearchDone && topic.TitleCategory != "DESCRIBE") continue;
                 if (IsInSkipList(ai, _placeNameSkipList)) continue;
 
                 if (!string.IsNullOrWhiteSpace(delayedConsoleLine))
@@ -99,14 +103,15 @@ internal class AiVenueLocationService
                     delayedConsoleLine = null;
                 }
 
-
-                GetMapPin(topic, ai, groupCountry, city, true);
+                if (!GetMapPin(topic, ai, groupCountry, city, true))
+                {
+                    Console.WriteLine($"Failed to find pin : {ai.PlaceName} : {pinsAdded}");
+                }
                 if (ai.Pin != null)
                 {
-                    //Console.WriteLine($"Found pin : {ai.PlaceName} : {pinsAdded}");
+
                     pinsAdded++;
                 }
-
 
                 ai.PinSearchDone = true;
             }
@@ -145,15 +150,19 @@ internal class AiVenueLocationService
             {
                 AiVenue? ai = topic.AiVenues[t];
 
-                if (ai.IsChain) continue;
-                if (!ai.IsExportable) continue;
                 if (ai.Pin == null) continue;
+                if (ai.IsChain)
+                {
+                    ai.Pin = null;
+                    continue;
+                }
                 if (GetCachePin(ai, groupCountry) != null) continue;
                 if (IsInSkipList(ai, _placeNameSkipList)) continue;
                 if (ai.ChainGenerated) continue;
+                if (!ai.IsExportable) continue;
 
 
-                var placeName = _aiVenueProcessorService.FilterPlaceName(ai.PlaceName, groupCountry);
+                var placeName = _aiVenueProcessorService.FilterPlaceName(ai.PlaceName, groupCountry, city);
                 if (ai.ChainGenerated) placeName = ai.Pin.Label;
                 var cachePin = _mapPinCache.TryGetPinLatLong(ai.Pin.GeoLatitude, ai.Pin.GeoLongitude, placeName);
                 if (cachePin != null)
@@ -454,7 +463,8 @@ internal class AiVenueLocationService
             ai.IsChain = true;
             AddChainUrls(chainUrls, country, topic);
         }
-        if (!result && !string.IsNullOrWhiteSpace(ai.PlaceName) && !ai.IsChain)
+        if (!result && !string.IsNullOrWhiteSpace(ai.PlaceName) && !ai.IsChain
+            && !PlaceNameFilterHelper.StartsWithPlaceNameSkipList(ai.PlaceName))
         {
             Console.WriteLineRed($"Tagging pin as skippable : {ai.PlaceName}");
             _placeNameSkipList.Add(ai);
@@ -465,13 +475,20 @@ internal class AiVenueLocationService
 
     }
 
-    private bool IsTopicAQuestion(DetailedTopic? topic)
+    public bool IsTopicAQuestion(DetailedTopic? topic)
     {
         if (topic.TitleCategory == "QUESTION")
         {
             // AI says yes
             if (topic.Title.Contains('?')) return true;
+            //if (topic.Title.Contains("Question", StringComparison.InvariantCultureIgnoreCase))                return true;
         }
+        return false;
+    }
+    public bool IsRecipe(DetailedTopic topic)
+    {
+        if (topic.Title.Contains("Recipe", StringComparison.InvariantCultureIgnoreCase)) return true;
+        if (topic.Title.Contains("INGREDIENTS", StringComparison.InvariantCultureIgnoreCase)) return true;
         return false;
     }
 

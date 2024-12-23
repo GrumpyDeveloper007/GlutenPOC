@@ -10,9 +10,8 @@ namespace Gluten.Core.DataProcessing.Helper
 {
     public static class PlaceNameAdjusterHelper
     {
-        public static string FixUserErrorsInPlaceNames(string placeName, string country)
+        public static string FixUserErrorsInPlaceNames(string placeName, string country, string city)
         {
-
 
             if (country == "France" || country == "")
             {
@@ -82,6 +81,114 @@ namespace Gluten.Core.DataProcessing.Helper
             // TODO: Remove restaurant types from place name?
             // TODO: Apply fuzzy logic or spell check?
 
+            placeName = placeName.Replace("Café & Bar SQOL", "Cafe＆Bar SQOL");
+            placeName = placeName.Replace("Sushi Go Round", "Sushi-Go-Round");
+            placeName = placeName.Replace("Where is a Dog", "genuine gluten free Where is a dog?");
+            placeName = placeName.Replace("Where is the Dog", "genuine gluten free Where is a dog?");
+            placeName = placeName.Replace("Genuine Where Is a Dog", "genuine gluten free Where is a dog?");
+
+            placeName = placeName.Replace("Nikuazabu", "NIKU-AZABU");
+            placeName = placeName.Replace("Sugarhill Kyoto Restaurant", "Sugarhill Kyoto");
+            placeName = placeName.Replace("Jurassic Park Cafe", "Jurassic Park");
+            placeName = placeName.Replace("Cafe Komoya", "Cafe Komaya - gluten free cafe");
+            placeName = placeName.Replace("Soranoira", "Soranoiro");
+            placeName = placeName.Replace("Soba Han", "そば半 馬渕店");
+            placeName = placeName.Replace("Cocoichi", "CoCo Ichibanya");
+            placeName = placeName.Replace("CoCo Curry", "CoCo Ichibanya");
+            placeName = placeName.Replace("Cocos", "CoCo Ichibanya");
+            placeName = placeName.Replace("Gyoumu", "Gyōmu");
+            placeName = placeName.Replace("Cafe Manma", "Caffè Mamma");
+            placeName = placeName.Replace("Origin Bento", "Kitchen Origin Bento");
+            placeName = placeName.Replace("Gyomu Supa", "Gyomu Super");
+            placeName = placeName.Replace("michinori bento", "みちのり弁当（Gluten-Free Michinori Bento）");
+            placeName = placeName.Replace("Starbucks / Starbucks Reserve", "Starbucks Reserve");
+            placeName = placeName.Replace("Plus One Cafe and Dining", "Plus1 coffee");
+            placeName = placeName.Replace("Moyan Curry Shinjuku Dining", "Moyan Curry");
+            placeName = placeName.Replace("Lawson convenience store", "Lawson");
+            placeName = placeName.Replace("Shimauma Burgers", "Shimauma Burger");
+            placeName = placeName.Replace("Asakusa Milkrepe", "Asakusa");
+            placeName = placeName.Replace("Kuma Cafe", "Kuma Kafe");
+            placeName = placeName.Replace("Taiwanese restaurant", "HAKONE PICNIC");
+            placeName = placeName.Replace("Nara -Onwa Cafe", "onwa");
+            placeName = placeName.Replace("Kotobuki Monja", "Kachidoki");
+            placeName = placeName.Replace("Estación", "Katsukura - Kyoto Porta");
+            placeName = placeName.Replace("Takagiya", "TAKAGIYA (タカギヤ) 東京・巣鴨 高木家");
+            placeName = placeName.Replace("Enishi", "縁-enishi-");
+            placeName = placeName.Replace("Wacos Crepes", "waco crepes");
+            placeName = placeName.Replace("Chibo Dotonbori Osaka", "Chibo");
+            placeName = placeName.Replace("Tomato and Onion", "Tomato & Onion");
+            placeName = placeName.Replace("Taco Taco", "TacoTaco");
+            placeName = placeName.Replace("Kaki Ichiban", "Hiroshima specialty oyster first");
+            placeName = placeName.Replace("Avan bakery", "Avan");
+            placeName = placeName.Replace("Salama at EAT PLAY WORKS-THE RESTAURANT", "Salam");
+
+            placeName = placeName.Replace("Ikinari steakhouse", "Ikinari Steak");
+            placeName = placeName.Replace("shinbusakiya", "Shinbu Sakiya Ramen");
+            placeName = placeName.Replace("ramen shop sinbusakiya", "Shinbu Sakiya Ramen");
+            placeName = placeName.Replace("さらしな- 2F in Okonomiyaki building", "Sarashina");
+            placeName = placeName.Replace("Chichu Art Museum Cafe", "Chichu Art Museum");
+            placeName = placeName.Replace("800 degrees Neapolitan pizza", "800 Degrees Neapolitan Pizzeria");
+            placeName = placeName.Replace("Life grocery store", "Life");
+            placeName = placeName.Replace("Takeru 1 Pound Steakhouse", "1 Pound Steak & Hamburg Takeru");
+            placeName = placeName.Replace("Ikinari Steakhouse", "Ikinari Steak");
+            placeName = placeName.Replace("Shochikeun Cafe", "Shochikuen Cafe");
+            placeName = placeName.Replace("Teddy’s Bigger Burgers", "Teddy's Bigger Burgers");
+            placeName = placeName.Replace("Watson's", "Watsons");
+            placeName = placeName.Replace("Super Loco Mexican", "Super Loco");
+            placeName = placeName.Replace("Tiannes", "TIANN’S");
+            placeName = placeName.Replace("Salad Stop", "SaladStop!");
+            placeName = placeName.Replace("Medya", "MEIDI-YA");
+            placeName = placeName.Replace("Manacitas", "Mamacitas");
+            placeName = placeName.Replace("Mamacita's restaurant", "Mamacitas");
+            placeName = placeName.Replace("Ta Wai Thai restaurant", "Tawai Thai Cuisine");
+            placeName = placeName.Replace("Skai At Swissotel", "SKAI Bar");
+            placeName = placeName.Replace("Smith's", "Smiths");
+
+
+
+
+
+
+
+
+            placeName = placeName.Replace("Mercado tsukiji", "Tsukiji");
+            placeName = placeName.Replace("RoseBakery", "Rose Bakery");
+            placeName = placeName.Replace("Genijsoba", "Genji-soba");
+            placeName = placeName.Replace("Ginja Soba", "Genji-soba");
+            placeName = placeName.Replace("Ohagi 3", "OHAGI 3 Shimokitazawaten");
+            placeName = placeName.Replace("Cafe Maru", "Cafe & Bar Maru");
+            placeName = placeName.Replace("Maru Bar& Cafe", "Cafe & Bar Maru");
+
+            placeName = placeName.Replace("Healthy Tokyo", "HealthyTokyo");
+            placeName = placeName.Replace("+ Plus One", "PlusOne");
+            placeName = placeName.Replace("Akita Prefecture Souvenir Shop", "Akita Prefectural Goods Plaza “Akitano”");
+
+
+            placeName = placeName.Replace("Mo's Burger", "Mos Burger");
+            placeName = placeName.Replace("MOS burgers", "Mos Burger");
+            placeName = placeName.Replace("Mo’s burger", "Mos Burger");
+            placeName = placeName.Replace("モスバーガー（MOS BURGER）", "Mos Burger");
+            placeName = placeName.Replace("Moss burger", "Mos Burger");
+            placeName = placeName.Replace("MosBurger", "Mos Burger");
+            placeName = placeName.Replace("Haubis Vietnam", "Der Imbiss Saigon");
+            placeName = placeName.Replace("Alfrescos", "Al Fresco's");
+
+
+
+
+
+            placeName = placeName.Replace("Dominos Pizza", "Domino's Pizza");
+            placeName = placeName.Replace("Ginza Isomera Kushiage", "Ginza Isomura");
+            placeName = placeName.Replace("Ungluten- Tokyo", "un-gluten(アングルテン)");
+            placeName = placeName.Replace("Nukafuku donuts", "nukafuku");
+
+
+
+
+
+
+            placeName = placeName.Replace("Family Mart", "FamilyMart");
+            placeName = placeName.Replace("FamilyMarts", "FamilyMart");
             placeName = placeName.Replace("Becky Boos", "Beccy Boos Bar");
             placeName = placeName.Replace("Woolies", "Woolworths");
             placeName = placeName.Replace("Hola Guacamole", "Holy Guacamole");
@@ -90,6 +197,22 @@ namespace Gluten.Core.DataProcessing.Helper
             placeName = placeName.Replace("Sushi-ichi", "Sushiichi");
             placeName = placeName.Replace("Le Jardin", "Brasserie Le Jardin");
             placeName = placeName.Replace("7-11", "7-Eleven");
+            placeName = placeName.Replace("7/11", "7-Eleven");
+            placeName = placeName.Replace("711", "7-Eleven");
+            placeName = placeName.Replace("Seven-11", "7-Eleven");
+            placeName = placeName.Replace("7eleven", "7-Eleven");
+            placeName = placeName.Replace("7 eleven", "7-Eleven");
+            placeName = placeName.Replace("Cafe Beviamo", "CAFFE BEVIAMO");
+            placeName = placeName.Replace("Mishima Base", "ミヤジマベース MIYAJIMA BASE");
+
+
+            placeName = placeName.Replace("Cafe Barraca", "Barraca");
+            placeName = placeName.Replace("Becks Coffee", "Beck's Coffee Shop");
+
+            placeName = placeName.Replace("Toshoan bakery", "Toshoan");
+            placeName = placeName.Replace("Toshoan-", "Toshoan");
+            if (placeName.EndsWith("-")) placeName = placeName.Substring(0, placeName.Length - 1);
+
             placeName = placeName.Replace("Grom gelato", "Grom");
             placeName = placeName.Replace("GROM gelato", "Grom");
             placeName = placeName.Replace("Rowie's Cakes", "Rowies Cakes");
@@ -100,6 +223,10 @@ namespace Gluten.Core.DataProcessing.Helper
             placeName = placeName.Replace("McDonald’s", "McDonald's");
             placeName = placeName.Replace("McDonalds", "McDonald's");
             placeName = placeName.Replace("MacDonald's", "McDonald's");
+            placeName = placeName.Replace("MCDonalds", "McDonald's");
+            placeName = placeName.Replace("Mcdonalds", "McDonald's");
+
+
             placeName = placeName.Replace("Macca's", "McDonald's");
             placeName = placeName.Replace("McD's", "McDonald's");
             placeName = placeName.Replace("McDs", "McDonald's");
@@ -107,11 +234,33 @@ namespace Gluten.Core.DataProcessing.Helper
             placeName = placeName.Replace("Gonoachi", "Gonpachi");
             placeName = placeName.Replace("Menbakka", "Menbaka");
             placeName = placeName.Replace("Ikispari", "Ikspiari");
+            placeName = placeName.Replace("Hybrid￼", "Hybrid");
+            placeName = placeName.Replace("Alladin Indian restaurant", "ALLADIN INDO RESTAURANT");
+
+            placeName = placeName.Replace("IsomaruSuisan", "Isomaru Suisan");
+            placeName = placeName.Replace("Toraji Tokyo Ebisu", "Yakiniku Toraji Ebisu");
+            placeName = placeName.Replace("FALAFEL SABARA", "Falafel Sababa");
+            placeName = placeName.Replace("Blue bird cafe", "Blue bird");
+            placeName = placeName.Replace("Han no Daidokoro Kafochikq", "Han no daidokoro");
+            placeName = placeName.Replace("Han no Daidokoro Bazaar", "Han no daidokoro");
+            placeName = placeName.Replace("Bio C Bon", "Bio c' Bon");
+
+            placeName = placeName.Replace("The campfire sushi and cafe", "The Campfire Sushi & Cafe Bar");
+
+
 
             placeName = placeName.Replace("Mie by me", "BY-MIE NOODLES HOUSE");
             placeName = placeName.Replace("The Hard Rock Cafe", "Hard Rock Cafe Bali");
             placeName = placeName.Replace("Gluten Free T's", "Gluten Free T’s Kitchen");
             placeName = placeName.Replace("gluten free Ts", "Gluten Free T’s Kitchen");
+            placeName = placeName.Replace("T’s Kitchen", "Gluten Free T’s Kitchen");
+            placeName = placeName.Replace("Gluten free T’s Rappongi", "Gluten Free T’s Kitchen");
+            placeName = placeName.Replace("Gluten Free T’s in Ueno", "Gluten Free T’s Kitchen");
+
+
+
+
+
 
 
             placeName = placeName.Replace("Samurai Ramen", "Samurai");
@@ -125,6 +274,8 @@ namespace Gluten.Core.DataProcessing.Helper
             placeName = placeName.Replace("Coco Curry", "Coco");
             placeName = placeName.Replace("10 Soba restaurant", "10 Soba Japanese Noodle Gokomachi Daimonjicho, Nakagyo Ward");
             placeName = placeName.Replace("Lawson natural", "Lawson");
+            placeName = placeName.Replace("Lawson’s", "Lawson");
+
 
 
             placeName = placeName.Replace("CoCo Ichibanya Curry", "CoCo Ichibanya");
@@ -239,6 +390,7 @@ namespace Gluten.Core.DataProcessing.Helper
             placeName = placeName.Replace("Briezh Cafe", "BREIZH Café Crêperie");
             placeName = placeName.Replace("Tokyo Cafe: Spread", "Spread");
             placeName = placeName.Replace("Kura sushi at Skytree", "Kura sushi");
+            placeName = placeName.Replace("Kurasushi", "Kura sushi");
             placeName = placeName.Replace("NA Cafe", "nacafe");
             placeName = placeName.Replace("ITAMAE SUSHI Akasaka", "Itamae Sushi Hanare");
             placeName = placeName.Replace("Nino’s Italian", "Nino");
@@ -275,7 +427,24 @@ namespace Gluten.Core.DataProcessing.Helper
             placeName = placeName.Replace("Baskin Robins", "Baskin Robbins");
             placeName = placeName.Replace("Long John Silvers", "Long John Silver's");
             placeName = placeName.Replace("Ciacho Bakery", "Ciacho");
+            placeName = placeName.Replace("Mochi eui Haru", "모찌의하루 서면본점");
+            placeName = placeName.Replace("DIVER'S INN", "Diver´s Inn Steak House");
+            placeName = placeName.Replace("Diver's Inn", "Diver´s Inn Steak House");
+            placeName = placeName.Replace("Diver’s Inn", "Diver´s Inn Steak House");
+            placeName = placeName.Replace("ANNIE 𝐬𝐰𝐞𝐭𝐞𝐫𝐲 & 𝐞𝐚𝐭𝐞𝐫𝐲", "ANNIE 𝐬𝐰𝐞𝐞𝐭𝐞𝐫𝐲 & 𝐞𝐚𝐭𝐞𝐫𝐲");
+            placeName = placeName.Replace("Tandori Palace", "Tandoori Palace");
+            placeName = placeName.Replace("Sunrise Tacos ~ Promenade Mall", "Sunrise Tacos");
+            placeName = placeName.Replace("Coffee Academics", "The Coffee Academics");
+            placeName = placeName.Replace("Kind Cones", "Kind Kones");
 
+
+
+
+
+
+
+            if (!string.IsNullOrWhiteSpace(city)) placeName = placeName.Replace(city, "").Trim();
+            if (placeName.StartsWith("-")) placeName = placeName.Substring(1);
             placeName = placeName.Replace("restaurant", "");
             placeName = placeName.Trim();
             return placeName;

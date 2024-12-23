@@ -54,12 +54,12 @@ namespace Gluten.Core.DataProcessing.Service
             return false;
         }
 
-        public string FilterPlaceName(string placeName, string country)
+        public string FilterPlaceName(string placeName, string country, string city)
         {
             // TODO: Add parsing of name for spelling errors?
             // TODO: Remove restaurant types from place name?
             placeName = RemoveTextInBrackets(placeName);
-            placeName = PlaceNameAdjusterHelper.FixUserErrorsInPlaceNames(placeName, country);
+            placeName = PlaceNameAdjusterHelper.FixUserErrorsInPlaceNames(placeName, country, city);
             return placeName;
         }
 
@@ -71,6 +71,12 @@ namespace Gluten.Core.DataProcessing.Service
         {
             string? searchString;
             string placeName = venue.PlaceName ?? "";
+            var aiCity = city;
+
+            if (!string.IsNullOrWhiteSpace(venue.City))
+            {
+                aiCity = venue.City;
+            }
 
             // Don't process if it is in the skip list
             if (PlaceNameFilterHelper.StartsWithPlaceNameSkipList(placeName)
@@ -79,7 +85,7 @@ namespace Gluten.Core.DataProcessing.Service
             // TODO: Add parsing of name for spelling errors?
             // TODO: Remove restaurant types from place name?
             placeName = RemoveTextInBrackets(placeName);
-            placeName = PlaceNameAdjusterHelper.FixUserErrorsInPlaceNames(placeName, country);
+            placeName = PlaceNameAdjusterHelper.FixUserErrorsInPlaceNames(placeName, country, city);
 
             if (venue == null) return false;
 
@@ -89,14 +95,14 @@ namespace Gluten.Core.DataProcessing.Service
 
             if (!string.IsNullOrWhiteSpace(address))
             {
-                searchString = $"{placeName} {address}, {country}";
+                searchString = $"{placeName}, {address}, {country}";
                 if (SearchForPlace(venue, searchString, placeName, chainUrls, $" {address}, {country}", enableChainMatch)) return true;
             }
             // search with city/country
-            else if (!string.IsNullOrWhiteSpace(city))
+            else if (!string.IsNullOrWhiteSpace(aiCity))
             {
-                searchString = $"{placeName}, {city}, {country}";
-                if (SearchForPlace(venue, searchString, placeName, chainUrls, $" {city}, {country}", enableChainMatch)) return true;
+                searchString = $"{placeName}, {aiCity}, {country}";
+                if (SearchForPlace(venue, searchString, placeName, chainUrls, $" {aiCity}, {country}", enableChainMatch)) return true;
             }
             else
             {

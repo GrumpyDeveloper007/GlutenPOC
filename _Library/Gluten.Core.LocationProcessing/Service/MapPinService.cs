@@ -217,15 +217,12 @@ namespace Gluten.Core.LocationProcessing.Service
                 var metaHtml = _mapPinCache.GetMetaHtml(pin.GeoLatitude, pin.GeoLongitude);
                 if (string.IsNullOrWhiteSpace(metaHtml))
                 {
-                    if (string.IsNullOrWhiteSpace(metaHtml))
-                    {
-                        metaHtml = GetMeta(pin.Label);
-                        _mapPinCache.AddUpdateMetaHtml(metaHtml, pin.GeoLatitude, pin.GeoLongitude);
-                    }
-                    if (!string.IsNullOrWhiteSpace(metaHtml))
-                    {
-                        pin.MetaData = _mapsMetaExtractorService.ExtractMeta(metaHtml);
-                    }
+                    metaHtml = GetMeta(pin.Label);
+                }
+                if (!string.IsNullOrWhiteSpace(metaHtml))
+                {
+                    _mapPinCache.AddUpdateMetaHtml(metaHtml, pin.GeoLatitude, pin.GeoLongitude);
+                    pin.MetaData = _mapsMetaExtractorService.ExtractMeta(metaHtml);
                 }
             }
 

@@ -1,5 +1,6 @@
 ﻿using Frodo.Helper;
 using Gluten.Core.DataProcessing.Service;
+using Gluten.Core.Helper;
 using Gluten.Core.Interface;
 using Gluten.Core.LocationProcessing.Helper;
 using Gluten.Core.LocationProcessing.Service;
@@ -7,8 +8,7 @@ using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
 using System;
 using System.Diagnostics;
-using System.Linq;
-using TimeSpanParserUtil;
+using static Gluten.Core.LocationProcessing.Service.CityService;
 
 namespace Frodo.Service
 {
@@ -43,7 +43,6 @@ namespace Frodo.Service
         /// </summary>
         public async Task ProcessFile()
         {
-            var skipSomeOperationsForDebugging = false;
             var topics = _topicsLoaderService.TryLoadTopics();
             if (topics != null)
             {
@@ -79,9 +78,11 @@ namespace Frodo.Service
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nStarting AI processing - detecting venue name/address");
-            if (!skipSomeOperationsForDebugging)
-                await ScanTopicsUseAiToDetectVenueInfo();
+            await ScanTopicsUseAiToDetectVenueInfo();
+            await ScanTopicsRegenerateNullPins();
+            FixCity(Topics);
 
+            await CategoriseTopic();
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nGenerating country names from topic title");
@@ -94,9 +95,11 @@ namespace Frodo.Service
             _aiVenueCleanUpService.DiscoverMinMessageLength(Topics);
             _aiVenueLocationService.RemoveDuplicatedPins(Topics);
             _aiVenueCleanUpService.RemoveNullAiPins(Topics);
+            _aiVenueCleanUpService.TagAiPinsFoundInDifferentCountry(Topics);
             _aiVenueCleanUpService.TagGenericPlaceNames(Topics);
             _aiVenueCleanUpService.TagAiPinsWithBadRestaurantTypes(Topics);
-            _aiVenueCleanUpService.TagAiPinsFoundInDifferentCountry(Topics);
+
+            _aiVenueCleanUpService.TagAiPinsPermanentlyClosed(Topics);
             _aiVenueCleanUpService.TagAiPinsNotFoundInOriginalText(Topics);
             _aiVenueCleanUpService.CountPins(Topics);
 
@@ -105,12 +108,9 @@ namespace Frodo.Service
             //Enable if we have better filtering
             //_aiVenueCleanUpService.RemoveChainGeneratedAiPins(Topics);
             //_aiVenueLocationService.UpdateChainGeneratedPins(Topics);
-
             //_aiVenueLocationService.CheckNonExportable(Topics);
-            _aiVenueCleanUpService.CountPins(Topics);
 
             Console.WriteLine("--------------------------------------");
-            await CategoriseTopic();
             _aiVenueCleanUpService.CountPins(Topics);
 
 
@@ -187,7 +187,9 @@ namespace Frodo.Service
             {
                 DetailedTopic? topic = Topics[i];
                 if (topic.IsAiVenuesSearchDone) continue;
-                if (topic.Title.Contains("Recipe", StringComparison.InvariantCultureIgnoreCase)) continue;
+                if (_aiVenueLocationService.IsRecipe(topic)) continue;
+
+                if (_aiVenueLocationService.IsTopicAQuestion(topic)) continue;
 
                 if (i % 100 == 0 && foundUpdates)
                 {
@@ -200,43 +202,116 @@ namespace Frodo.Service
                 timer.Stop();
                 Console.WriteLine($"Processing topic message {i} of {Topics.Count} length :{topic.Title.Length} Time: {timer.Elapsed.TotalSeconds}");
                 topic.IsAiVenuesSearchDone = true;
-                if (venue != null && venue.Count > 0)
+                if (SyncVenues(topic.AiVenues, venue))
                 {
-                    if (topic.AiVenues != null)
+                    foundUpdates = true;
+                }
+            }
+            _topicsLoaderService.SaveTopics(Topics);
+        }
+
+        private void FixCity(List<DetailedTopic> topics)
+        {
+            for (int i = 0; i < topics.Count; i++)
+            {
+                DetailedTopic? topic = topics[i];
+                if (topic.AiVenues == null) continue;
+
+                for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
+                {
+                    AiVenue? ai = topic.AiVenues[t];
+                    if (!string.IsNullOrWhiteSpace(ai.City) && !_cityService.IsCity(ai.City))
                     {
-                        if (venue.Count > topic.AiVenues.Count)
-                        {
-                            Console.WriteLineBlue($"Updating AiVenues, count mismatch");
-                            topic.AiVenues = venue;
-                            foundUpdates = true;
-                        }
-                        else
-                        {
-                            bool updated = false;
-                            for (int t = 0; t < venue.Count; t++)
-                            {
-                                if (topic.AiVenues[t].PlaceName != venue[t].PlaceName)
-                                {
-                                    Console.WriteLineBlue($"Updating AiVenues place name mismatch");
-                                    updated = true;
-                                    topic.AiVenues = venue;
-                                    foundUpdates = true;
-                                    break;
-                                }
-                            }
-                            if (!updated)
-                                Console.WriteLineRed($"Skipping update AiVenues");
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLineBlue($"Adding AiVenues, new data");
-                        topic.AiVenues = venue;
-                        foundUpdates = true;
+                        ai.City = "";
                     }
                 }
             }
             _topicsLoaderService.SaveTopics(Topics);
+        }
+
+
+
+        private async Task ScanTopicsRegenerateNullPins()
+        {
+            int updateCount = 0;
+            Stopwatch timer = new();
+            for (int i = 0; i < Topics.Count; i++)
+            {
+                DetailedTopic? topic = Topics[i];
+                if (_aiVenueLocationService.IsRecipe(topic)) continue;
+                if (topic.AiVenues == null) continue;
+                if (_aiVenueLocationService.IsTopicAQuestion(topic)) continue;
+
+                var reCheck = false;
+                var allNull = true;
+                if (topic.AiVenues != null)
+                    foreach (var item in topic.AiVenues)
+                    {
+                        if (item.Pin != null) allNull = false;
+
+                        if (item.Pin == null
+                            && !item.IsChain)
+                        {
+                            reCheck = true;
+                        }
+                    }
+                if (!reCheck) continue;
+
+                if (updateCount > 50)
+                {
+                    Console.WriteLineBlue($"Saving topics");
+                    _topicsLoaderService.SaveTopics(Topics);
+                    updateCount = 0;
+                }
+                timer.Restart();
+                var venue = await _localAi.ExtractRestaurantNamesFromTitle(topic.Title);
+                timer.Stop();
+                Console.WriteLine($"Processing topic message {i} of {Topics.Count} length :{topic.Title.Length} Time: {timer.Elapsed.TotalSeconds}");
+                topic.IsAiVenuesSearchDone = true;
+
+                if (allNull)
+                {
+                    topic.AiVenues = venue;
+                    updateCount++;
+                }
+                else
+                {
+                    if (SyncVenues(topic.AiVenues, venue))
+                    {
+                        updateCount++;
+                    }
+                }
+            }
+            _topicsLoaderService.SaveTopics(Topics);
+        }
+
+        private bool SyncVenues(List<AiVenue>? oldVenues, List<AiVenue>? newVenues)
+        {
+            bool foundUpdates = false;
+            if (oldVenues == null && newVenues == null) return false;
+            if (newVenues == null) return false;
+            if (oldVenues == null && newVenues != null)
+            {
+                oldVenues = newVenues;
+                return false;
+            }
+
+            for (int i = 0; i < newVenues.Count; i++)
+            {
+                var oldVenue = oldVenues.FirstOrDefault(o => o.PlaceName == newVenues[i].PlaceName);
+                if (oldVenue != null)
+                {
+                    if (string.IsNullOrWhiteSpace(oldVenue.City)) oldVenue.City = newVenues[i].City;
+                    foundUpdates = true;
+                }
+                else
+                {
+                    oldVenues.Add(newVenues[i]);
+                    Console.WriteLineBlue($"Adding new venue :{newVenues[i].PlaceName}");
+                    foundUpdates = true;
+                }
+            }
+            return foundUpdates;
         }
 
         private async Task ScanTopicsUseAiToDetectTopicCountry()
@@ -251,7 +326,8 @@ namespace Frodo.Service
 
                 if (topic.AiVenues == null || topic.AiVenues.Count == 0) continue;
                 if (!string.IsNullOrWhiteSpace(Topics[i].TitleCountry)) continue;
-                if (topic.CitySearchDone) continue;
+                //if (topic.TitleCategory != "DESCRIBE") continue;
+                //if (topic.CitySearchDone) continue;
                 if (itemsUpdated > 100)
                 {
                     Console.WriteLineBlue("Saving Topics");
@@ -339,7 +415,7 @@ namespace Frodo.Service
                     && country != "South America"
                     )
                 {
-                    Console.WriteLineRed($"Unknown country {country}");
+                    Console.WriteLineRed($"Unknown country : {country}");
                     continue;
                 }
                 topic.TitleCountry = country.Replace("é", "e");
@@ -519,8 +595,6 @@ namespace Frodo.Service
             _topicsLoaderService.SaveTopics(Topics);
             Console.WriteLine($"Has Maps Links : {mapsLinkCount}");
         }
-
-
 
     }
 }

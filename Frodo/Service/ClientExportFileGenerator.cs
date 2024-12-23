@@ -125,13 +125,18 @@ namespace Frodo.Service
                 {
                     foreach (var aiVenue in topic.AiVenues)
                     {
-                        if (aiVenue.Pin != null && aiVenue.IsExportable)
+                        if (aiVenue.Pin != null && aiVenue.IsExportable && !aiVenue.IsChain)
                         {
                             var cachePin = _mapPinCache.TryGetPinLatLong(aiVenue.Pin.GeoLatitude, aiVenue.Pin.GeoLongitude, aiVenue.PlaceName);
                             if (cachePin == null)
                             {
+                                cachePin = _mapPinCache.TryGetPinLatLong(aiVenue.Pin.GeoLatitude, aiVenue.Pin.GeoLongitude, aiVenue.Pin.Label);
+                            }
+                            if (cachePin == null)
+                            {
                                 Console.WriteLine($"Unable to get cache pin {aiVenue.PlaceName} ");
                             }
+
                             var pinCountry = _geoService.GetCountryPin(cachePin);
 
                             if (!groupCountry.Contains(pinCountry, StringComparison.InvariantCultureIgnoreCase) && !string.IsNullOrWhiteSpace(groupCountry))

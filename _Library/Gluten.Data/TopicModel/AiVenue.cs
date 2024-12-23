@@ -10,6 +10,7 @@ namespace Gluten.Data.TopicModel
     {
         public required string PlaceName { get; set; }
         public string? Address { get; set; }
+        public string? City { get; set; }
 
         public TopicPin? Pin { get; set; }
         public bool PinSearchDone { get; set; } = false;

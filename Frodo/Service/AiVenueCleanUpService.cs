@@ -31,7 +31,6 @@ internal class AiVenueCleanUpService(
         var invalidGeoChain = 0;
         var invalidGeoChainGenerated = 0;
         var unmatchedLabels = 0;
-        var permanentlyClosed = 0;
         Console.WriteLine("--------------------------------------");
         for (int i = 0; i < topics.Count; i++)
         {
@@ -69,6 +68,35 @@ internal class AiVenueCleanUpService(
                     venue.IsExportable = false;
                     venue.InvalidGeo = true;
                 }
+            }
+        }
+
+        LabelHelper.Check();
+        Console.WriteLine($"Unmatched labels {unmatchedLabels}");
+        Console.WriteLine($"Invalid Geo pins {invalidGeo}");
+        Console.WriteLine($"Invalid Chain Geo pins {invalidGeoChain}");
+        Console.WriteLine($"Invalid Chain generated Geo pins {invalidGeoChainGenerated}");
+
+        _topicsService.SaveTopics(topics);
+    }
+
+    public void TagAiPinsPermanentlyClosed(List<DetailedTopic> topics)
+    {
+        var permanentlyClosed = 0;
+        Console.WriteLine("--------------------------------------");
+        for (int i = 0; i < topics.Count; i++)
+        {
+            DetailedTopic? topic = topics[i];
+
+            if (topic.AiVenues == null) continue;
+            for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
+            {
+                var venue = topic.AiVenues[t];
+                var pin = venue.Pin;
+                if (pin == null) continue;
+
+                var cachePin = _mapPinCache.TryGetPinLatLong(pin.GeoLatitude, pin.GeoLongitude, venue.PlaceName ?? "");
+                if (cachePin == null) continue;
 
                 // Sync PermanentlyClosed status
                 if (cachePin.MetaData != null && cachePin.MetaData.PermanentlyClosed && !venue.PermanentlyClosed)
@@ -80,13 +108,7 @@ internal class AiVenueCleanUpService(
             }
         }
 
-        LabelHelper.Check();
-        Console.WriteLine($"Unmatched labels {unmatchedLabels}");
-        Console.WriteLine($"Invalid Geo pins {invalidGeo}");
-        Console.WriteLine($"Invalid Chain Geo pins {invalidGeoChain}");
-        Console.WriteLine($"Invalid Chain generated Geo pins {invalidGeoChainGenerated}");
         Console.WriteLine($"Permanently Closed pins {permanentlyClosed}");
-
         _topicsService.SaveTopics(topics);
     }
 
@@ -226,8 +248,8 @@ internal class AiVenueCleanUpService(
 
                 if (venue.Pin == null) continue;
                 if (venue.ChainGenerated) continue;
-                var label = PlaceNameAdjusterHelper.FixUserErrorsInPlaceNames(venue.Pin.Label ?? "", "");
-                var placeName = PlaceNameAdjusterHelper.FixUserErrorsInPlaceNames(venue.PlaceName ?? "", "");
+                var label = PlaceNameAdjusterHelper.FixUserErrorsInPlaceNames(venue.Pin.Label ?? "", "", "");
+                var placeName = PlaceNameAdjusterHelper.FixUserErrorsInPlaceNames(venue.PlaceName ?? "", "", "");
 
                 label = HttpUtility.UrlDecode(label).Replace("’", "").Replace("'", "");
                 placeName = HttpUtility.UrlDecode(placeName).Replace("’", "").Replace("'", "");
@@ -343,13 +365,31 @@ internal class AiVenueCleanUpService(
         int questionCount = 0;
         int unknownCount = 0;
         int emptyCount = 0;
+        string QuestionLinesWithoutQ = "";
+        string DescribeWithQ = "";
+        string UnknownWithQ = "";
+        string UnknownWithoutQ = "";
 
         for (int i = 0; i < Topics.Count; i++)
         {
             DetailedTopic? topic = Topics[i];
-            if (topic.TitleCategory == "DESCRIBE") describeCount++;
-            else if (topic.TitleCategory == "QUESTION") questionCount++;
-            else if (topic.TitleCategory == "UNKNOWN") unknownCount++;
+            if (topic.TitleCategory == "DESCRIBE")
+            {
+                //if (topic.Title.Contains("?")) DescribeWithQ += topic.Title + "\r\n";
+                describeCount++;
+            }
+            else if (topic.TitleCategory == "QUESTION")
+            {
+                //if (!topic.Title.Contains("?")) QuestionLinesWithoutQ += topic.Title + "\r\n";
+                questionCount++;
+            }
+            else if (topic.TitleCategory == "UNKNOWN")
+            {
+                //if (topic.Title.Contains("?")) UnknownWithQ += topic.Title + "\r\n";
+                //if (!topic.Title.Contains("?")) UnknownWithoutQ += topic.Title + "\r\n";
+                unknownCount++;
+            }
+
             else emptyCount++;
 
             if (topic.AiVenues == null || topic.AiVenues.Count == 0) continue;
@@ -370,10 +410,15 @@ internal class AiVenueCleanUpService(
                 if (ai.ChainGenerated) chainGenerated++;
                 if (ai.PermanentlyClosed) permanentlyClosed++;
                 if (ai.RejectedRestaurantType) rejectedRestaurantType++;
-                if (ai.Pin == null) nullPins++;
+                if (ai.Pin == null && !ai.IsChain) nullPins++;
                 if (ai.Pin != null && ai.IsExportable) validPins++;
             }
         }
+        string filePath = "D:\\Coding\\Gluten\\Database\\";
+        //File.WriteAllText(filePath + "QuestionLinesWithoutQ.txt", QuestionLinesWithoutQ);
+        //File.WriteAllText(filePath + "DescribeWithQ.txt", DescribeWithQ);
+        //File.WriteAllText(filePath + "UnknownWithQ.txt", UnknownWithQ);
+        //File.WriteAllText(filePath + "UnknownWithoutQ.txt", UnknownWithoutQ);
 
         Console.WriteLine($"Total pin count (valid/not chain) : {count}");
         Console.WriteLine($"Total not Exportable : {notExportable}");
