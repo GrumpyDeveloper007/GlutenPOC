@@ -8,7 +8,7 @@ using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
 using System;
 using System.Diagnostics;
-using static Gluten.Core.LocationProcessing.Service.CityService;
+using System.Globalization;
 
 namespace Frodo.Service
 {
@@ -60,6 +60,10 @@ namespace Frodo.Service
             }
 
             _aiVenueCleanUpService.ResetIsExportable(Topics);
+            var placeNames = _aiVenueCleanUpService.GetPlaceNames(Topics);
+            string filePath = "D:\\Coding\\Gluten\\Outputs\\";
+            File.WriteAllText(filePath + "placeNames.txt", placeNames);
+
 
             _pinCacheSyncService.MakeSureIndexIsInSearchString();
             _pinCacheSyncService.CheckRestaurantTypes();
@@ -76,22 +80,24 @@ namespace Frodo.Service
             Console.WriteLine($"\r\nProcessing information from source");
             UpdateMessageAndResponseUrls();
 
-            Console.WriteLine("--------------------------------------");
-            Console.WriteLine($"\r\nStarting AI processing - detecting venue name/address");
-            await ScanTopicsUseAiToDetectVenueInfo();
-            await ScanTopicsRegenerateNullPins();
-            FixCity(Topics);
-
             await CategoriseTopic();
 
             Console.WriteLine("--------------------------------------");
+            Console.WriteLine($"\r\nStarting AI processing - detecting venue name/address");
+            await ScanTopicsUseAiToDetectVenueInfo();
+            //await ScanTopicsRegenerateNullPins();
+            //FixCity(Topics);
+
+            Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nGenerating country names from topic title");
-            await ScanTopicsUseAiToDetectTopicCountry();
+            await ScanTopicsDetectCountryAndCity();
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nFiltering AI pins");
             _aiVenueCleanUpService.RemoveGenericPlaceNames(Topics);
             //_aiVenueCleanUpService.CheckForPlaceNamesPinMisMatch(Topics);
+
+            //_aiVenueCleanUpService.RemoveCityPins(Topics);
             _aiVenueCleanUpService.DiscoverMinMessageLength(Topics);
             _aiVenueLocationService.RemoveDuplicatedPins(Topics);
             _aiVenueCleanUpService.RemoveNullAiPins(Topics);
@@ -101,7 +107,6 @@ namespace Frodo.Service
 
             _aiVenueCleanUpService.TagAiPinsPermanentlyClosed(Topics);
             _aiVenueCleanUpService.TagAiPinsNotFoundInOriginalText(Topics);
-            _aiVenueCleanUpService.CountPins(Topics);
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nRebuilding chain pins");
@@ -118,7 +123,6 @@ namespace Frodo.Service
             Console.WriteLine($"\r\nUpdating pin information for Ai Venues");
             _aiVenueLocationService.ProcessNewPins(Topics);
             _aiVenueLocationService.CheckPinsAreInCache(Topics);
-
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nExtracting meta info for pins");
@@ -185,10 +189,11 @@ namespace Frodo.Service
             Stopwatch timer = new();
             for (int i = 0; i < Topics.Count; i++)
             {
-                DetailedTopic? topic = Topics[i];
-                if (topic.IsAiVenuesSearchDone) continue;
-                if (_aiVenueLocationService.IsRecipe(topic)) continue;
+                if (i < 30520) continue;
 
+                DetailedTopic? topic = Topics[i];
+                //if (topic.IsAiVenuesSearchDone) continue;
+                if (_aiVenueLocationService.IsRecipe(topic)) continue;
                 if (_aiVenueLocationService.IsTopicAQuestion(topic)) continue;
 
                 if (i % 100 == 0 && foundUpdates)
@@ -200,7 +205,7 @@ namespace Frodo.Service
                 timer.Restart();
                 var venue = await _localAi.ExtractRestaurantNamesFromTitle(topic.Title);
                 timer.Stop();
-                Console.WriteLine($"Processing topic message {i} of {Topics.Count} length :{topic.Title.Length} Time: {timer.Elapsed.TotalSeconds}");
+                Console.WriteLine($"Processing topic (new) {i} of {Topics.Count} length :{topic.Title.Length} Time: {timer.Elapsed.TotalSeconds}");
                 topic.IsAiVenuesSearchDone = true;
                 if (SyncVenues(topic.AiVenues, venue))
                 {
@@ -266,7 +271,7 @@ namespace Frodo.Service
                 timer.Restart();
                 var venue = await _localAi.ExtractRestaurantNamesFromTitle(topic.Title);
                 timer.Stop();
-                Console.WriteLine($"Processing topic message {i} of {Topics.Count} length :{topic.Title.Length} Time: {timer.Elapsed.TotalSeconds}");
+                Console.WriteLine($"Processing topic (null pin) {i} of {Topics.Count} length :{topic.Title.Length} Time: {timer.Elapsed.TotalSeconds}");
                 topic.IsAiVenuesSearchDone = true;
 
                 if (allNull)
@@ -314,7 +319,7 @@ namespace Frodo.Service
             return foundUpdates;
         }
 
-        private async Task ScanTopicsUseAiToDetectTopicCountry()
+        private async Task ScanTopicsDetectCountryAndCity()
         {
             var countries = _geoService.GetCountries();
             var unknownCities = new List<string>();
@@ -322,10 +327,13 @@ namespace Frodo.Service
 
             for (int i = 0; i < Topics.Count; i++)
             {
+                if (i < 51810) continue;
                 DetailedTopic? topic = Topics[i];
 
                 if (topic.AiVenues == null || topic.AiVenues.Count == 0) continue;
-                if (!string.IsNullOrWhiteSpace(Topics[i].TitleCountry)) continue;
+                if (_aiVenueLocationService.IsRecipe(topic)) continue;
+                if (_aiVenueLocationService.IsTopicAQuestion(topic)) continue;
+                if (!string.IsNullOrWhiteSpace(Topics[i].TitleCountry) && !string.IsNullOrWhiteSpace(Topics[i].TitleCity)) continue;
                 //if (topic.TitleCategory != "DESCRIBE") continue;
                 //if (topic.CitySearchDone) continue;
                 if (itemsUpdated > 100)
@@ -340,6 +348,9 @@ namespace Frodo.Service
                 if (string.IsNullOrWhiteSpace(topic.TitleCity))
                 {
                     var city = await _localAi.ExtractCity(topic.Title);
+                    city = city.Replace("\r", "");
+                    city = city.Replace("\n", "").Trim();
+
                     topic.CitySearchDone = true;
                     if (topic.Title.Contains(city))
                     {
@@ -363,62 +374,76 @@ namespace Frodo.Service
                 // todo: remove me
                 if (!_fBGroupService.IsGenericGroup(topic.GroupId)) continue;
 
-                var country = await _localAi.ExtractCountry(topic.Title) ?? "";
-                country = country.Replace("United States of America", "United States");
-                country = country.Replace("USA", "United States");
-                country = country.Replace("UK", "United Kingdom");
-                country = country.Replace("Wales", "United Kingdom");
-                country = country.Replace("The Netherlands", "Netherlands");
-                country = country.Replace("Nederland", "Netherlands");
-                country = country.Replace("SPAIN", "Spain");
-                country = country.Replace("\"", "");
-                country = country.Replace("Suid Afrika", "South Africa");
-                country = country.Replace("Türkiye", "Turkey");
-                country = country.Replace("Saint Lucia", "St. Lucia");
-                country = country.Replace("Bahamas", "The Bahamas");
-                country = country.Replace("Turks and Caicos Islands", "Turks & Caicos Is.");
-                country = country.Replace("Grand Cayman", "Cayman Is.");
-                country = country.Replace("Saint Kitts and Nevis", "St.Kitts & Nevis");
-                country = country.Replace("Cayman Islands", "Cayman Is.");
-                country = country.Replace("Giappone", "Japan");
-                country = country.Replace("Japón", "Japan");
-                country = country.Replace("Hong Kong", "China");
-                country = country.Replace("VIETNAM", "Vietnam");
-                country = country.Replace("Viet Nam", "Vietnam");
-                country = country.Replace("ไทย", "Thailand");
-                country = country.Replace("ประเทศThailand", "Thailand");
-                country = country.Replace("Kingdom of Thailand", "Thailand");
-                country = country.Replace("Gambia", "The Gambia");
-                country = country.Replace("Antigua", "Antigua & Barbuda");
-                country = country.Replace("Bosnia and Herzegovina", "Bosnia & Herzegovina");
-                country = country.Replace("North Macedonia", "Macedonia");
-                country = country.Replace("ICELAND", "Iceland");
-                country = country.Replace("Ελλάδα", "Greece");
-                country = country.Replace("Mallorca", "Spain");
-
-
-
-                country = country.Replace("Bali", "Indonesia");
-                country = country.Replace("Czechia", "Czech Republic");
-                country = country.Replace("Peru", "Peru(Peruvian point of view)");
-                if (country.StartsWith("Korea"))
-                    country = country.Replace("Korea", "South Korea");
-
-                if (string.IsNullOrWhiteSpace(country)) continue;
-                if (country.Contains("\r\n")) continue;
-                if (country == "Europe") continue;
-
-                if (!countries.Exists(o => o == country)
-                    && !countries.Exists(o => o == country.Replace("é", "e"))
-                    && country != "Asia"
-                    && country != "Europe" && country != "European Union" && country != "European"
-                    && country != "South America"
-                    )
+                if (string.IsNullOrWhiteSpace(topic.TitleCountry))
                 {
-                    Console.WriteLineRed($"Unknown country : {country}");
-                    continue;
+                    var country = await _localAi.ExtractCountry(topic.Title) ?? "";
+                    country = country.Replace("\r", "");
+                    country = country.Replace("\n", "").Trim();
+                    country = country.Replace("\"", "");
+
+                    country = CapitalizeEachWord(country);
+
+                    country = country.Replace("United States of America", "United States");
+                    country = country.Replace("USA", "United States");
+                    country = country.Replace("UK", "United Kingdom");
+                    country = country.Replace("Wales", "United Kingdom");
+                    country = country.Replace("The Netherlands", "Netherlands");
+                    country = country.Replace("Nederland", "Netherlands");
+                    country = country.Replace("Suid Afrika", "South Africa");
+                    country = country.Replace("Türkiye", "Turkey");
+                    country = country.Replace("Saint Lucia", "St. Lucia");
+                    country = country.Replace("Bahamas", "The Bahamas");
+                    country = country.Replace("Turks and Caicos Islands", "Turks & Caicos Is.");
+                    country = country.Replace("Grand Cayman", "Cayman Is.");
+                    country = country.Replace("Saint Kitts and Nevis", "St.Kitts & Nevis");
+                    country = country.Replace("Cayman Islands", "Cayman Is.");
+                    country = country.Replace("Giappone", "Japan");
+                    country = country.Replace("Japón", "Japan");
+                    country = country.Replace("Hong Kong", "China");
+                    country = country.Replace("VIETNAM", "Vietnam");
+                    country = country.Replace("Viet Nam", "Vietnam");
+                    country = country.Replace("ไทย", "Thailand");
+                    country = country.Replace("ประเทศThailand", "Thailand");
+                    country = country.Replace("Kingdom of Thailand", "Thailand");
+                    country = country.Replace("Gambia", "The Gambia");
+                    country = country.Replace("Antigua", "Antigua & Barbuda");
+                    country = country.Replace("Bosnia and Herzegovina", "Bosnia & Herzegovina");
+                    country = country.Replace("North Macedonia", "Macedonia");
+                    country = country.Replace("Ελλάδα", "Greece");
+                    country = country.Replace("Mallorca", "Spain");
+                    country = country.Replace("Kosovo", "Albania");
+                    country = country.Replace("Republic of Malta", "Malta");
+                    country = country.Replace("Belgium --", "Belgium");
+                    country = country.Replace("Canary islands", "Spain");
+                    country = country.Replace("Gran Canaria", "Spain");
+                    country = country.Replace("Perú", "Peru (Peruvian point of view)");
+
+
+                    country = country.Replace("Bali", "Indonesia");
+                    country = country.Replace("Czechia", "Czech Republic");
+                    country = country.Replace("Peru", "Peru(Peruvian point of view)");
+                    if (country.StartsWith("Korea"))
+                        country = country.Replace("Korea", "South Korea");
+
+                    if (string.IsNullOrWhiteSpace(country)) continue;
+
+                    if (country == "Europe") continue;
+
+                    if (!countries.Exists(o => o == country)
+                        && !countries.Exists(o => o == country.Replace("é", "e"))
+                        && country != "Asia"
+                        && country != "Europe" && country != "European Union" && country != "European"
+                        && country != "South America"
+                        )
+                    {
+
+                        if (country != "Safe") Console.WriteLineRed($"Unknown country : {country}");
+                    }
+                    else
+                    {
+                        topic.TitleCountry = country.Replace("é", "e");
+                    }
                 }
-                topic.TitleCountry = country.Replace("é", "e");
 
                 if (topic.TitleCity != null)
                 {
@@ -443,6 +468,7 @@ namespace Frodo.Service
 
             _topicsLoaderService.SaveTopics(Topics);
         }
+
 
         private async Task CategoriseTopic()
         {
@@ -596,5 +622,22 @@ namespace Frodo.Service
             Console.WriteLine($"Has Maps Links : {mapsLinkCount}");
         }
 
+        private static string CapitalizeFirstLetter(string str)
+        {
+            if (string.IsNullOrEmpty(str))
+                return str;
+
+            return char.ToUpper(str[0]) + str.Substring(1);
+        }
+
+        private static string CapitalizeEachWord(string str)
+        {
+            if (string.IsNullOrEmpty(str))
+                return str;
+
+            // Use TextInfo for culture-aware casing
+            TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
+            return textInfo.ToTitleCase(str.ToLower());
+        }
     }
 }

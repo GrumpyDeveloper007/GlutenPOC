@@ -37,14 +37,14 @@ namespace Gluten.Core.DataProcessing.Service
         public DatabaseLoaderService()
         {
             Dictionary<string, TopicPinCache>? pins = null;
-            Dictionary<string, PinCacheMetaHtml> pinsHtml = null;
+            Dictionary<string, PinCacheMetaHtml> pinsHtml = [];
             if (File.Exists(PinCacheDBFileName))
             {
                 pins = JsonHelper.TryLoadJsonDictionary<TopicPinCache>(PinCacheDBFileName);
             }
             if (File.Exists(PinCacheHtmlDBFileName))
             {
-                pinsHtml = JsonHelper.TryLoadJsonDictionary<PinCacheMetaHtml>(PinCacheHtmlDBFileName);
+                pinsHtml = JsonHelper.TryLoadJsonDictionary<PinCacheMetaHtml>(PinCacheHtmlDBFileName) ?? [];
             }
             if (pins != null)
             {

@@ -28,7 +28,7 @@ internal class AiVenueLocationService
     private readonly TopicsDataLoaderService _topicsDataLoaderService;
     private readonly AiVenueProcessorService _aiVenueProcessorService;
     private readonly IConsole Console;
-    private List<AiVenue> _placeNameSkipList;
+    private readonly List<AiVenue> _placeNameSkipList;
 
     public AiVenueLocationService(
         DatabaseLoaderService databaseLoaderService,

@@ -258,10 +258,6 @@ internal class AiVenueCleanUpService(
                     && !placeName.Contains(label, StringComparison.InvariantCultureIgnoreCase)
                     && !LabelHelper.IsInTextBlock(label, placeName))
                 {
-                    if (placeName == "Gluten Free Ts Kitchen")
-                    {
-                        Console.WriteLine($"Found {placeName}, {label} ({venue.PlaceName})");
-                    }
                     Console.WriteLine($"Found {placeName}, {label} ({venue.PlaceName})");
                     count++;
                     //venue.PinSearchDone = false;
@@ -294,6 +290,60 @@ internal class AiVenueCleanUpService(
         Console.WriteLine($"Removed null pins : {removeCount}");
         _topicsService.SaveTopics(topics);
     }
+
+    public void RemoveCityPins(List<DetailedTopic> topics)
+    {
+        var citys = new CityService();
+        Console.WriteLine("--------------------------------------");
+        int removeCount = 0;
+        for (int i = 0; i < topics.Count; i++)
+        {
+            DetailedTopic? topic = topics[i];
+
+            if (topic.AiVenues == null) continue;
+            for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
+            {
+                if (citys.IsCity(topic.AiVenues[t].PlaceName))
+                {
+                    Console.WriteLineRed($"Removing city place name : {topic.AiVenues[t].PlaceName}");
+                    topic.AiVenues.RemoveAt(t);
+                    removeCount++;
+                }
+            }
+        }
+        Console.WriteLine($"Removed city place name : {removeCount}");
+        _topicsService.SaveTopics(topics);
+    }
+
+    public string GetPlaceNames(List<DetailedTopic> topics)
+    {
+        var citys = new CityService();
+        Console.WriteLine("--------------------------------------");
+        List<string> placeNames = [];
+        for (int i = 0; i < topics.Count; i++)
+        {
+            DetailedTopic? topic = topics[i];
+
+            if (topic.AiVenues == null) continue;
+            for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
+            {
+                if (topic.AiVenues[t].Pin?.Label != null && !placeNames.Contains(topic.AiVenues[t].Pin.Label))
+                {
+                    placeNames.Add(topic.AiVenues[t].Pin.Label);
+                }
+            }
+        }
+
+        placeNames.Sort();
+        var places = "";
+        foreach (var item in placeNames)
+        {
+            places += $"{item}\r\n";
+        }
+        return places;
+    }
+
+
 
     public void RemoveChainGeneratedAiPins(List<DetailedTopic> topics)
     {
@@ -365,10 +415,10 @@ internal class AiVenueCleanUpService(
         int questionCount = 0;
         int unknownCount = 0;
         int emptyCount = 0;
-        string QuestionLinesWithoutQ = "";
-        string DescribeWithQ = "";
-        string UnknownWithQ = "";
-        string UnknownWithoutQ = "";
+        //string QuestionLinesWithoutQ = "";
+        //string DescribeWithQ = "";
+        //string UnknownWithQ = "";
+        //string UnknownWithoutQ = "";
 
         for (int i = 0; i < Topics.Count; i++)
         {
@@ -414,7 +464,7 @@ internal class AiVenueCleanUpService(
                 if (ai.Pin != null && ai.IsExportable) validPins++;
             }
         }
-        string filePath = "D:\\Coding\\Gluten\\Database\\";
+        //string filePath = "D:\\Coding\\Gluten\\Database\\";
         //File.WriteAllText(filePath + "QuestionLinesWithoutQ.txt", QuestionLinesWithoutQ);
         //File.WriteAllText(filePath + "DescribeWithQ.txt", DescribeWithQ);
         //File.WriteAllText(filePath + "UnknownWithQ.txt", UnknownWithQ);

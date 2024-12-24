@@ -93,7 +93,16 @@ namespace Gluten.Core.DataProcessing.Helper
             "no specific address provided",
             "Not specified",
             "Google Maps link",
-            "Lovely restaurant"
+            "Lovely restaurant",
+            "by the beach",
+            "up the hill",
+            "around the corner",
+            "off the ",
+            "across from ",
+            "just up by",
+            "Top floor of",
+            "you go in the "
+
 ];
 
         /// <summary>

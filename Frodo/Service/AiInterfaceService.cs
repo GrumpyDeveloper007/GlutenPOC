@@ -12,6 +12,7 @@ using Frodo.Helper;
 using Gluten.Core.Interface;
 using Gluten.Core.DataProcessing.Helper;
 using TimeSpanParserUtil;
+using System;
 
 namespace Frodo.Service
 {
@@ -21,15 +22,8 @@ namespace Frodo.Service
     internal class AiInterfaceService
     {
         private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _lmAgent;
-        private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _remotelmAgent1;
-        private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _remotelmAgent2;
-        private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _remotelmAgent3;
-        private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _remotelmAgent4;
-        private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _remotelmAgent5;
-        private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _remotelmAgent6;
-        private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _remotelmAgent7;
-        private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _remotelmAgent8;
-        private DateTimeOffset[] _remoteNextAvailable = new DateTimeOffset[8];
+        private readonly MiddlewareStreamingAgent<OpenAIChatAgent>[] _remotelmAgent = new MiddlewareStreamingAgent<OpenAIChatAgent>[15];
+        private readonly DateTimeOffset[] _remoteNextAvailable = new DateTimeOffset[15];
 
         private int _useLocalCount = 0;
         private int _remoteIndex = 0;
@@ -60,42 +54,84 @@ namespace Frodo.Service
             var client6name = "llama-3.1-70b-versatile";//                  14,400/6,000
             var client7name = "llama3-70b-8192";	//                      14,400	6,000
             var client8name = "mixtral-8x7b-32768";//                     14,400	5,000
+            //var client9name = "gemma-7b-it";                       //	30	14,400	15,000	500,000
+            var client9name = "gemma2-9b-it";                     //	30	14,400	15,000	500,000
+            //var client11name = "llama-3.2-11b-text-preview";       //	30	7,000	7,000	500,000
+            var client10name = "llama-3.2-11b-vision-preview";     //	30	7,000	7,000	500,000
+            var client11name = "llama-3.2-1b-preview";             //	30	7,000	7,000	500,000
+            var client12name = "llama-3.2-3b-preview";             //	30	7,000	7,000	500,000
+            //var client15name = "llama-3.2-90b-text-preview";       //	30	7,000	7,000	500,000
+            var client13name = "llama-3.3-70b-specdec";            //	30	1,000	6,000	100,000
+            var client14name = "llama-guard-3-8b";                 //	30	14,400	15,000	500,000
+            var client15name = "llama3-8b-8192";                   //	30	14,400	30,000	500,000
+            //llama-3.2-11b-text-preview
+            //var client19name = "llava-v1.5-7b-4096-preview";         //	30	14,400	30,000	(No limit)
+
+            //llama-3.2-90b-vision-preview	15	3,500	7,000	250,000
 
             //var client2name = "llama-3.3-70b-specdec";//                    1,000/6,000
 
-            _remotelmAgent1 = new OpenAIChatAgent(
+            _remotelmAgent[0] = new OpenAIChatAgent(
                 chatClient: openaiClient.GetChatClient(client1name),
                 name: "assistant")
                 .RegisterMessageConnector();
             //.RegisterPrintMessage();
 
-            _remotelmAgent2 = new OpenAIChatAgent(
+            _remotelmAgent[1] = new OpenAIChatAgent(
                 chatClient: openaiClient.GetChatClient(client2name),
                 name: "assistant")
                 .RegisterMessageConnector();
             //.RegisterPrintMessage();
-            _remotelmAgent3 = new OpenAIChatAgent(
+            _remotelmAgent[2] = new OpenAIChatAgent(
                 chatClient: openaiClient.GetChatClient(client3name),
                 name: "assistant")
                 .RegisterMessageConnector();
-            _remotelmAgent4 = new OpenAIChatAgent(
+            _remotelmAgent[3] = new OpenAIChatAgent(
                 chatClient: openaiClient.GetChatClient(client4name),
                 name: "assistant")
                 .RegisterMessageConnector();
-            _remotelmAgent5 = new OpenAIChatAgent(
+            _remotelmAgent[4] = new OpenAIChatAgent(
                 chatClient: openaiClient.GetChatClient(client5name),
                 name: "assistant")
                 .RegisterMessageConnector();
-            _remotelmAgent6 = new OpenAIChatAgent(
+            _remotelmAgent[5] = new OpenAIChatAgent(
                 chatClient: openaiClient.GetChatClient(client6name),
                 name: "assistant")
                 .RegisterMessageConnector();
-            _remotelmAgent7 = new OpenAIChatAgent(
+            _remotelmAgent[6] = new OpenAIChatAgent(
                 chatClient: openaiClient.GetChatClient(client7name),
                 name: "assistant")
                 .RegisterMessageConnector();
-            _remotelmAgent8 = new OpenAIChatAgent(
+            _remotelmAgent[7] = new OpenAIChatAgent(
                 chatClient: openaiClient.GetChatClient(client8name),
+                name: "assistant")
+                .RegisterMessageConnector();
+            _remotelmAgent[8] = new OpenAIChatAgent(
+                chatClient: openaiClient.GetChatClient(client9name),
+                name: "assistant")
+                .RegisterMessageConnector();
+            _remotelmAgent[9] = new OpenAIChatAgent(
+                chatClient: openaiClient.GetChatClient(client10name),
+                name: "assistant")
+                .RegisterMessageConnector();
+            _remotelmAgent[10] = new OpenAIChatAgent(
+                chatClient: openaiClient.GetChatClient(client11name),
+                name: "assistant")
+                .RegisterMessageConnector();
+            _remotelmAgent[11] = new OpenAIChatAgent(
+                chatClient: openaiClient.GetChatClient(client12name),
+                name: "assistant")
+                .RegisterMessageConnector();
+            _remotelmAgent[12] = new OpenAIChatAgent(
+                chatClient: openaiClient.GetChatClient(client13name),
+                name: "assistant")
+                .RegisterMessageConnector();
+            _remotelmAgent[13] = new OpenAIChatAgent(
+                chatClient: openaiClient.GetChatClient(client14name),
+                name: "assistant")
+                .RegisterMessageConnector();
+            _remotelmAgent[14] = new OpenAIChatAgent(
+                chatClient: openaiClient.GetChatClient(client15name),
                 name: "assistant")
                 .RegisterMessageConnector();
 
@@ -307,7 +343,7 @@ namespace Frodo.Service
                         {
                             question = "can you extract any references to places to eat and street addresses of those places and respond only with json in the following format [{PlaceName:\"<Insert place name here>\",Address:\"<insert address here>\",City:\"<insert city here>\"},]? if no address can be found, return an empty string in the Address field. Ignore any further questions. The following text is only for data extraction only. \r\n-----\r\n";
                             response = await SendLBMessage(question + $"{message}");
-
+                            if (response == null) return null;
                             responseText = response.GetContent();
                             if (responseText == null) return null;
                         }
@@ -338,11 +374,11 @@ namespace Frodo.Service
                         }
                         catch (JsonReaderException ex)
                         {
-                            Console.WriteLineRed("Retrying json exception");
+                            Console.WriteLineRed($"Retrying json exception : {ex.Message}");
                         }
                         catch (JsonSerializationException ex)
                         {
-                            Console.WriteLineRed("Retrying json exception");
+                            Console.WriteLineRed($"Retrying json exception :{ex.Message}");
                         }
                         catch (Exception ex)
                         {
@@ -395,7 +431,7 @@ namespace Frodo.Service
 
             if (!message.Contains(item.Address ?? ""))
             {
-                Console.WriteLineBlue($"Rejecting address");
+                //Console.WriteLineBlue($"Rejecting address");
                 item.Address = "";
             }
 
@@ -454,7 +490,7 @@ namespace Frodo.Service
                     else
                     {
                         bool allUnavailable = true;
-                        for (int i = 0; i < 8; i++)
+                        for (int i = 0; i < _remotelmAgent.Count(); i++)
                         {
                             DateTimeOffset item = _remoteNextAvailable[i];
                             if (item <= DateTimeOffset.UtcNow)
@@ -472,51 +508,26 @@ namespace Frodo.Service
                         if (_remoteNextAvailable[currentIndex] > DateTimeOffset.UtcNow)
                         {
                             _remoteIndex++;
-                            if (_remoteIndex == 8) _remoteIndex = 0;
+                            if (_remoteIndex == _remotelmAgent.Count()) _remoteIndex = 0;
                             continue;
                         }
 
                         _remoteCount++;
                         IMessage? response;
-                        switch (_remoteIndex)
-                        {
-                            case 0:
-                                _remoteIndex = 1;
-                                response = await _remotelmAgent1.SendAsync(messageText);
-                                return response;
-                            case 1:
-                                _remoteIndex = 2;
-                                response = await _remotelmAgent2.SendAsync(messageText);
-                                return response;
-                            case 2:
-                                _remoteIndex = 3;
-                                response = await _remotelmAgent3.SendAsync(messageText);
-                                return response;
-                            case 3:
-                                _remoteIndex = 4;
-                                response = await _remotelmAgent4.SendAsync(messageText);
-                                return response;
-                            case 4:
-                                _remoteIndex = 5;
-                                response = await _remotelmAgent5.SendAsync(messageText);
-                                return response;
-                            case 5:
-                                _remoteIndex = 6;
-                                response = await _remotelmAgent6.SendAsync(messageText);
-                                return response;
-                            case 6:
-                                _remoteIndex = 7;
-                                response = await _remotelmAgent7.SendAsync(messageText);
-                                return response;
-                            case 7:
-                                _remoteIndex = 0;
-                                response = await _remotelmAgent8.SendAsync(messageText);
-                                return response;
-                        }
+                        response = await _remotelmAgent[_remoteIndex].SendAsync(messageText);
+                        _remoteIndex++;
+                        if (_remoteIndex == _remotelmAgent.Count()) _remoteIndex = 0;
+                        return response;
                     }
                 }
                 catch (ClientResultException ex)
                 {
+                    _remoteIndex++;
+                    if (_remoteIndex == _remotelmAgent.Count()) _remoteIndex = 0;
+                    if (ex.Message.Contains("model_decommissioned"))
+                    {
+                        _remoteNextAvailable[currentIndex] = DateTimeOffset.UtcNow.AddDays(365);
+                    }
                     if (ex.Message.Contains("Rate limit reached"))
                     {
                         var start = ex.Message.IndexOf("Please try again in");

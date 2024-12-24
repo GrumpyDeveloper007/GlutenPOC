@@ -48,7 +48,7 @@ namespace Gluten.Core.LocationProcessing.Service
 
         public string CityToCountry(string city)
         {
-            var cities = _cityList.Where(o => o.name.ToLower() == city.ToLower()).ToList();
+            var cities = _cityList.Where(o => o.name.Equals(city, StringComparison.CurrentCultureIgnoreCase)).ToList();
             var countries = "";
             if (cities.Count > 0)
             {
@@ -83,10 +83,75 @@ namespace Gluten.Core.LocationProcessing.Service
         {
             List<string> cities = ["Krakow", "Reykjavik", "Cancun", "New York", "Rhodes",
                 "Penang", "Tenerife","Frankfurt","Sydney","Melbourne","Zurich","Quebec City",
-                "Nuremberg","Münich","Shibuya","Asakusa","Ueno" , "Nara","Magome","Roppongi",
+                "Nuremberg","Münich"];
+
+            List<string> districts = ["Shibuya","Asakusa","Ueno" , "Nara","Magome","Roppongi",
                 "ikebukuro","Nozawa Onsen","Niseko","Shinjuku","Hiroo","Harajuku","Ginza"
-                ,"Itsukushima","Shimokitazawa","Tendo city"];
-            if (_cityList.Any(o => o.name.ToLower() == city.ToLower())) return true;
+                ,"Itsukushima","Shimokitazawa","Tendo city","Fukui",
+"Odaiba",
+"Toyosu",
+"Rinku town",
+"Nikko",
+"shinjuku",
+"Ikebukuro",
+"Myoko",
+"Takachiho",
+"Seijo",
+"Daikanyama",
+"Ebina",
+"Rappongi",
+"Harajuka",
+"Akasaka",
+"Rusutsu",
+"Taito City",
+"Hokkaido",
+"Tokio",
+"Jiyugaoka",
+"Kawaguchiko",
+"Nozawa",
+"Akihabara",
+"Kamata",
+"Takadanobaba",
+"Aomori City",
+"Umeda",
+"Sendagaya",
+"Setagaya",
+"Aoyama",
+"Ryogoku",
+"Higashiazabu",
+"Tachikawa",
+"Azabujuban",
+"Shiodome",
+"Furano",
+"Sangenjaya",
+"Kichijoji",
+"Lower Hirafu",
+"Firenze",
+"Nozawaonsen",
+"Kurukawa",
+"Nihombashimuromachi",
+"Yatsushiro",
+"Naoshima",
+"Saigon",
+            "Shimbashi",
+"Matsuya Ginza",
+"SEIJO ISHII",
+"Shibuya City",
+"Sugamo",
+"Shirakawago",
+"Tokyo Bay",
+"Kinosaki Onsen",
+"Marunouchi",
+"Marrakech"
+            ];
+            if (city == "Kioto") city = "Kyoto";
+            if (city == "Giappone") city = "Japan";
+            if (city == "Ciudad de México") city = "Mexico City";
+            city = city.Replace("Gdasnk", "Gdańsk");
+            city = city.Replace("NYC", "New York");
+
+            if (districts.Any(o => o == city)) return true;
+            if (_cityList.Any(o => o.name.Equals(city, StringComparison.CurrentCultureIgnoreCase))) return true;
             if (cities.Any(o => o == city)) return true;
             return false;
         }
