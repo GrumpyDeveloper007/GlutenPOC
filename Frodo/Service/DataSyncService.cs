@@ -1,4 +1,5 @@
 ﻿using Frodo.Helper;
+using Gluten.Core.DataProcessing.Helper;
 using Gluten.Core.DataProcessing.Service;
 using Gluten.Core.Helper;
 using Gluten.Core.Interface;
@@ -36,7 +37,6 @@ namespace Frodo.Service
         private readonly TopicLoaderService _topicLoaderService = new(_topicsLoaderService, Console);
 
         public List<DetailedTopic> Topics = [];
-        private readonly bool _regeneratePins = true;
 
         /// <summary>
         /// Processes the file generated from FB, run through many processing stages finally generating an export file for the client app
@@ -61,13 +61,26 @@ namespace Frodo.Service
 
             _aiVenueCleanUpService.ResetIsExportable(Topics);
             var placeNames = _aiVenueCleanUpService.GetPlaceNames(Topics);
+            var places = "";
+            Console.WriteLine($"----------------------");
+            foreach (var item in placeNames)
+            {
+                if (SmartPlaceNameFilterHelper.IsSkippable(item))
+                {
+                    Console.WriteLineRed($"Skipping :{item}");
+                }
+
+                places += $"{item}\r\n";
+            }
+
             string filePath = "D:\\Coding\\Gluten\\Outputs\\";
-            File.WriteAllText(filePath + "placeNames.txt", placeNames);
+            File.WriteAllText(filePath + "placeNames.txt", places);
 
 
             _pinCacheSyncService.MakeSureIndexIsInSearchString();
             _pinCacheSyncService.CheckRestaurantTypes();
-            _pinCacheSyncService.CheckPriceExtraction();
+            //_pinCacheSyncService.CheckPriceExtraction();
+            //_pinCacheSyncService.CheckFilteredRestaurantTypes();
 
 
             //await _localAi.ExtractDescriptionTitle("this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message", "test");
@@ -81,6 +94,7 @@ namespace Frodo.Service
             UpdateMessageAndResponseUrls();
 
             await CategoriseTopic();
+            await CalculateLanguageTopic();
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nStarting AI processing - detecting venue name/address");
@@ -90,7 +104,7 @@ namespace Frodo.Service
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nGenerating country names from topic title");
-            await ScanTopicsDetectCountryAndCity();
+            //await ScanTopicsDetectCountryAndCity();
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nFiltering AI pins");
@@ -189,10 +203,8 @@ namespace Frodo.Service
             Stopwatch timer = new();
             for (int i = 0; i < Topics.Count; i++)
             {
-                if (i < 30520) continue;
-
                 DetailedTopic? topic = Topics[i];
-                //if (topic.IsAiVenuesSearchDone) continue;
+                if (topic.IsAiVenuesSearchDone) continue;
                 if (_aiVenueLocationService.IsRecipe(topic)) continue;
                 if (_aiVenueLocationService.IsTopicAQuestion(topic)) continue;
 
@@ -327,7 +339,6 @@ namespace Frodo.Service
 
             for (int i = 0; i < Topics.Count; i++)
             {
-                if (i < 51810) continue;
                 DetailedTopic? topic = Topics[i];
 
                 if (topic.AiVenues == null || topic.AiVenues.Count == 0) continue;
@@ -335,7 +346,7 @@ namespace Frodo.Service
                 if (_aiVenueLocationService.IsTopicAQuestion(topic)) continue;
                 if (!string.IsNullOrWhiteSpace(Topics[i].TitleCountry) && !string.IsNullOrWhiteSpace(Topics[i].TitleCity)) continue;
                 //if (topic.TitleCategory != "DESCRIBE") continue;
-                //if (topic.CitySearchDone) continue;
+                if (topic.CitySearchDone) continue;
                 if (itemsUpdated > 100)
                 {
                     Console.WriteLineBlue("Saving Topics");
@@ -416,12 +427,12 @@ namespace Frodo.Service
                     country = country.Replace("Belgium --", "Belgium");
                     country = country.Replace("Canary islands", "Spain");
                     country = country.Replace("Gran Canaria", "Spain");
+                    country = country.Replace("Peru", "Peru (Peruvian point of view)");
                     country = country.Replace("Perú", "Peru (Peruvian point of view)");
 
 
                     country = country.Replace("Bali", "Indonesia");
                     country = country.Replace("Czechia", "Czech Republic");
-                    country = country.Replace("Peru", "Peru(Peruvian point of view)");
                     if (country.StartsWith("Korea"))
                         country = country.Replace("Korea", "South Korea");
 
@@ -465,6 +476,41 @@ namespace Frodo.Service
                 Console.WriteLineBlue(city);
             }
 
+
+            _topicsLoaderService.SaveTopics(Topics);
+        }
+
+
+
+        private async Task CalculateLanguageTopic()
+        {
+            var itemsUpdated = 0;
+
+            for (int i = 0; i < Topics.Count; i++)
+            {
+                DetailedTopic? topic = Topics[i];
+
+                if (!string.IsNullOrWhiteSpace(topic.TitleLanguage)) continue;
+                if (itemsUpdated > 100)
+                {
+                    Console.WriteLineBlue("Saving Topics");
+                    _topicsLoaderService.SaveTopics(Topics);
+                    itemsUpdated = 0;
+                }
+
+                var language1 = await _localAi.CalculateLanguage(topic.Title);
+                var language2 = await _localAi.CalculateLanguage(topic.Title);
+                var language3 = await _localAi.CalculateLanguage(topic.Title);
+                var language = language1;
+                if (language2 == language3) language = language2;
+                if (language != "English")
+                {
+                    Console.WriteLine($"Categorise topics {i} of {Topics.Count} : {language}");
+                }
+                Console.WriteLine($"Categorise topics {i} of {Topics.Count} : {language1},{language2},{language3}");
+                topic.TitleLanguage = language;
+                itemsUpdated++;
+            }
 
             _topicsLoaderService.SaveTopics(Topics);
         }
@@ -552,7 +598,7 @@ namespace Frodo.Service
                     var url = topic.UrlsV2[t].Url;
                     if (!MapPinHelper.IsMapsUrl(url)) continue;
 
-                    if (topic.UrlsV2[t].Pin == null || _regeneratePins)
+                    if (topic.UrlsV2[t].Pin == null)
                     {
                         var cachePin = _mapPinService.TryToGenerateMapPin(url, url, groupCountry, "");
                         if (cachePin == null)
@@ -593,7 +639,7 @@ namespace Frodo.Service
                             if (!MapPinHelper.IsMapsUrl(url)) continue;
 
 
-                            if (links[t].Pin == null || _regeneratePins)
+                            if (links[t].Pin == null)
                             {
                                 var cachePin = _mapPinService.TryToGenerateMapPin(url, url, groupCountry, "");
                                 if (cachePin == null)

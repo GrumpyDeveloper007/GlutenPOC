@@ -156,6 +156,33 @@ namespace Gluten.FBModel.Helper
                     seconds = trackingInfo.page_insights._573768437691444?.post_context?.publish_time ?? 0;
                 else if (trackingInfo.page_insights._1452094601717166 != null)
                     seconds = trackingInfo.page_insights._1452094601717166?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._1025248344200757 != null)
+                    seconds = trackingInfo.page_insights._1025248344200757?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._746699194039212 != null)
+                    seconds = trackingInfo.page_insights._746699194039212?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._191520127713279 != null)
+                    seconds = trackingInfo.page_insights._191520127713279?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._428227140573301 != null)
+                    seconds = trackingInfo.page_insights._428227140573301?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._100005382646259 != null)
+                    seconds = trackingInfo.page_insights._100005382646259?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._100082959441702 != null)
+                    seconds = trackingInfo.page_insights._100082959441702?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._1587317368127948 != null)
+                    seconds = trackingInfo.page_insights._1587317368127948?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._403103165372802 != null)
+                    seconds = trackingInfo.page_insights._403103165372802?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._167644913804569 != null)
+                    seconds = trackingInfo.page_insights._167644913804569?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._938709760910143 != null)
+                    seconds = trackingInfo.page_insights._938709760910143?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._100054658493997 != null)
+                    seconds = trackingInfo.page_insights._100054658493997?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._205340443215686 != null)
+                    seconds = trackingInfo.page_insights._205340443215686?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._1147493181954443 != null)
+                    seconds = trackingInfo.page_insights._1147493181954443?.post_context?.publish_time ?? 0;
+
 
                 else
                 {

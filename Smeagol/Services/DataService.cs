@@ -24,7 +24,7 @@ namespace Smeagol.Services
 
         public static List<string> LoadGroupPost()
         {
-            var data = JsonHelper.TryLoadJson<string>(GroupPostProcessedFileName);
+            var data = JsonHelper.TryLoadJsonList<string>(GroupPostProcessedFileName);
             if (data == null) return [];
             return data;
         }

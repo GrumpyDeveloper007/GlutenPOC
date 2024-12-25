@@ -41,6 +41,8 @@ namespace Gluten.Core.DataProcessing.Helper
             // TODO: Remove restaurant types from place name?
             // TODO: Apply fuzzy logic or spell check?
 
+
+            placeName = placeName.Replace("Blacktap", "Black Tap");
             placeName = placeName.Replace("MooMoo Steak and Wine", "Moo Moo");
             placeName = placeName.Replace("Moo Moo Steak", "Moo Moo");
             placeName = placeName.Replace("Sushi Go Round", "Sushi-Go-Round");
@@ -198,6 +200,7 @@ namespace Gluten.Core.DataProcessing.Helper
 
 
             // Error with spaces / Missing spaces
+            placeName = placeName.Replace("Star Bucks", "Starbucks");
             placeName = placeName.Replace("Taco Taco", "TacoTaco");
             placeName = placeName.Replace("Salad Stop", "SaladStop!");
             placeName = placeName.Replace("IsomaruSuisan", "Isomaru Suisan");

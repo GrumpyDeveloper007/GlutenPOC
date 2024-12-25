@@ -315,7 +315,7 @@ internal class AiVenueCleanUpService(
         _topicsService.SaveTopics(topics);
     }
 
-    public string GetPlaceNames(List<DetailedTopic> topics)
+    public List<string> GetPlaceNames(List<DetailedTopic> topics)
     {
         var citys = new CityService();
         Console.WriteLine("--------------------------------------");
@@ -335,12 +335,7 @@ internal class AiVenueCleanUpService(
         }
 
         placeNames.Sort();
-        var places = "";
-        foreach (var item in placeNames)
-        {
-            places += $"{item}\r\n";
-        }
-        return places;
+        return placeNames;
     }
 
 

@@ -1,4 +1,5 @@
-﻿using Gluten.Core.DataProcessing.Service;
+﻿using Gluten.Core.DataProcessing.Helper;
+using Gluten.Core.DataProcessing.Service;
 using Gluten.Core.Helper;
 using Gluten.Core.Interface;
 using Gluten.Core.LocationProcessing.Service;
@@ -63,6 +64,31 @@ namespace Frodo.Service
 
             var restaurants = _restaurantTypeService.GetRestaurantTypes();
             _databaseLoaderService.SaveRestaurantList(restaurants);
+            _databaseLoaderService.SavePinDB();
+        }
+
+
+        public void CheckFilteredRestaurantTypes()
+        {
+            var cache = _mapPinCache.GetCache();
+            foreach (var item in cache)
+            {
+                if (item.Value == null) continue;
+
+                if (PlaceNameFilterHelper.IsInPlaceNameSkipList(item.Key))
+                {
+                    Console.WriteLine(item.Key);
+                }
+
+                foreach (var search in item.Value.SearchStrings)
+                {
+                    if (PlaceNameFilterHelper.IsInPlaceNameSkipList(search))
+                    {
+                        Console.WriteLine(search);
+                    }
+                }
+            }
+
             _databaseLoaderService.SavePinDB();
         }
 

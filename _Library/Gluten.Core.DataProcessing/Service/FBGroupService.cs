@@ -88,6 +88,9 @@ namespace Gluten.Core.DataProcessing.Service
             // new
             {"167644913804569","France" },          //Gluten Free Anglophones in France
             {"938709760910143","" },                //Sun, Sea and Gluten Free 💗
+            {"205340443215686","" },                //Free From Gluten
+            {"1147493181954443","United Kingdom" }, //The North East Gluten Free Foodie
+            
             
             
             //{"","" },

@@ -172,7 +172,19 @@ namespace Gluten.Core.DataProcessing.Helper
             "Bali",
             "pad",
             "Gluten Free",
-
+            "Gluten Morgen",
+            "<Recommended ice cream place>",
+            "Any GF Resturants",
+            "Restaurant near Exit Glacier",
+            "Gf Bitter",
+            "Main restaurant",
+            "Celiac Safe restaurants",
+            "Most restaurants in Argentina and Uruguay",
+            "There's also a plaza with a nice diner and some stores in it",
+            "There's a Subway nearby if you need anything else to grab on quick. Subway is near the 15 exit in Selinsgrove on Rt. 15",
+            "gluten-free stand",
+            "burger food truck near SeicoMart",
+            "Yueng Sing market"
             ];
 
 
