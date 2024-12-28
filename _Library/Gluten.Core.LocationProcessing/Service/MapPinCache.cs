@@ -27,17 +27,13 @@ namespace Gluten.Core.LocationProcessing.Service
 
         public void Clean()
         {
+            int count = 0;
             foreach (var item in _pinCache.Values)
             {
+                count++;
+                if (item == null) continue;
                 for (int i = item.SearchStrings.Count - 1; i >= 0; i--)
                 {
-                    if (item.SearchStrings[i].StartsWith("https://www.google.com/maps/place/")
-                        || item.SearchStrings[i].StartsWith("https://www.google.it/maps/place/"))
-                    {
-                        Console.WriteLine($"Removing {item.SearchStrings[i]}");
-                        item.SearchStrings.RemoveAt(i);
-                    }
-
                     // remove duplicates
                     for (int t = item.SearchStrings.Count - 1; t >= 0; t--)
                     {
@@ -48,6 +44,14 @@ namespace Gluten.Core.LocationProcessing.Service
                             break;
                         }
                     }
+
+                    if (item.SearchStrings[i].StartsWith("https://www.google.com/maps/place/")
+                        || item.SearchStrings[i].StartsWith("https://www.google.it/maps/place/"))
+                    {
+                        Console.WriteLine($"Removing {item.SearchStrings[i]}");
+                        item.SearchStrings.RemoveAt(i);
+                    }
+
                 }
             }
         }

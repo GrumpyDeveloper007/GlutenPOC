@@ -13,6 +13,8 @@ namespace Gluten.Core.DataProcessing.Helper
     public static class PlaceNameFilterHelper
     {
         private static readonly List<string> _exactNameFilters = [
+            "Grab",
+            "FoodPanda",
             "cafe",
             "Pub",
             "GF",
@@ -184,7 +186,10 @@ namespace Gluten.Core.DataProcessing.Helper
             "There's a Subway nearby if you need anything else to grab on quick. Subway is near the 15 exit in Selinsgrove on Rt. 15",
             "gluten-free stand",
             "burger food truck near SeicoMart",
-            "Yueng Sing market"
+            "Yueng Sing market",
+            "Emirates",
+            "Shops with TopValue brand",
+            "Hotel Breakfast Buffet"
             ];
 
 
@@ -1089,7 +1094,6 @@ namespace Gluten.Core.DataProcessing.Helper
             "Pizza place",
             "Chanti",
             "Japanese or Korean gluten-free",
-            "Hotel",
             "Le corts apts",
             "GF shop",
             "Italian",

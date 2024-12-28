@@ -22,9 +22,9 @@ internal class FacebookSniffer
     {
         _dataService = dataService;
         _settings = settings;
-        var options = new ChromeOptions();
-        options.AddArguments("--js-flags=\" --max_old_space_size=1024 --max_semi_space_size=1024 \"");
-        _driver = new ChromeDriver(options);
+        //var options = new ChromeOptions();
+        //options.AddArguments("--js-flags=\" --max_old_space_size=1024 --max_semi_space_size=1024 \"");
+        _driver = new ChromeDriver();
     }
 
     public void Start()
@@ -61,7 +61,14 @@ internal class FacebookSniffer
 
         }
         _driver.CloseDevToolsSession();
-        _driver.Close();
+        try
+        {
+            _driver.Close();
+        }
+        catch
+        {
+
+        }
     }
 
     private void Network_NetworkResponseReceived(object? sender, NetworkResponseReceivedEventArgs e)

@@ -34,7 +34,7 @@ namespace Frodo.Service
         )
     {
         private readonly string _responsefileName = "D:\\Coding\\Gluten\\Database\\Responses.txt";
-        private readonly TopicLoaderService _topicLoaderService = new(_topicsLoaderService, Console);
+        private readonly TopicLoaderService _topicLoaderService = new(_topicsLoaderService, _fBGroupService, Console);
 
         public List<DetailedTopic> Topics = [];
 
@@ -59,7 +59,6 @@ namespace Frodo.Service
                 temp += $"\"{venue.PlaceName}\",\n";
             }
 
-            _aiVenueCleanUpService.ResetIsExportable(Topics);
             var placeNames = _aiVenueCleanUpService.GetPlaceNames(Topics);
             var places = "";
             Console.WriteLine($"----------------------");
@@ -77,6 +76,8 @@ namespace Frodo.Service
             File.WriteAllText(filePath + "placeNames.txt", places);
 
 
+            _aiVenueCleanUpService.ResetIsExportable(Topics);
+            _aiVenueLocationService.RemoveDuplicatedPins(Topics);
             _pinCacheSyncService.MakeSureIndexIsInSearchString();
             _pinCacheSyncService.CheckRestaurantTypes();
             //_pinCacheSyncService.CheckPriceExtraction();
@@ -88,6 +89,7 @@ namespace Frodo.Service
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nReading captured FB data");
             _topicLoaderService.ReadFileLineByLine(_responsefileName, Topics);
+            //_topicLoaderService.ReadTestFile("D:\\Coding\\Gluten\\Database\\LinkedStory.json");
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nProcessing information from source");
@@ -95,6 +97,7 @@ namespace Frodo.Service
 
             await CategoriseTopic();
             await CalculateLanguageTopic();
+            await TranslateTopic();
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nStarting AI processing - detecting venue name/address");
@@ -104,7 +107,7 @@ namespace Frodo.Service
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nGenerating country names from topic title");
-            //await ScanTopicsDetectCountryAndCity();
+            await ScanTopicsDetectCountryAndCity();
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nFiltering AI pins");
@@ -149,6 +152,8 @@ namespace Frodo.Service
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nGenerating data for client application");
             await _clientExportFileGenerator.GenerateTopicExport(Topics);
+            _topicsLoaderService.SaveTopics(Topics);
+
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nComplete, exit...");
@@ -169,7 +174,7 @@ namespace Frodo.Service
                 }
 
                 if (topic.ShortTitleProcessed) continue;
-                if (i % 10 == 0)
+                if (i % 1000 == 0)
                     Console.WriteLine($"Generating short title {i} of {Topics.Count}");
 
                 if ((topic.AiVenues == null || topic.AiVenues.Count == 0)
@@ -310,6 +315,10 @@ namespace Frodo.Service
             if (oldVenues == null && newVenues != null)
             {
                 oldVenues = newVenues;
+                for (int i = 0; i < newVenues.Count; i++)
+                {
+                    Console.WriteLineBlue($"Adding new venue :{newVenues[i].PlaceName}");
+                }
                 return false;
             }
 
@@ -481,6 +490,39 @@ namespace Frodo.Service
         }
 
 
+        private async Task TranslateTopic()
+        {
+            var itemsUpdated = 0;
+
+            for (int i = 0; i < Topics.Count; i++)
+            {
+                DetailedTopic? topic = Topics[i];
+
+                if (itemsUpdated > 100)
+                {
+                    Console.WriteLineBlue("Saving Topics");
+                    _topicsLoaderService.SaveTopics(Topics);
+                    itemsUpdated = 0;
+                }
+
+                if (!string.IsNullOrWhiteSpace(topic.TitleLanguage)
+                    && topic.TitleLanguage != "English"
+                    && topic.TitleLanguage != "Japanese"
+                    && string.IsNullOrWhiteSpace(topic.TitleEnglish)
+                    && !string.IsNullOrWhiteSpace(topic.Title))
+                {
+                    var text = await _localAi.TranslateToEnglish(topic.Title);
+                    Console.WriteLine($"Translate topics {i} of {Topics.Count} : ");
+                    topic.TitleEnglish = text;
+                    itemsUpdated++;
+                }
+
+            }
+
+            _topicsLoaderService.SaveTopics(Topics);
+        }
+
+
 
         private async Task CalculateLanguageTopic()
         {
@@ -490,6 +532,7 @@ namespace Frodo.Service
             {
                 DetailedTopic? topic = Topics[i];
 
+                if (string.IsNullOrWhiteSpace(topic.Title)) continue;
                 if (!string.IsNullOrWhiteSpace(topic.TitleLanguage)) continue;
                 if (itemsUpdated > 100)
                 {
@@ -503,6 +546,10 @@ namespace Frodo.Service
                 var language3 = await _localAi.CalculateLanguage(topic.Title);
                 var language = language1;
                 if (language2 == language3) language = language2;
+                if (language1.Length > 10 || language2.Length > 10 || language3.Length > 10)
+                {
+                    Console.WriteLine($"Categorise topics {i} of {Topics.Count} : {language}");
+                }
                 if (language != "English")
                 {
                     Console.WriteLine($"Categorise topics {i} of {Topics.Count} : {language}");
@@ -565,8 +612,8 @@ namespace Frodo.Service
             int searchesDone = 0;
             for (int i = 0; i < Topics.Count; i++)
             {
-                if (i < 55663) continue;
                 Console.WriteLine($"Processing {i} of {Topics.Count} updating embedded urls");
+                if (i < 30000) continue;
                 if (searchesDone > 50)
                 {
                     _databaseLoaderService.SavePinDB();

@@ -191,7 +191,7 @@ namespace Frodo.Service
                         if (string.IsNullOrWhiteSpace(metaHtml))
                         {
                             Console.WriteLine($"Unable to get meta for {item.Value.Label}");
-                            cache.Remove(item.Key);
+                            //cache.Remove(item.Key);
                         }
                     }
                 }
@@ -204,7 +204,7 @@ namespace Frodo.Service
                 if (item.Value.MetaData == null)
                 {
                     Console.WriteLine($"Unable to get meta for {item.Value.Label}");
-                    cache.Remove(item.Key);
+                    //cache.Remove(item.Key);
                 }
 
                 item.Value.MetaProcessed = true;

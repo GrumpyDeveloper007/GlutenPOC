@@ -91,13 +91,21 @@ namespace Gluten.Core.DataProcessing.Service
             {"205340443215686","" },                //Free From Gluten
             {"1147493181954443","United Kingdom" }, //The North East Gluten Free Foodie
             
-            
-            
+            {"918867574821402","Romania" },         //Celiac la Restaurant - fara gluten public
+            {"110689309272680","Peru" },            //Perú Sin Gluten
+            {"161399357837455","Guatemala" },       //Gluten free Antigua Guatemala - public
+            {"263520447526095","" },                //Sin gluten con amor.			- public, mostly products
+            {"390608588786276","Spain" },           //Alicante Sin Gluten
+            {"1235554466913814","" },               //Sin gluten, Celiac@s 			- big group 
+            {"503548514144589","Peru" },            //Comunidad Sin Gluten			- big group
+
             //{"","" },
         };
 
         private readonly Dictionary<string, string> _groupIdToCity = new()
         {
+
+            {"390608588786276","Alicante" },
             {"3087018218214300","Bali" },//Gluten Free in Bali
             {"422262581142441","Hong Kong" },//Gluten Free in Hong Kong
             {"660915839470807","Ho Chi Minh City" },//Gluten Free Saigon (Ho Chi Minh City)
@@ -120,6 +128,13 @@ namespace Gluten.Core.DataProcessing.Service
             {"1535703166696570","New York" },//Coeliac and Gluten Free York			public group
         };
 
+
+        public bool IsFilteredGroup(string groupId)
+        {
+            List<string> groups = ["497294327007595"];
+            if (groups.Contains(groupId)) return true;
+            return false;
+        }
 
 
         public bool IsGenericGroup(string groupId)

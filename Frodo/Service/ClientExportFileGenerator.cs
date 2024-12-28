@@ -123,8 +123,9 @@ namespace Frodo.Service
 
                 if (topic.AiVenues != null)
                 {
-                    foreach (var aiVenue in topic.AiVenues)
+                    for (int i = topic.AiVenues.Count - 1; i >= 0; i--)
                     {
+                        AiVenue? aiVenue = topic.AiVenues[i];
                         if (aiVenue.Pin != null && aiVenue.IsExportable && !aiVenue.IsChain)
                         {
                             var cachePin = _mapPinCache.TryGetPinLatLong(aiVenue.Pin.GeoLatitude, aiVenue.Pin.GeoLongitude, aiVenue.PlaceName);
@@ -134,7 +135,19 @@ namespace Frodo.Service
                             }
                             if (cachePin == null)
                             {
-                                Console.WriteLine($"Unable to get cache pin {aiVenue.PlaceName} ");
+                                if (aiVenue.ChainGenerated)
+                                {
+                                    Console.WriteLine($"Unable to get cache pin, broken chain generated : {aiVenue.PlaceName} ");
+                                    //topic.AiVenues.RemoveAt(i);
+                                    continue;
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"Unable to get cache pin, broken static pin {aiVenue.PlaceName} ");
+                                    aiVenue.Pin = null;
+                                    aiVenue.PinSearchDone = false;
+                                    continue;
+                                }
                             }
 
                             var pinCountry = _geoService.GetCountryPin(cachePin);
@@ -145,7 +158,7 @@ namespace Frodo.Service
                                 continue;
                             }
 
-                            if (!_fBGroupService.IsPinWithinExpectedRange(topic.GroupId, aiVenue.Pin))
+                            if (aiVenue.Pin != null && !_fBGroupService.IsPinWithinExpectedRange(topic.GroupId, aiVenue.Pin))
                             {
                                 Console.WriteLine($"Rejecting pin latitude / longitude out of range");
                                 continue;
@@ -155,7 +168,6 @@ namespace Frodo.Service
                             if (aiVenue.Pin != null
                                 && !string.IsNullOrWhiteSpace(aiVenue.Pin.GeoLatitude)
                                 && !string.IsNullOrWhiteSpace(aiVenue.Pin.GeoLongitude)
-                                //&& FBGroupService.IsPinWithinExpectedRange(topic.GroupId, double.Parse(aiVenue.Pin.GeoLatitude), double.Parse(aiVenue.Pin.GeoLongitude))
                                 )
                             {
                                 var existingPin = DataHelper.IsPinInList(aiVenue.Pin, pins);
@@ -292,7 +304,7 @@ namespace Frodo.Service
             {
                 var item = pins[i];
                 var existingDbPin = FindDbPin(items, item);
-                if (i % 100 == 0)
+                if (i % 500 == 0)
                     Console.WriteLine($"Writing to database {i}");
                 var dbItem = mapper.Map<PinTopicDb, PinTopic>(item);
                 dbItem.Country = _geoService.GetCountryPin(item);

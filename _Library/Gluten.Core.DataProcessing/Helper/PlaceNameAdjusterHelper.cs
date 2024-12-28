@@ -19,6 +19,7 @@ namespace Gluten.Core.DataProcessing.Helper
             placeName = RemoveSuffix(placeName, "salad place");
             placeName = RemoveSuffix(placeName, "-");
             placeName = RemoveSuffix(placeName, " bakery");
+            placeName = RemoveSuffix(placeName, " Chain");
 
 
             if (!placeName.Contains("Pizzeria Vesi")) placeName = placeName.Replace("Vesi", "Pizzeria Vesi");

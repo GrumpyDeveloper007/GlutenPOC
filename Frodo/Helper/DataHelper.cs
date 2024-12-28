@@ -3,6 +3,9 @@ using Gluten.Core.Service;
 using Gluten.Data.ClientModel;
 using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
+using NetTopologySuite.Index.HPRtree;
+using OpenQA.Selenium.BiDi.Modules.BrowsingContext;
+using System.Web;
 
 namespace Frodo.Helper
 {
@@ -65,16 +68,37 @@ namespace Frodo.Helper
             {
                 AiVenue? item = venues[i];
                 if (i != newVenueIndex
-                    && item.Pin != null && venue.Pin != null
-                    && item.Pin.Label == venue.Pin.Label
                     && item.IsChain == venue.IsChain
                     && item.ChainGenerated == venue.ChainGenerated
-                    && item.Pin.GeoLongitude == venue.Pin.GeoLongitude
-                    && item.Pin.GeoLatitude == venue.Pin.GeoLatitude
-                    && (ignoreChains == false || !item.IsChain))
+                    )
                 {
-                    return true;
+                    // search done and pin found, details match
+                    if (IsPinMatch(item.Pin, venue.Pin))
+                    {
+                        return true;
+                    }
+
+                    // search done and no pin found
+                    if (item.PinSearchDone //&& venue.PinSearchDone
+                        && item.Pin == null && venue.Pin == null
+                        && item.PlaceName == venue.PlaceName)
+                    {
+                        return true;
+                    }
                 }
+            }
+            return false;
+        }
+
+        private static bool IsPinMatch(TopicPin? original, TopicPin? newPin)
+        {
+            if (original != null && newPin != null
+            && original.Label == newPin.Label
+                && original.GeoLongitude == newPin.GeoLongitude
+                && original.GeoLatitude == newPin.GeoLatitude
+                )
+            {
+                return true;
             }
             return false;
         }
@@ -84,7 +108,7 @@ namespace Frodo.Helper
         /// or updates data if new (only really needed because of evolvoing data structures, TODO: can be cleaned up later)
         /// </summary>
         public static void AddIfNotExists(List<PinTopic> pins, PinTopic? matchingPinTopic,
-            PinLinkInfo topicToAdd, TopicPin? pinToAdd, TopicPinCache? cachePin)
+                PinLinkInfo topicToAdd, TopicPin? pinToAdd, TopicPinCache? cachePin)
         {
             if (pinToAdd == null) return;
             if (pinToAdd == null) return;
@@ -99,7 +123,7 @@ namespace Frodo.Helper
                 {
                     GeoLatitude = double.Parse(pinToAdd.GeoLatitude),
                     GeoLongitude = double.Parse(pinToAdd.GeoLongitude),
-                    Label = pinToAdd.Label,
+                    Label = HttpUtility.UrlDecode(pinToAdd.Label),
                     Topics = [topicToAdd],
                 };
                 if (cachePin != null && !string.IsNullOrWhiteSpace(cachePin.MapsUrl))

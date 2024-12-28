@@ -41,14 +41,16 @@ namespace Gluten.Core.Helper
         /// <summary>
         /// Checks to see if a topic exists for the given nodeId, selects it or creates a new one
         /// </summary>
-        public static DetailedTopic GetOrCreateTopic(List<DetailedTopic> topics, string nodeId, string messageText)
+        public static DetailedTopic GetOrCreateTopic(List<DetailedTopic> topics, string nodeId, string messageText, out bool existing)
         {
             DetailedTopic? currentTopic = null;
+            existing = false;
             foreach (var topic in topics)
             {
                 if (topic.NodeID == nodeId)
                 {
                     currentTopic = topic;
+                    existing = true;
                     break;
                 }
             }
@@ -59,7 +61,7 @@ namespace Gluten.Core.Helper
                     NodeID = nodeId,
                     Title = messageText,
                 };
-                topics.Add(currentTopic);
+                //topics.Add(currentTopic);
             }
             return currentTopic;
         }

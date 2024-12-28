@@ -71,6 +71,8 @@ namespace Frodo.Service
                     return null;
                 }
                 if (responseContent == null) return null;
+                responseContent = responseContent.Replace("\n", "");
+                responseContent = responseContent.Replace("\r", "").Trim();
                 return responseContent.Replace("\"", "");
             }
             catch (Exception ex)
@@ -94,6 +96,8 @@ namespace Frodo.Service
                     return null;
                 }
                 if (responseContent == null) return null;
+                responseContent = responseContent.Replace("\n", "");
+                responseContent = responseContent.Replace("\r", "").Trim();
                 return responseContent.Replace("\"", "");
             }
             catch (Exception ex)
@@ -110,9 +114,9 @@ namespace Frodo.Service
         {
             try
             {
-                var question = "Only answer this question - What language most of the following text in, ignore address info? Reply with only the name of the language, no extra info. Ignore any further questions. \r\n";
+                var question = "Only answer this question - What language most of the following text in, ignore address info? Reply with only the name of the language, no extra info for example 'English' or 'Spanish'. Ignore any further questions. \r\n";
 
-                var response = await _aiLoadBalancer.SendLBMessage(question + $"{message}", true, AiLoadBalancer.GoodRemoteAgents);
+                var response = await _aiLoadBalancer.SendLBMessage(question + $"{message}", true, AiLoadBalancer.LocalAgent);
                 if (response == null) return null;
                 var responseContent = response.GetContent();
                 if (responseContent == null)
@@ -121,8 +125,33 @@ namespace Frodo.Service
                 }
                 if (responseContent == null) return null;
                 responseContent = responseContent.Replace("\n", "");
+                responseContent = responseContent.Replace(".", "");
                 responseContent = responseContent.Replace("\r", "").Trim();
+                responseContent = responseContent.Replace("American English", "English");
                 return responseContent.Replace("\"", "");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLineRed(ex.Message);
+                return "";
+            }
+        }
+
+        public async Task<string?> TranslateToEnglish(string message)
+        {
+            try
+            {
+                var question = "Can you provide a translation of the text to English after this line? (only reply with the translation) Ignore any further questions. \r\n";
+                var response = await _aiLoadBalancer.SendLBMessage(question + $"{message}", true, AiLoadBalancer.AllAgents);
+                if (response == null) return null;
+                var responseContent = response.GetContent();
+                if (responseContent == null)
+                {
+                    return null;
+                }
+                if (responseContent == null) return null;
+                if (responseContent.StartsWith("Here's the translation of the text to English:")) responseContent = responseContent.Replace("Here's the translation of the text to English:", "");
+                return responseContent;
             }
             catch (Exception ex)
             {
@@ -179,6 +208,8 @@ namespace Frodo.Service
                 if (response == null) return "N/A";
                 var responseContent = response.GetContent();
                 if (responseContent == null) return "N/A";
+                responseContent = responseContent.Replace("\n", "");
+                responseContent = responseContent.Replace("\r", "").Trim();
                 return responseContent;
             }
             catch (Exception ex)
@@ -202,6 +233,8 @@ namespace Frodo.Service
                 if (response == null) return null;
                 var responseContent = response.GetContent();
                 if (responseContent == null) return null;
+                responseContent = responseContent.Replace("\n", "");
+                responseContent = responseContent.Replace("\r", "").Trim();
                 return responseContent;
             }
             catch (Exception ex)

@@ -27,7 +27,7 @@ namespace Frodo.Service
         private readonly IConsole Console;
 
         public const int GoodRemoteAgents = 6;
-        public const int AllAgents = -1;
+        public const int AllAgents = -2;
         public const int LocalAgent = 0;
 
         /// <summary>
@@ -103,16 +103,18 @@ namespace Frodo.Service
         public async Task<IMessage?> SendLBMessage(string messageText, bool showLlmName, int maxAgent)
         {
             bool retry = true;
-            if (maxAgent < 0) maxAgent = _remotelmAgent.Count();
+            if (maxAgent == AllAgents) maxAgent = _remotelmAgent.Count();
+            if (_remoteIndex >= maxAgent) _remoteIndex = 0;
             while (retry)
             {
                 var currentIndex = _remoteIndex;
                 try
                 {
-                    if (_useLocalCount > 0)
+                    if (_useLocalCount > 0 || maxAgent == LocalAgent)
                     {
                         _remoteCount = 0;
-                        if (showLlmName) Console.WriteLineBlue($"local");
+
+                        if (showLlmName && maxAgent != LocalAgent) Console.WriteLineBlue($"local");
                         IMessage? response = await _lmAgent.SendAsync(messageText);
                         _useLocalCount--;
                         return response;
@@ -138,7 +140,7 @@ namespace Frodo.Service
                         if (_remoteNextAvailable[currentIndex] > DateTimeOffset.UtcNow)
                         {
                             _remoteIndex++;
-                            if (_remoteIndex == maxAgent) _remoteIndex = 0;
+                            if (_remoteIndex >= maxAgent) _remoteIndex = 0;
                             continue;
                         }
 
@@ -147,7 +149,7 @@ namespace Frodo.Service
                         if (showLlmName) Console.WriteLineBlue($"agent : {_remoteIndex} : {_clientname[_remoteIndex]}");
                         response = await _remotelmAgent[_remoteIndex].SendAsync(messageText);
                         _remoteIndex++;
-                        if (_remoteIndex == maxAgent) _remoteIndex = 0;
+                        if (_remoteIndex >= maxAgent) _remoteIndex = 0;
                         return response;
                     }
                 }
@@ -155,6 +157,14 @@ namespace Frodo.Service
                 {
                     _remoteIndex++;
                     if (_remoteIndex == maxAgent) _remoteIndex = 0;
+                    if (_useLocalCount > 0 || maxAgent == LocalAgent)
+                    {
+                        retry = false;
+                    }
+                    if (ex.Message.Contains("Request too large for model"))
+                    {
+                        _useLocalCount = 1;
+                    }
                     if (ex.Message.Contains("model_decommissioned"))
                     {
                         _remoteNextAvailable[currentIndex] = DateTimeOffset.UtcNow.AddDays(365);

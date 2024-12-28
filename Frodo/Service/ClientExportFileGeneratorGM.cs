@@ -91,6 +91,7 @@ namespace Frodo.Service
             {
                 var item = gmPins[i];
                 var existingDbPin = FindDbPin(itemsGm, item);
+                item.Description = $"Pin generated from Google maps - {item.Comment}";
 
                 if (existingDbPin == null
                     || existingDbPin.Label != item.Label
@@ -101,8 +102,7 @@ namespace Frodo.Service
                     || existingDbPin.Comment != item.Comment
                     || existingDbPin.Description != item.Description)
                 {
-                    item.Description = $"Pin generated from Google maps - {item.Comment}";
-                    Console.WriteLine($"Writing to database {i}");
+                    Console.WriteLine($"Writing GM to database {i}");
                     var dbItem = mapper.Map<GMapsPinDb, GMapsPin>(item);
                     dbItem.Country = _geoService.GetCountryPin(item);
                     _dataStore.ReplaceItemAsync(dbItem).Wait();

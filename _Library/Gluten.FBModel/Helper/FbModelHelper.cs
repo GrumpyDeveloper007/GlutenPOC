@@ -182,7 +182,71 @@ namespace Gluten.FBModel.Helper
                     seconds = trackingInfo.page_insights._205340443215686?.post_context?.publish_time ?? 0;
                 else if (trackingInfo.page_insights._1147493181954443 != null)
                     seconds = trackingInfo.page_insights._1147493181954443?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._61560624580671 != null)
+                    seconds = trackingInfo.page_insights._61560624580671?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._110689309272680 != null)
+                    seconds = trackingInfo.page_insights._110689309272680?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._100083121222818 != null)
+                    seconds = trackingInfo.page_insights._100083121222818?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._100001999066907 != null)
+                    seconds = trackingInfo.page_insights._100001999066907?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._100063591966209 != null)
+                    seconds = trackingInfo.page_insights._100063591966209?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._918867574821402 != null)
+                    seconds = trackingInfo.page_insights._918867574821402?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._100063462763440 != null)
+                    seconds = trackingInfo.page_insights._100063462763440?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._100063752282380 != null)
+                    seconds = trackingInfo.page_insights._100063752282380?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._161399357837455 != null)
+                    seconds = trackingInfo.page_insights._161399357837455?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._100063828682053 != null)
+                    seconds = trackingInfo.page_insights._100063828682053?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._263520447526095 != null)
+                    seconds = trackingInfo.page_insights._263520447526095?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._390608588786276 != null)
+                    seconds = trackingInfo.page_insights._390608588786276?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._1235554466913814 != null)
+                    seconds = trackingInfo.page_insights._1235554466913814?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._100002119293737 != null)
+                    seconds = trackingInfo.page_insights._100002119293737?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._503548514144589 != null)
+                    seconds = trackingInfo.page_insights._503548514144589?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._100063520301683 != null)
+                    seconds = trackingInfo.page_insights._100063520301683?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._100063770546152 != null)
+                    seconds = trackingInfo.page_insights._100063770546152?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._100063587919272 != null)
+                    seconds = trackingInfo.page_insights._100063587919272?.post_context?.publish_time ?? 0;
+                else if (trackingInfo.page_insights._100062805141501 != null)
+                    seconds = trackingInfo.page_insights._100062805141501?.post_context?.publish_time ?? 0;
 
+                else if (trackingInfo.page_insights._100063618280186 != null)
+                    seconds = trackingInfo.page_insights._100063618280186?.post_context?.publish_time ?? 0;
+
+                else if (trackingInfo.page_insights._100063572320352 != null)
+                    seconds = trackingInfo.page_insights._100063572320352?.post_context?.publish_time ?? 0;
+
+                else if (trackingInfo.page_insights._497294327007595 != null)
+                    seconds = trackingInfo.page_insights._497294327007595?.post_context?.publish_time ?? 0;
+
+                else if (trackingInfo.page_insights._100063707374581 != null)
+                    seconds = trackingInfo.page_insights._100063707374581?.post_context?.publish_time ?? 0;
+
+                else if (trackingInfo.page_insights._100064362116863 != null)
+                    seconds = trackingInfo.page_insights._100064362116863?.post_context?.publish_time ?? 0;
+
+                else if (trackingInfo.page_insights._100053249987557 != null)
+                    seconds = trackingInfo.page_insights._100053249987557?.post_context?.publish_time ?? 0;
+
+                else if (trackingInfo.page_insights._105833364200390 != null)
+                    seconds = trackingInfo.page_insights._105833364200390?.post_context?.publish_time ?? 0;
+
+                else if (trackingInfo.page_insights._100075781135940 != null)
+                    seconds = trackingInfo.page_insights._100075781135940?.post_context?.publish_time ?? 0;
+
+                else if (trackingInfo.page_insights._100500652379911 != null)
+                    seconds = trackingInfo.page_insights._100500652379911?.post_context?.publish_time ?? 0;
 
                 else
                 {
@@ -258,7 +322,7 @@ namespace Gluten.FBModel.Helper
 
             foreach (var edge in root.data.serpResponse.results.edges)
             {
-                if (edge.relay_rendering_strategy.__typename == "SearchEndOfResultsModuleRenderingStrategy") continue;
+                if (edge.relay_rendering_strategy?.__typename == "SearchEndOfResultsModuleRenderingStrategy") continue;
                 if (edge?.relay_rendering_strategy?.view_model?.click_model?.story != null)
                 {
                     var story = edge.relay_rendering_strategy.view_model.click_model.story;

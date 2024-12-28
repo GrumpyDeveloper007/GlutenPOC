@@ -12,6 +12,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web;
+using static Gluten.Core.LocationProcessing.Service.CityService;
 
 namespace Frodo.Service;
 
@@ -61,7 +63,6 @@ internal class AiVenueLocationService
 
         for (int i = 0; i < topics.Count; i++)
         {
-            if (i < 16539) continue; // TODO: Manual review point 
             DetailedTopic? topic = topics[i];
             if (topic.AiVenues == null || topic.AiVenues.Count == 0) continue;
             if (IsRecipe(topic)) continue;
@@ -92,9 +93,9 @@ internal class AiVenueLocationService
                 if (ai.IsChain) continue;
                 if (!ai.IsExportable) continue;
                 if (ai.RejectedRestaurantType) continue;
-                if (GetCachePin(ai, groupCountry) != null) continue;
                 if (ai.Pin != null) continue;
-                if (ai.PinSearchDone && topic.TitleCategory != "DESCRIBE") continue;
+                //if (GetCachePin(ai, groupCountry, city) != null) continue;
+                //if (ai.PinSearchDone) continue;
                 if (IsInSkipList(ai, _placeNameSkipList)) continue;
 
                 if (!string.IsNullOrWhiteSpace(delayedConsoleLine))
@@ -106,6 +107,10 @@ internal class AiVenueLocationService
                 if (!GetMapPin(topic, ai, groupCountry, city, true))
                 {
                     Console.WriteLine($"Failed to find pin : {ai.PlaceName} : {pinsAdded}");
+                }
+                if (ai.Pin == null && ai.ChainGenerated)
+                {
+                    //topic.AiVenues.RemoveAt(t);
                 }
                 if (ai.Pin != null)
                 {
@@ -156,25 +161,13 @@ internal class AiVenueLocationService
                     ai.Pin = null;
                     continue;
                 }
-                if (GetCachePin(ai, groupCountry) != null) continue;
+                if (GetCachePin(ai, groupCountry, city) != null) continue;
                 if (IsInSkipList(ai, _placeNameSkipList)) continue;
                 if (ai.ChainGenerated) continue;
                 if (!ai.IsExportable) continue;
 
-
-                var placeName = _aiVenueProcessorService.FilterPlaceName(ai.PlaceName, groupCountry, city);
-                if (ai.ChainGenerated) placeName = ai.Pin.Label;
-                var cachePin = _mapPinCache.TryGetPinLatLong(ai.Pin.GeoLatitude, ai.Pin.GeoLongitude, placeName);
-                if (cachePin != null)
-                {
-                    cachePin.SearchStrings.Add(placeName);
-                    pinsAdded++;
-                    continue;
-                }
-
-
                 Console.WriteLine($"Check Ai Pins are in cache {i} of {topics.Count} : {StringHelper.Truncate(topic.Title, 75).Replace("\n", "")}");
-                if (!GetMapPin(topic, ai, groupCountry, city, ai.ChainGenerated))
+                if (!GetMapPin(topic, ai, groupCountry, city, !ai.ChainGenerated))
                 {
                     ai.Pin = null;
                 }
@@ -387,7 +380,7 @@ internal class AiVenueLocationService
         return false;
     }
 
-    private TopicPinCache? GetCachePin(AiVenue? ai, string groupCountry)
+    private TopicPinCache? GetCachePin(AiVenue? ai, string groupCountry, string city)
     {
         TopicPinCache? cachedPin = null;
 
@@ -399,9 +392,16 @@ internal class AiVenueLocationService
             {
                 return cachedPin;
             }
+
+            // alternate search
+            var placeName = _aiVenueProcessorService.FilterPlaceName(ai.PlaceName, groupCountry, city);
+            if (ai.ChainGenerated) placeName = ai.Pin.Label;
+            cachedPin = _mapPinCache.TryGetPinLatLong(ai.Pin.GeoLatitude, ai.Pin.GeoLongitude, placeName);
+            if (cachedPin != null)
+            {
+                return cachedPin;
+            }
         }
-        // alternate search
-        //cachedPin = _mapPinCache.TryGetPin(ai.PlaceName, groupCountry);
 
         return cachedPin;
     }
@@ -457,11 +457,29 @@ internal class AiVenueLocationService
         var result = _aiVenueProcessorService.GetMapPinForPlaceName(ai, country, city, chainUrls, true);
 
         // Add any chain urls detected earlier (searches that have multiple results)
-        if (chainUrls.Count > 0 && enableChainMatch && !ai.ChainGenerated)
+        if (chainUrls.Count > 0)
         {
-            ai.Pin = null;
-            ai.IsChain = true;
-            AddChainUrls(chainUrls, country, topic);
+            if (enableChainMatch && !ai.ChainGenerated)
+            {
+                ai.Pin = null;
+                ai.IsChain = true;
+                AddChainUrls(chainUrls, country, topic);
+            }
+            else
+            {
+                foreach (var item in chainUrls)
+                {
+                    var pin = PinHelper.GenerateMapPin(item, "", country);
+                    if (HttpUtility.UrlDecode(pin.Label) == ai.PlaceName)
+                    {
+                        if (pin.Label != ai.PlaceName) pin.SearchStrings.Add(ai.PlaceName);
+                        var newPin = _mapPinCache.AddPinCache(pin, ai.PlaceName, pin.Label);
+                        var topicPin = _mappingService.Map<TopicPin, TopicPinCache>(pin);
+                        ai.Pin = topicPin;
+
+                    }
+                }
+            }
         }
         if (!result && !string.IsNullOrWhiteSpace(ai.PlaceName) && !ai.IsChain
             && !PlaceNameFilterHelper.StartsWithPlaceNameSkipList(ai.PlaceName))
