@@ -64,8 +64,8 @@
         <TextBox Grid.Row="5" Name="txtMessage" Grid.Column="1" Margin="2,2,2,2"  HorizontalAlignment="Stretch" VerticalAlignment="Stretch"  TextWrapping="Wrap" Text="" ScrollViewer.CanContentScroll="True" VerticalScrollBarVisibility="Visible" FontSize="14" />
         <Grid  Grid.Column="0" Grid.Row="6" Grid.ColumnSpan="3" >
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="80"/>
-                <ColumnDefinition Width="80"/>
+                <ColumnDefinition Width="120"/>
+                <ColumnDefinition Width="120"/>
                 <ColumnDefinition Width="80"/>
                 <ColumnDefinition Width="80"/>
                 <ColumnDefinition Width="*"/>
@@ -76,7 +76,8 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="27"/>
             </Grid.RowDefinitions>
-            <Button x:Name="butCaptureInfo" Content="Capture Info" Grid.Column="0" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Top" Click="ButCaptureInfo_Click"   />
+            <Button x:Name="butCaptureInfo" Content="Capture Search" Grid.Column="0" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Top" Click="ButCaptureInfo_Click"   />
+            <Button x:Name="butCaptureSavedList" Content="Capture Saved List" Grid.Column="1" Grid.Row="0" HorizontalAlignment="Left" VerticalAlignment="Top" Click="ButCaptureSavedList_Click" />
             <Button x:Name="butLeft" Content="&lt;" Grid.Column="5" Grid.Row="0" VerticalAlignment="Top" Margin="0" HorizontalAlignment="Center" Width="22"  />
             <Button x:Name="butRight" Content="&gt;" Grid.Column="6" Grid.Row="0" HorizontalAlignment="Center" Margin="0" VerticalAlignment="Top" Width="22" />
             <TextBlock x:Name="txtCounter" Grid.Row="0" Grid.Column="7" Margin="2,2,2,2" TextWrapping="Wrap" Text="1/ 100"/>

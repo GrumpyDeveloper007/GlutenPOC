@@ -613,7 +613,6 @@ namespace Frodo.Service
             for (int i = 0; i < Topics.Count; i++)
             {
                 Console.WriteLine($"Processing {i} of {Topics.Count} updating embedded urls");
-                if (i < 30000) continue;
                 if (searchesDone > 50)
                 {
                     _databaseLoaderService.SavePinDB();

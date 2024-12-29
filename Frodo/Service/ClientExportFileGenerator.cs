@@ -96,10 +96,14 @@ namespace Frodo.Service
                     }
                 }
 
+
+
                 if (string.IsNullOrWhiteSpace(pin.RestaurantType))
                 {
                     unknownRestaurantType++;
                 }
+
+                pin.Description = $"AI Generated : {pin.Description}";
 
                 ii++;
             }
@@ -240,6 +244,7 @@ namespace Frodo.Service
             var itemsToAdd = 0;
             var itemsToUpdate = 0;
             Dictionary<string, int> deleteByCountry = new();
+            Dictionary<string, int> updateByCountry = new();
             for (int i = 0; i < items.Count; i++)
             {
                 var item = items[i];
@@ -270,6 +275,12 @@ namespace Frodo.Service
                         || item.Topics.Count != existingDbPin.Topics.Count)
                     {
                         itemsToUpdate++;
+                        if (!updateByCountry.ContainsKey(existingDbPin.Country))
+                        {
+                            updateByCountry.Add(existingDbPin.Country, 0);
+                        }
+                        updateByCountry[existingDbPin.Country] += 1;
+
                     }
 
                 }
@@ -281,7 +292,7 @@ namespace Frodo.Service
 
             foreach (var item in deleteByCountry)
             {
-                Console.WriteLine($"Items to Add : {item.Key} = {item.Value}");
+                Console.WriteLine($"Items to Delete : {item.Key} = {item.Value}");
             }
             Console.WriteLine($"Items to Add : {itemsToAdd}");
             Console.WriteLine($"Items to Delete : {itemsToDelete}");

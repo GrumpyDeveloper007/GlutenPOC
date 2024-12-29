@@ -26,6 +26,7 @@ namespace Gluten.Core.DataProcessing.Service
         private readonly string RestaurantsFileName = "D:\\Coding\\Gluten\\Database\\Restaurant.txt";
         private readonly string PinDescriptionCacheFileName = "D:\\Coding\\Gluten\\Database\\PinDescriptionCache.json";
         private readonly string GMPinFileName = "D:\\Coding\\Gluten\\Database\\GMPin.json";
+        private readonly string GMSharedPinFileName = "D:\\Coding\\Gluten\\Database\\GMSharedPin.json";
         private const string PlacenameSkipListFileName = "D:\\Coding\\Gluten\\Database\\PlaceNameSkipList.json";
 
         private readonly List<PinDescriptionCache> _pinDescriptionsCache;
@@ -169,6 +170,25 @@ namespace Gluten.Core.DataProcessing.Service
             if (data == null) return [];
             return data;
         }
+
+        /// <summary>
+        /// Save pins generated from shared lists
+        /// </summary>
+        public void SaveGMSharedPins(List<GMapsPin> data)
+        {
+            JsonHelper.SaveDb<List<GMapsPin>>(GMSharedPinFileName, data);
+        }
+
+        /// <summary>
+        /// Load pins generated from shared lists
+        /// </summary>
+        public List<GMapsPin> LoadGMSharedPins()
+        {
+            var data = JsonHelper.TryLoadJsonList<GMapsPin>(GMSharedPinFileName);
+            if (data == null) return [];
+            return data;
+        }
+
         /// <summary>
         /// Gets the PinHelper
         /// </summary>

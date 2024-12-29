@@ -49,7 +49,25 @@ namespace Gluten.Core.Helper
                 found.Comment = newPin.Comment;
                 found.RestaurantType = newPin.RestaurantType;
             }
+        }
+
+        /// <summary>
+        /// Add/Update pin
+        /// </summary>
+        public static void TryAddPinList(List<GMapsPin> pins, GMapsPin newPin)
+        {
+            var oldPin = pins.SingleOrDefault(o => o.Label == newPin.Label);
+            if (oldPin == null)
+            {
+                pins.Add(newPin);
+            }
+            else
+            {
+                oldPin.Comment = newPin.Comment;
+                oldPin.Label = newPin.Label;
+            }
 
         }
+
     }
 }

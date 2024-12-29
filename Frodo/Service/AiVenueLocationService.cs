@@ -63,6 +63,7 @@ internal class AiVenueLocationService
 
         for (int i = 0; i < topics.Count; i++)
         {
+            //Manual - 4729
             DetailedTopic? topic = topics[i];
             if (topic.AiVenues == null || topic.AiVenues.Count == 0) continue;
             if (IsRecipe(topic)) continue;
@@ -94,9 +95,12 @@ internal class AiVenueLocationService
                 if (!ai.IsExportable) continue;
                 if (ai.RejectedRestaurantType) continue;
                 if (ai.Pin != null) continue;
+                if (string.IsNullOrWhiteSpace(ai.PlaceName)) continue;
                 //if (GetCachePin(ai, groupCountry, city) != null) continue;
-                //if (ai.PinSearchDone) continue;
-                if (IsInSkipList(ai, _placeNameSkipList)) continue;
+                if (ai.PinSearchDone) continue;
+                //if (IsInSkipList(ai, _placeNameSkipList)) continue;
+                if (PlaceNameFilterHelper.StartsWithPlaceNameSkipList(ai.PlaceName)) continue;
+
 
                 if (!string.IsNullOrWhiteSpace(delayedConsoleLine))
                 {
@@ -162,7 +166,9 @@ internal class AiVenueLocationService
                     continue;
                 }
                 if (GetCachePin(ai, groupCountry, city) != null) continue;
-                if (IsInSkipList(ai, _placeNameSkipList)) continue;
+                if (string.IsNullOrWhiteSpace(ai.PlaceName)) continue;
+                if (PlaceNameFilterHelper.StartsWithPlaceNameSkipList(ai.PlaceName)) continue;
+                //if (IsInSkipList(ai, _placeNameSkipList)) continue;
                 if (ai.ChainGenerated) continue;
                 if (!ai.IsExportable) continue;
 
@@ -214,7 +220,9 @@ internal class AiVenueLocationService
                 if (ai.PermanentlyClosed) continue;
                 if (ai.RejectedRestaurantType) continue;
                 if (ai.Pin == null) continue;
-                if (IsInSkipList(ai, _placeNameSkipList)) continue;
+                if (string.IsNullOrWhiteSpace(ai.PlaceName)) continue;
+                if (PlaceNameFilterHelper.StartsWithPlaceNameSkipList(ai.PlaceName)) continue;
+                //if (IsInSkipList(ai, _placeNameSkipList)) continue;
 
                 var geoLat = ai.Pin.GeoLatitude;
                 var geoLong = ai.Pin.GeoLongitude;
