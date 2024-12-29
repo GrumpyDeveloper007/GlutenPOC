@@ -51,7 +51,7 @@ var pinCacheSync = new PinCacheSyncService(mapPin, dbLoader, geoService, pinCach
 var aiPinService = new AiVenueProcessorService(mapPin, mapper, consoleLogger);
 var aiVenueLocationService = new AiVenueLocationService(dbLoader, mapper, geoService, fbGroupService, pinCache, topicDataLoader, aiPinService, consoleLogger);
 var aiVenueCleanUpService = new AiVenueCleanUpService(geoService, fbGroupService, pinCache, aiVenueLocationService, topicDataLoader, consoleLogger);
-var service = new DataSyncService(mapPin, dbLoader, mapper, dataExporter, geoService, fbGroupService, pinCache, pinCacheSync, cityService, aiVenueLocationService, topicDataLoader, aiVenueCleanUpService, ai, consoleLogger);
+var service = new DataSyncService(mapPin, dbLoader, mapper, dataExporter, geoService, fbGroupService, pinCache, pinCacheSync, cityService, aiVenueLocationService, topicDataLoader, aiVenueCleanUpService, ai, aiPinService, consoleLogger);
 await service.ProcessFile();
 
 selenium.Stop();

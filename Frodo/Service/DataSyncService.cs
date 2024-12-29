@@ -1,15 +1,16 @@
 ﻿using Frodo.Helper;
 using Gluten.Core.DataProcessing.Helper;
 using Gluten.Core.DataProcessing.Service;
-using Gluten.Core.Helper;
 using Gluten.Core.Interface;
 using Gluten.Core.LocationProcessing.Helper;
 using Gluten.Core.LocationProcessing.Service;
+using Gluten.Data.MapsModel;
 using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
 using System;
 using System.Diagnostics;
 using System.Globalization;
+
 
 namespace Frodo.Service
 {
@@ -30,11 +31,13 @@ namespace Frodo.Service
         TopicsDataLoaderService _topicsLoaderService,
         AiVenueCleanUpService _aiVenueCleanUpService,
         AiInterfaceService _localAi,
+        AiVenueProcessorService _aiVenueProcessorService,
         IConsole Console
         )
     {
         private readonly string _responsefileName = "D:\\Coding\\Gluten\\Database\\Responses.txt";
         private readonly TopicLoaderService _topicLoaderService = new(_topicsLoaderService, _fBGroupService, Console);
+        private List<GMapsPin> _gmSharedPins;
 
         public List<DetailedTopic> Topics = [];
 
@@ -44,6 +47,7 @@ namespace Frodo.Service
         public async Task ProcessFile()
         {
             var topics = _topicsLoaderService.TryLoadTopics();
+            _gmSharedPins = _databaseLoaderService.LoadGMSharedPins();
             if (topics != null)
             {
                 Topics = topics;
@@ -75,6 +79,7 @@ namespace Frodo.Service
             string filePath = "D:\\Coding\\Gluten\\Outputs\\";
             File.WriteAllText(filePath + "placeNames.txt", places);
 
+            CheckSharedPinLocations();
 
             _aiVenueCleanUpService.ResetIsExportable(Topics);
             _aiVenueLocationService.RemoveDuplicatedPins(Topics);
@@ -612,6 +617,7 @@ namespace Frodo.Service
             int searchesDone = 0;
             for (int i = 0; i < Topics.Count; i++)
             {
+                if (i < 75540) continue;
                 Console.WriteLine($"Processing {i} of {Topics.Count} updating embedded urls");
                 if (searchesDone > 50)
                 {
@@ -731,5 +737,66 @@ namespace Frodo.Service
             TextInfo textInfo = CultureInfo.CurrentCulture.TextInfo;
             return textInfo.ToTitleCase(str.ToLower());
         }
+
+
+        private void CheckSharedPinLocations()
+        {
+            int searchesDone = 0;
+            for (int i = 0; i < _gmSharedPins.Count; i++)
+            {
+                if (i < 1400) continue;
+                var item = _gmSharedPins[i];
+                if (item.Comment == null) item.Comment = item.Description;
+                if (item.Label == null) continue;
+                Console.WriteLine($"Processing {i} of {_gmSharedPins.Count} updating shared GM pins");
+                if (searchesDone > 50)
+                {
+                    _databaseLoaderService.SaveGMSharedPins(_gmSharedPins);
+                    _databaseLoaderService.SavePinDB();
+                    searchesDone = 0;
+                }
+                if (string.IsNullOrWhiteSpace(item.GeoLatitude))
+                {
+                    var cachePin = _mapPinCache.TryGetPin(item.Label, "");
+                    if (cachePin == null)
+                    {
+                        _mapPinService.GetMapUrl(item.Label);
+                        cachePin = _mapPinService.GetPinFromCurrentUrl(item.Label, item.Label);
+
+                        if (cachePin == null)
+                        {
+                            var pinsFound = _mapPinService.GetMapUrls().Count;
+                            List<string> chainUrls = new List<string>();
+                            _aiVenueProcessorService.IsPlaceNameAChain(chainUrls, item.Label);
+                            if (chainUrls.Count == 1)
+                            {
+                                _mapPinService.GoToUrl(chainUrls[0]);
+                                cachePin = _mapPinService.TryToGenerateMapPin(chainUrls[0], item.Label, "", item.Label);
+                            }
+                        }
+
+                    }
+                    if (cachePin != null)
+                    {
+                        if (cachePin.MetaData != null)
+                        {
+                            item.Price = cachePin.MetaData.Price;
+                            item.RestaurantType = cachePin.MetaData.RestaurantType;
+                            item.Stars = cachePin.MetaData.Stars;
+                        }
+                        item.MapsUrl = cachePin.MapsUrl;
+                        item.GeoLatitude = cachePin.GeoLatitude;
+                        item.GeoLongitude = cachePin.GeoLongitude;
+                    }
+
+                }
+            }
+
+            Console.WriteLine($"Completed shared pin update");
+            _databaseLoaderService.SaveGMSharedPins(_gmSharedPins);
+            _databaseLoaderService.SavePinDB();
+
+        }
+
     }
 }

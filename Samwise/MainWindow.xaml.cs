@@ -89,6 +89,7 @@ namespace Samwise
                         Label = placeName,
                         RestaurantType = restaurantType,
                         MapsUrl = mapsUrl,
+                        MapsLink = mapsUrl,
                         GeoLatitude = mapPin.GeoLatitude,
                         GeoLongitude = mapPin.GeoLongitude,
                         Comment = comment
@@ -143,7 +144,7 @@ namespace Samwise
                 var newPin = new GMapsPin
                 {
                     Label = HttpUtility.UrlDecode(itemName.InnerText).Replace("&amp;", "&"),
-                    Description = HttpUtility.UrlDecode(itemComment.InnerText).Replace("&amp;", "&")
+                    Comment = HttpUtility.UrlDecode(itemComment.InnerText).Replace("&amp;", "&")
                 };
                 GPinHelper.TryAddPinList(_sharedPins, newPin);
             }
