@@ -94,7 +94,7 @@ namespace Frodo.Service
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nReading captured FB data");
             _topicLoaderService.ReadFileLineByLine(_responsefileName, Topics);
-            //_topicLoaderService.ReadTestFile("D:\\Coding\\Gluten\\Database\\LinkedStory.json");
+            _topicLoaderService.ReadTestFile("D:\\Coding\\Gluten\\Database\\LinkedStory.json");
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nProcessing information from source");

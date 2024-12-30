@@ -18,7 +18,7 @@ namespace Gluten.Core.DataProcessing.Service
     {
         private readonly Dictionary<string, string> _knownGroupIds = new()
         {
-            {"806902313439614","Thailand" }, // not gf group
+            {"806902313439614","NA" }, // not gf group
             {"769136475365475","NA" }, // dales gf map
             {"573768437691444","NA" },
 
@@ -37,7 +37,6 @@ namespace Gluten.Core.DataProcessing.Service
             {"302515126584130","Philippines" }, //Gluten-Free Philippines
             {"422284561238159","South Korea" },
 
-            {"488425731191722","Malaysia" },//Off The Wheaten Path In Kuala Lumpur (Gluten Free Tips, Recipes & Findings)
             {"1720098858232675","United Arab Emirates" },//Gluten Free - UAE
             {"687227675922496","Spain" },
             {"383755778784374","Italy" },//Gluten Free Italy
@@ -98,7 +97,48 @@ namespace Gluten.Core.DataProcessing.Service
             {"390608588786276","Spain" },           //Alicante Sin Gluten
             {"1235554466913814","" },               //Sin gluten, Celiac@s 			- big group 
             {"503548514144589","Peru" },            //Comunidad Sin Gluten			- big group
+            {"100494046660564","New Zealand" },     //Coeliac Disease New Zealand
+            {"1445656685668034","New Zealand" },    //Gluten Free - New Zealand
 
+            {"295848524957207","United Kingdom"} ,//Gluten free Chinese takeaways and Resturants
+            {"1498685044195603","Australia"}  ,//Everything Gluten-Free Australia
+            {"1581292258820482",""}  ,//LUGARES PARA CELIACOS
+            {"1567883909903404","United Kingdom"}  ,//Gluten Free Restaurants UK
+            {"1477742395840260","Australia"}  ,//Gluten Free Townsville
+            {"1408134342803555","Australia"}  ,//Gluten Free Community CQ and Beyond
+            {"1549831711968081","Australia"}  ,//Gluten Free in the Shoalhaven
+            {"161013676073326","Australia"}  ,//Gluten free in Port Macquarie
+            {"100433633347630",""}   ,//Gluten Free Planet
+            {"342311525964001","Australia"}  ,//Gluten free QLD
+            {"1419827381602939","Australia"}  ,//Gluten Free and Low Fodmap Melbourne
+            {"154089411432662","Australia"}   ,//Gluten Free In Townsville
+            {"233133110222997",""}   ,//Celiac Support/ Gluten-Free Living
+            {"250643821964381","United Kingdom"}  ,//No Gluten? No Problem!
+            {"329643313216840","United States"}  ,//Utah Gluten Free Restaurant Reviews
+            {"60236153835","Australia"}      ,//Gluten Free in Sutherland Shire
+            {"335055766702799","United States"}   ,//Las Vegas Celiac Support Group
+            {"1883047718596643","Australia"}  ,//Lets Talk GF Food in Newcastle / Hunter
+            {"827560204801451","United States"}  ,//Gluten Free Maryland Restaurant Options
+            {"1542806239378917","United States"}  ,//Celiac-Safe Eats - Los Angeles
+            {"1589343111356722","United States"}  ,//GFLA: Gluten Free Los Angeles
+            //Recipes{"1093929974438823",""}  ,//Gluten Free Foodees: Gluten-Free Living, Tips, And Recipes
+            {"1998996983717391","Portugal"}  ,//Gluten Free Eating Algarve
+
+            {"214061389246852","Costa Rica"}  ,//sin gluten Costa Rica
+            {"883455988375508","Mexico"}   ,//Celiacos de Mexico
+            {"488425731191722","Malaysia"}  ,//Off The Wheaten Path In Kuala Lumpur (Gluten Free Tips, Recipes & Findings)
+            {"813777736885016",""}  ,//Gluten Free For Beginners
+            {"198332044243620","Argentina"}  ,//celíacos de Córdoba capital.
+            {"147725482327676","Chile"}  ,//Celiacos en chile
+            {"660524202315334","Chile"}  ,//Sin gluten 🚫, sin lactosa 🚫 Chile 🇨🇱
+            {"2419811021599517","Spain"}  ,//Restaurantes Vegan & Gluten free Barcelona
+            {"379358975435525",""}   ,//Soy celiaco
+            //{"676415385724187",""}  ,//SIN LACTOSA Y SIN GLUTEN
+            //{"669768788261531",""}  ,//Gluten free tips and tricks
+            {"489449818300463","United Kingdom"}  ,//Gluten Free Lincolnshire
+            {"2297343817067372","United Kingdom"}  ,//Gluten And Free From On The Isle Of Wight
+            {"463573660488313",""}  ,//Club des restaurateurs
+            
             //{"","" },
         };
 
@@ -126,8 +166,17 @@ namespace Gluten.Core.DataProcessing.Service
             
             {"187020706020686","Gold Coast " },//Gold Coast Gluten Free							public group
             {"1535703166696570","New York" },//Coeliac and Gluten Free York			public group
+            {"1477742395840260","Townsville"}  ,//Gluten Free Townsville
+            {"1549831711968081","Shoalhaven"}  ,//Gluten Free in the Shoalhaven
+            {"161013676073326","Port Macquarie"}  ,//Gluten free in Port Macquarie
+            {"1542806239378917","Los Angeles"}  ,//Celiac-Safe Eats - Los Angeles
+            {"1589343111356722","Los Angeles"}  ,//GFLA: Gluten Free Los Angeles
         };
 
+        public Dictionary<string, string> GetKnownGroups()
+        {
+            return _knownGroupIds;
+        }
 
         public bool IsFilteredGroup(string groupId)
         {
