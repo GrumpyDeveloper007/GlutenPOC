@@ -40,7 +40,7 @@ namespace Samwise
                 _pins.Add(pin.GeoLatitude + ":" + pin.GeoLongitude, pin);
             txtMessage.Text = _pins.Count.ToString();
             var pinCache = _dbLoader.GetPinCache();
-            var selenium = new SeleniumMapsUrlProcessor(console);
+            var selenium = new SeleniumService(console);
             var geoService = new GeoService();
 
             _mapPinService = new MapPinService(selenium, pinCache, geoService, new MapsMetaExtractorService(console), console);

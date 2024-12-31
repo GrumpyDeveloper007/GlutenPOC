@@ -26,20 +26,22 @@ internal class AiVenueLocationService
     private readonly MappingService _mappingService;
     private readonly GeoService _geoService;
     private readonly FBGroupService _fBGroupService;
-    private readonly MapPinCache _mapPinCache;
+    private readonly MapPinCacheService _mapPinCache;
     private readonly TopicsDataLoaderService _topicsDataLoaderService;
     private readonly AiVenueProcessorService _aiVenueProcessorService;
     private readonly IConsole Console;
     private readonly List<AiVenue> _placeNameSkipList;
+    private readonly MapPinService _mapPinService;
 
     public AiVenueLocationService(
         DatabaseLoaderService databaseLoaderService,
         MappingService mappingService,
         GeoService geoService,
         FBGroupService fBGroupService,
-        MapPinCache mapPinCache,
+        MapPinCacheService mapPinCache,
         TopicsDataLoaderService topicsDataLoaderService,
         AiVenueProcessorService aiVenueProcessorService,
+        MapPinService mapPinService,
         IConsole console)
     {
         _databaseLoaderService = databaseLoaderService;
@@ -51,6 +53,7 @@ internal class AiVenueLocationService
         _aiVenueProcessorService = aiVenueProcessorService;
         Console = console;
         _placeNameSkipList = databaseLoaderService.LoadPlaceSkipList();
+        _mapPinService = mapPinService;
 
     }
 
@@ -66,8 +69,8 @@ internal class AiVenueLocationService
             //Manual - 4729
             DetailedTopic? topic = topics[i];
             if (topic.AiVenues == null || topic.AiVenues.Count == 0) continue;
-            if (IsRecipe(topic)) continue;
-            if (IsTopicAQuestion(topic)) continue;
+            if (TopicItemHelper.IsRecipe(topic)) continue;
+            if (TopicItemHelper.IsTopicAQuestion(topic)) continue;
 
             // Skip if the country and city cannot be identified
             var groupCountry = GetCountry(topic);
@@ -339,8 +342,9 @@ internal class AiVenueLocationService
                     Pin = _mappingService.Map<TopicPin, TopicPinCache>(pin),
                     ChainGenerated = true
                 };
-                if (!DataHelper.IsInList(topic.AiVenues, newVenue, -1, true))
+                if (!TopicListHelper.IsInList(topic.AiVenues, newVenue, -1))
                 {
+                    topic.AiVenues ??= [];
                     topic.AiVenues.Add(newVenue);
                     Console.WriteLine($"Adding chain url :{newVenue.PlaceName}");
                 }
@@ -367,7 +371,7 @@ internal class AiVenueLocationService
                 {
                     _ = double.TryParse(pin.GeoLongitude, out double longitude);
                     _ = double.TryParse(pin.GeoLatitude, out double latitude);
-                    //Console.WriteLine($"country mismatch, group: {groupCountry} pin: {country}, {latitude}, {longitude}");
+                    Console.WriteLine($"country mismatch, group: {groupCountry} pin: {country}, {latitude}, {longitude}");
                     return false;
                 }
             }
@@ -403,7 +407,7 @@ internal class AiVenueLocationService
 
             // alternate search
             var placeName = _aiVenueProcessorService.FilterPlaceName(ai.PlaceName, groupCountry, city);
-            if (ai.ChainGenerated) placeName = ai.Pin.Label;
+            if (ai.ChainGenerated && ai.Pin.Label != null) placeName = ai.Pin.Label;
             cachedPin = _mapPinCache.TryGetPinLatLong(ai.Pin.GeoLatitude, ai.Pin.GeoLongitude, placeName);
             if (cachedPin != null)
             {
@@ -477,8 +481,11 @@ internal class AiVenueLocationService
             {
                 foreach (var item in chainUrls)
                 {
-                    var pin = PinHelper.GenerateMapPin(item, "", country);
-                    if (HttpUtility.UrlDecode(pin.Label) == ai.PlaceName)
+                    _mapPinService.GoToUrl(item);
+                    var pin = _mapPinService.TryToGenerateMapPin(item, "", "", "");
+
+                    //var pin = PinHelper.GenerateMapPin(item, "", country);
+                    if (pin != null && HttpUtility.UrlDecode(pin.Label) == ai.PlaceName)
                     {
                         if (pin.Label != ai.PlaceName) pin.SearchStrings.Add(ai.PlaceName);
                         var newPin = _mapPinCache.AddPinCache(pin, ai.PlaceName, pin.Label);
@@ -500,23 +507,4 @@ internal class AiVenueLocationService
         return result;
 
     }
-
-    public bool IsTopicAQuestion(DetailedTopic? topic)
-    {
-        if (topic.TitleCategory == "QUESTION")
-        {
-            // AI says yes
-            if (topic.Title.Contains('?')) return true;
-            //if (topic.Title.Contains("Question", StringComparison.InvariantCultureIgnoreCase))                return true;
-        }
-        return false;
-    }
-    public bool IsRecipe(DetailedTopic topic)
-    {
-        if (topic.Title.Contains("Recipe", StringComparison.InvariantCultureIgnoreCase)) return true;
-        if (topic.Title.Contains("INGREDIENTS", StringComparison.InvariantCultureIgnoreCase)) return true;
-        return false;
-    }
-
-
 }

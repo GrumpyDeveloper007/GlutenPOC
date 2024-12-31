@@ -101,6 +101,9 @@ namespace Gluten.Core.LocationProcessing.Helper
             return false;
         }
 
+        /// <summary>
+        /// Try to work out if the text starts with a currency symbol
+        /// </summary>
         public static bool StartsWithCurrencySymbol(string text)
         {
             if (text.StartsWith('¥')
@@ -161,6 +164,9 @@ namespace Gluten.Core.LocationProcessing.Helper
             return false;
         }
 
+        /// <summary>
+        /// Tries to work out if the text ends with a currency symbol
+        /// </summary>
         public static bool EndsWithCurrencySymbol(string text)
         {
             if (text.EndsWith('¥')

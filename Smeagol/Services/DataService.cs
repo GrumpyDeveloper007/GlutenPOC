@@ -138,11 +138,11 @@ namespace Smeagol.Services
                         var nodeId = FbModelHelper.GetNodeId(m);
                         if (nodeId == null)
                         {
-                            Console.WriteLine($"Unknown Node Id, {m.label}");
+                            //Console.WriteLine($"Unknown Node Id, {m.label}");
                         }
                         else
                         {
-                            Console.WriteLine($"known Node Id,   {m.label}, {nodeId}");
+                            //Console.WriteLine($"known Node Id,   {m.label}, {nodeId}");
                         }
                         if (nodeId != null && !_LoadedIds.Contains(nodeId))
                         {

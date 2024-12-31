@@ -6,8 +6,14 @@ using System.Text;
 
 namespace Gluten.Core.DataProcessing.Helper
 {
+    /// <summary>
+    /// Provides functions to compensate for user errors in place names
+    /// </summary>
     public static class PlaceNameAdjusterHelper
     {
+        /// <summary>
+        /// Tries to work out what the user meant when they entered a place name
+        /// </summary>
         public static string FixUserErrorsInPlaceNames(string placeName, string country, string city)
         {
             placeName = RemoveSuffix(placeName, "Supermarket");

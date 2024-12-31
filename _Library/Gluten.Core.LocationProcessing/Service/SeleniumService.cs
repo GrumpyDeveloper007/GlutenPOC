@@ -8,7 +8,7 @@ namespace Gluten.Core.LocationProcessing.Service
     /// <summary>
     /// Uses Selenium to extract information from web pages
     /// </summary>
-    public class SeleniumMapsUrlProcessor(IConsole Console)
+    public class SeleniumService(IConsole Console)
     {
         private readonly ChromeDriver _driver = new();
         private ReadOnlyCollection<IWebElement> _currentSearchResults = new([]);

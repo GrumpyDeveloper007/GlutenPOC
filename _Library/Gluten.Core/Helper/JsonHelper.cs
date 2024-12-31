@@ -57,22 +57,21 @@ namespace Gluten.Core.Helper
 
         public static void SaveDb<typeToSave>(string fileName, typeToSave objectToSave)
         {
-            using (StreamWriter file = File.CreateText(fileName))
-            {
-                JsonSerializer serializer = new();
-                serializer.Formatting = Formatting.Indented; // Optional: makes the JSON readable
-                serializer.Serialize(file, objectToSave);
-            }
+            using StreamWriter file = File.CreateText(fileName);
+            JsonSerializer serializer = new();
+            serializer.Formatting = Formatting.Indented; // Optional: makes the JSON readable
+            serializer.Serialize(file, objectToSave);
         }
 
+        /// <summary>
+        /// Saves a class structure to a Json file - in a space saving format
+        /// </summary>
         public static void SaveDbNoPadding<typeToSave>(string fileName, typeToSave objectToSave)
         {
-            using (StreamWriter file = File.CreateText(fileName))
-            {
-                JsonSerializer serializer = new();
-                serializer.Formatting = Formatting.None;
-                serializer.Serialize(file, objectToSave);
-            }
+            using StreamWriter file = File.CreateText(fileName);
+            JsonSerializer serializer = new();
+            serializer.Formatting = Formatting.None;
+            serializer.Serialize(file, objectToSave);
         }
     }
 }

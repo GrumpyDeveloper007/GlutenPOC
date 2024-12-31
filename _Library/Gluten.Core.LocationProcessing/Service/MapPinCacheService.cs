@@ -15,7 +15,7 @@ namespace Gluten.Core.LocationProcessing.Service
     /// <summary>
     /// Provides caching of pins
     /// </summary>
-    public class MapPinCache(
+    public class MapPinCacheService(
         Dictionary<string, TopicPinCache> pinCache,
         Dictionary<string, PinCacheMetaHtml> pinCacheHtml,
         IConsole Console)
@@ -134,9 +134,9 @@ namespace Gluten.Core.LocationProcessing.Service
             }
             else
             {
-                if (_pinCache.ContainsKey(newPin.Label))
+                if (_pinCache.TryGetValue(newPin.Label, out TopicPinCache? value))
                 {
-                    oldPin = _pinCache[newPin.Label];
+                    oldPin = value;
                     Console.WriteLineRed($"Existing cache entry error: {newPin.GeoLatitude}, {newPin.GeoLongitude} old: {oldPin.GeoLatitude},{oldPin.GeoLongitude}");
                     if (newPin.GeoLatitude == oldPin.GeoLatitude || newPin.GeoLongitude == oldPin.GeoLongitude)
                     {

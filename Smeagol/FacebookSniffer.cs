@@ -57,13 +57,11 @@ internal class FacebookSniffer
 
         email.SendKeys(_settings.Email);
 
-        Thread.Sleep(1000 * 60);
-
         //?sorting_setting=CHRONOLOGICAL
         //page.driver.browser.reload
 
         var groups = _fBGroupService.GetKnownGroups();
-        Console.WriteLine($"Press a key to continue");
+        Console.WriteLine($"Waiting for login, press a key to continue");
         Console.ReadKey();
         bool multiGroupMode;
         multiGroupMode = true;
@@ -71,44 +69,53 @@ internal class FacebookSniffer
         foreach (var item in groups)
         {
             if (item.Value == "NA") continue;
+            if (item.Key != "342422672937608") continue;
             if (multiGroupMode)
             {
+                _driver.Navigate().Refresh();
                 _driver.Navigate().GoToUrl($"https://www.facebook.com/groups/{item.Key}/?sorting_setting=CHRONOLOGICAL");
                 Console.WriteLine($"Selecting group {item.Key}");
             }
             bool keepRunning = true;
-            while (keepRunning)
+            try
             {
-                for (int i = 0; i < 50; i++)
+                while (keepRunning)
                 {
-                    Console.WriteLine($"Sending page down");
-                    action.SendKeys(Keys.PageDown).Build().Perform();
-                    action.SendKeys(Keys.PageDown).Build().Perform();
-                    action.SendKeys(Keys.PageDown).Build().Perform();
-                    action.SendKeys(Keys.PageDown).Build().Perform();
-                    Thread.Sleep(1000 * 3);
-                }
+                    for (int i = 0; i < 50; i++)
+                    {
+                        Console.WriteLine($"Sending page down {i}");
+                        action.SendKeys(Keys.PageDown).Build().Perform();
+                        action.SendKeys(Keys.PageDown).Build().Perform();
+                        action.SendKeys(Keys.PageDown).Build().Perform();
+                        action.SendKeys(Keys.PageDown).Build().Perform();
+                        Thread.Sleep(1000 * 3);
+                    }
 
-                Console.WriteLine($"Pausing");
-                Thread.Sleep(1000 * 60);
-                _dataService.SaveGroupPost();
+                    Console.WriteLine($"Pausing");
+                    Thread.Sleep(1000 * 60);
+                    _dataService.SaveGroupPost();
 
-                // Trim DOM
-                for (int i = 0; i < 500; i++)
-                {
-                    _driver.ExecuteScript("if (document.querySelectorAll('[role=\"feed\"]')[0].children.length>40){ console.log('clearing'); document.querySelectorAll('[role=\"feed\"]')[0].removeChild(document.querySelectorAll('[role=\"feed\"]')[0].children[0])};");
-                }
+                    // Trim DOM
+                    for (int i = 0; i < 500; i++)
+                    {
+                        _driver.ExecuteScript("if (document.querySelectorAll('[role=\"feed\"]')[0].children.length>40){ console.log('clearing'); document.querySelectorAll('[role=\"feed\"]')[0].removeChild(document.querySelectorAll('[role=\"feed\"]')[0].children[0])};");
+                    }
 
-                if (_skippedItemCounter > 40 && _newItemCounter == 0 && multiGroupMode)
-                {
-                    keepRunning = false;
+                    if (_skippedItemCounter > 40 && _newItemCounter == 0 && multiGroupMode)
+                    {
+                        keepRunning = false;
+                    }
+                    if (_skippedItemCounter == 0 && _newItemCounter == 0 && multiGroupMode)
+                    {
+                        keepRunning = false;
+                    }
+                    _skippedItemCounter = 0;
+                    _newItemCounter = 0;
                 }
-                if (_skippedItemCounter == 0 && _newItemCounter == 0 && multiGroupMode)
-                {
-                    keepRunning = false;
-                }
-                _skippedItemCounter = 0;
-                _newItemCounter = 0;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
             }
         }
 

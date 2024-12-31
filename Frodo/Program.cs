@@ -25,20 +25,20 @@ if (settings == null)
 
 var dbLoader = new DatabaseLoaderService();
 
-var consoleLogger = new ColorConsole();
+var consoleLogger = new ColorConsoleService();
 var geoService = new GeoService();
-var selenium = new SeleniumMapsUrlProcessor(consoleLogger);
+var selenium = new SeleniumService(consoleLogger);
 var mapper = new MappingService();
 var fbGroupService = new FBGroupService(consoleLogger);
 var pinCache = dbLoader.GetPinCache();
-var dataStore = new CloudDataStore(settings.DbEndpointUri, settings.DbPrimaryKey);
+var dataStore = new CloudDataStoreService(settings.DbEndpointUri, settings.DbPrimaryKey);
 var cityService = new CityService();
 var restaurantTypeService = new RestaurantTypeService();
 var topicDataLoader = new TopicsDataLoaderService();
 var mapMetaExtractor = new MapsMetaExtractorService(consoleLogger);
 var ai = new AiInterfaceService(settings.GroqApiKey, consoleLogger);
 
-DataHelper.Console = consoleLogger;
+TopicListHelper.Console = consoleLogger;
 LabelHelper.Console = consoleLogger;
 
 consoleLogger.WriteLineBlue("Blue");
@@ -46,10 +46,10 @@ consoleLogger.WriteLineRed("Red");
 
 
 var mapPin = new MapPinService(selenium, pinCache, geoService, mapMetaExtractor, consoleLogger);
-var dataExporter = new ClientExportFileGenerator(dbLoader, mapper, pinCache, fbGroupService, geoService, dataStore, ai, consoleLogger);
+var dataExporter = new ClientExportGeneratorService(dbLoader, mapper, pinCache, fbGroupService, geoService, dataStore, ai, consoleLogger);
 var pinCacheSync = new PinCacheSyncService(mapPin, dbLoader, geoService, pinCache, restaurantTypeService, consoleLogger);
 var aiPinService = new AiVenueProcessorService(mapPin, mapper, consoleLogger);
-var aiVenueLocationService = new AiVenueLocationService(dbLoader, mapper, geoService, fbGroupService, pinCache, topicDataLoader, aiPinService, consoleLogger);
+var aiVenueLocationService = new AiVenueLocationService(dbLoader, mapper, geoService, fbGroupService, pinCache, topicDataLoader, aiPinService, mapPin, consoleLogger);
 var aiVenueCleanUpService = new AiVenueCleanUpService(geoService, fbGroupService, pinCache, aiVenueLocationService, topicDataLoader, consoleLogger);
 var service = new DataSyncService(mapPin, dbLoader, mapper, dataExporter, geoService, fbGroupService, pinCache, pinCacheSync, cityService, aiVenueLocationService, topicDataLoader, aiVenueCleanUpService, ai, aiPinService, consoleLogger);
 await service.ProcessFile();

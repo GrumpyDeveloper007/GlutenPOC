@@ -12,7 +12,7 @@ namespace Frodo.Service
     /// <summary>
     /// Simple support for colour console logging
     /// </summary>
-    internal class ColorConsole : IConsole
+    internal class ColorConsoleService : IConsole
     {
         public void Clear()
         {

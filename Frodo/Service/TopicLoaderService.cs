@@ -5,7 +5,6 @@ using Gluten.Core.Interface;
 using Gluten.Data.TopicModel;
 using Gluten.FBModel;
 using Gluten.FBModel.Helper;
-using NetTopologySuite.Utilities;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 
@@ -17,24 +16,6 @@ namespace Frodo.Service
     internal class TopicLoaderService(TopicsDataLoaderService _topicsLoaderService, FBGroupService _fBGroupService, IConsole Console)
     {
         internal static readonly string[] crlf = ["/r/n"];
-
-
-        public void ReadTestFile(string filePath)
-        {
-            if (!File.Exists(filePath)) return;
-            var json = File.ReadAllText(filePath);
-            try
-            {
-                GroupRoot? m;
-                m = JsonConvert.DeserializeObject<GroupRoot>(json);
-                ProcessModel(m, new List<DetailedTopic>());
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
-
-        }
 
         /// <summary>
         /// Loads the data objects captured from FB groups, extracts the information we are interested in
@@ -89,7 +70,7 @@ namespace Frodo.Service
 
             foreach (var edge in sr.data.serpResponse.results.edges)
             {
-                if (edge.relay_rendering_strategy.__typename == "SearchEndOfResultsModuleRenderingStrategy") continue;
+                if (edge.relay_rendering_strategy?.__typename == "SearchEndOfResultsModuleRenderingStrategy") continue;
                 if (edge.relay_rendering_strategy?.view_model?.click_model?.story == null) continue;
 
                 var story = edge.relay_rendering_strategy.view_model.click_model.story;
@@ -120,7 +101,6 @@ namespace Frodo.Service
         private void ProcessModel(GroupRoot? groupRoot, List<DetailedTopic> topics)
         {
             if (groupRoot == null) return;
-            string? messageText;
             if (groupRoot == null || groupRoot.data.node == null) return;
 
             var stories = FbStoryModelHelper.FlattenNodes(groupRoot?.data?.node);
@@ -150,7 +130,8 @@ namespace Frodo.Service
             var messageText = story.message?.text;
 
             if (currentTopic.Title != messageText
-                && !string.IsNullOrWhiteSpace(messageText))
+                && !string.IsNullOrWhiteSpace(messageText)
+                && !string.IsNullOrWhiteSpace(currentTopic.Title))
             {
                 Console.WriteLineBlue($"Change detection {currentTopic.Title} new : {messageText}");
             }
@@ -164,15 +145,7 @@ namespace Frodo.Service
                 //Console.WriteLineBlue($"Change detection {currentTopic.PostCreated} new : {DateTimeOffset.FromUnixTimeSeconds(story.creation_time)}");
             }
             var groupId = story?.target_group?.id;
-            if (currentTopic.GroupId != groupId
-                && !string.IsNullOrWhiteSpace(currentTopic.GroupId))
-            {
-                Console.WriteLineBlue($"Change detection {currentTopic.GroupId} new : {story.target_group.id}");
-            }
-            if (groupId == null)
-            {
-                groupId = story?.comet_sections?.action_link?.group.id;
-            }
+            groupId ??= story?.comet_sections?.action_link?.group.id;
 
             if (story?.attached_story?.comet_sections?.message?.story != null)
             {
@@ -211,7 +184,7 @@ namespace Frodo.Service
             }
 
             if (currentTopic.Title != messageText
-                || currentTopic.GroupId != story.target_group.id)
+                || currentTopic.GroupId != story?.target_group.id)
             {
                 // Text updated, refresh data
                 currentTopic.CitySearchDone = false;
@@ -219,9 +192,9 @@ namespace Frodo.Service
                 currentTopic.ShortTitleProcessed = false;
             }
             currentTopic.Title = messageText ?? "";
-            currentTopic.FacebookUrl = story.wwwURL;
-            currentTopic.PostCreated = DateTimeOffset.FromUnixTimeSeconds(story.creation_time);
-            currentTopic.GroupId = groupId;
+            currentTopic.FacebookUrl = story?.wwwURL;
+            currentTopic.PostCreated = DateTimeOffset.FromUnixTimeSeconds(story?.creation_time ?? 0);
+            currentTopic.GroupId = groupId ?? "";
         }
     }
 }

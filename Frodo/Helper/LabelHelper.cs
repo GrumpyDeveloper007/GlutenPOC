@@ -9,6 +9,9 @@ using System.Web;
 
 namespace Frodo.Helper
 {
+    /// <summary>
+    /// Helper functions for restaurant 'labels'
+    /// </summary>
     internal static class LabelHelper
     {
         public static IConsole Console { get; set; } = new DummyConsole();
@@ -58,7 +61,7 @@ namespace Frodo.Helper
                 {
                     if (string.IsNullOrWhiteSpace(word)) continue;
                     var newWord = word;
-                    if (newWord[newWord.Length - 1] == 's') newWord = newWord.Substring(0, newWord.Length - 1);
+                    if (newWord[^1] == 's') newWord = newWord[..^1];
                     if (title.Contains(newWord, StringComparison.InvariantCultureIgnoreCase))
                     {
                         wordMatchCount++;

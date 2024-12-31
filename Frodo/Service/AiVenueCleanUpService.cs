@@ -19,7 +19,7 @@ namespace Frodo.Service;
 internal class AiVenueCleanUpService(
     GeoService _geoService,
     FBGroupService _fBGroupService,
-    MapPinCache _mapPinCache,
+    MapPinCacheService _mapPinCache,
     AiVenueLocationService _aiVenueLocationService,
     TopicsDataLoaderService _topicsService,
     IConsole Console)

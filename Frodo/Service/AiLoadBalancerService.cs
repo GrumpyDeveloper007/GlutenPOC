@@ -14,12 +14,12 @@ namespace Frodo.Service
     /// <summary>
     /// Provide a load balanced interface to remote/local AI models
     /// </summary>
-    internal class AiLoadBalancer
+    internal class AiLoadBalancerService
     {
         private readonly MiddlewareStreamingAgent<OpenAIChatAgent> _lmAgent;
-        private readonly List<MiddlewareStreamingAgent<OpenAIChatAgent>> _remotelmAgent = new List<MiddlewareStreamingAgent<OpenAIChatAgent>>();
-        private readonly List<DateTimeOffset> _remoteNextAvailable = new List<DateTimeOffset>();
-        private readonly List<string> _clientname = new List<string>();
+        private readonly List<MiddlewareStreamingAgent<OpenAIChatAgent>> _remotelmAgent = [];
+        private readonly List<DateTimeOffset> _remoteNextAvailable = [];
+        private readonly List<string> _clientname = [];
 
         private int _useLocalCount = 0;
         private int _remoteIndex = 0;
@@ -34,7 +34,7 @@ namespace Frodo.Service
         /// Opens the connection to our local AI
         /// </summary>
         /// 
-        public AiLoadBalancer(string grokApiKey, IConsole console)
+        public AiLoadBalancerService(string grokApiKey, IConsole console)
         {
             Console = console;
 
@@ -73,13 +73,12 @@ namespace Frodo.Service
 
             for (int i = 0; i < _clientname.Count; i++)
             {
-                string? item = _clientname[i];
                 _remotelmAgent.Add(new OpenAIChatAgent(
                     chatClient: openaiClient.GetChatClient(_clientname[i]),
                     name: "assistant")
                     .RegisterMessageConnector());
                 _remoteNextAvailable.Add(new DateTimeOffset());
-                //.RegisterPrintMessage();
+                // Add to provide extra console debug info .RegisterPrintMessage();
             }
 
             endpoint = "http://localhost:1234";
@@ -94,7 +93,7 @@ namespace Frodo.Service
                 chatClient: openaiClient.GetChatClient("<does-not-matter>"),
                 name: "assistant")
                 .RegisterMessageConnector();
-            //.RegisterPrintMessage();
+            // Add to provide extra console debug info .RegisterPrintMessage();
         }
 
         /// <summary>
@@ -103,7 +102,7 @@ namespace Frodo.Service
         public async Task<IMessage?> SendLBMessage(string messageText, bool showLlmName, int maxAgent)
         {
             bool retry = true;
-            if (maxAgent == AllAgents) maxAgent = _remotelmAgent.Count();
+            if (maxAgent == AllAgents) maxAgent = _remotelmAgent.Count;
             if (_remoteIndex >= maxAgent) _remoteIndex = 0;
             while (retry)
             {
@@ -175,9 +174,11 @@ namespace Frodo.Service
                         if (start > 0)
                         {
                             start += "Please try again in".Length;
-                            var end = ex.Message.IndexOf("s", start);
+                            var end = ex.Message.IndexOf('s', start);
                             var duration = ex.Message.Substring(start, end - start + 1).Trim();
                             var timespan = TimeSpanParser.Parse(duration);
+                            // Add a little extra time
+                            timespan = timespan.Add(TimeSpan.FromSeconds(5));
                             _remoteNextAvailable[currentIndex] = DateTimeOffset.UtcNow.Add(timespan);
                         }
                         else

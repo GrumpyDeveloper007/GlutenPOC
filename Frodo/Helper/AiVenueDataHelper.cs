@@ -22,7 +22,7 @@ namespace Frodo.Helper
 
             for (int t = venues.Count - 1; t >= 0; t--)
             {
-                if (DataHelper.IsInList(venues, venues[t], t, true))
+                if (TopicListHelper.IsInList(venues, venues[t], t))
                 {
                     removeCount++;
                     venues.RemoveAt(t);

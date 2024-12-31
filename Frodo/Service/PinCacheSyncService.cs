@@ -15,7 +15,7 @@ namespace Frodo.Service
     internal class PinCacheSyncService(MapPinService _mapPinService,
         DatabaseLoaderService _databaseLoaderService,
         GeoService _geoService,
-        MapPinCache _mapPinCache,
+        MapPinCacheService _mapPinCache,
         RestaurantTypeService _restaurantTypeService,
         IConsole Console
         )
@@ -29,7 +29,7 @@ namespace Frodo.Service
             foreach (var item in cache)
             {
                 if (item.Value == null) continue;
-                item.Value.SearchStrings = new();
+                item.Value.SearchStrings = [];
             }
 
             _databaseLoaderService.SavePinDB();
@@ -95,7 +95,7 @@ namespace Frodo.Service
 
         public void CheckPriceExtraction()
         {
-            List<string> prices = new();
+            List<string> prices = [];
             var cache = _mapPinCache.GetCache();
             _restaurantTypeService.ClearRestaurantType();
             foreach (var item in cache)

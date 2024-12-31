@@ -1168,6 +1168,9 @@ namespace Gluten.Core.DataProcessing.Helper
             return false;
         }
 
+        /// <summary>
+        /// Checks the place name against the skip list
+        /// </summary>
         public static bool IsInPlaceNameSkipList(string? placeName)
         {
             if (placeName == null) return false;

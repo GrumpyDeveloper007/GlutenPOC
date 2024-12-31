@@ -21,6 +21,8 @@ namespace Gluten.Core.DataProcessing.Service
             {"806902313439614","NA" }, // not gf group
             {"769136475365475","NA" }, // dales gf map
             {"573768437691444","NA" },
+            {"497294327007595","NA" }, //Santa Fe Los Foodies Facebook Group
+            
 
             {"379994195544478","Japan" },//Gluten-Free in Japan!
             {"182984958515029","Singapore" },//Gluten Free Singapore - Support Group
@@ -69,9 +71,9 @@ namespace Gluten.Core.DataProcessing.Service
             {"403103165372802","Cambodia" },//Cambodia,
             {"361337232353766","Vietnam" }, // not active
             
-            {"286367932803894","Cambodia" },//Cambodia Travel
-            {"1300758866697297","Cambodia/Vietnam" },//Cambodia & Vietnam Travel Tips
-            {"309301445942480","Cambodia" },//Cambodia Travels & Tips
+            {"286367932803894","NA" },//Cambodia Travel
+            {"1300758866697297","NA" },//Cambodia & Vietnam Travel Tips
+            {"309301445942480","NA" },//Cambodia Travels & Tips
             
             {"342422672937608","Indonesia" },//Gluten Free Bali
             
@@ -180,8 +182,8 @@ namespace Gluten.Core.DataProcessing.Service
 
         public bool IsFilteredGroup(string groupId)
         {
-            List<string> groups = ["497294327007595"];
-            if (groups.Contains(groupId)) return true;
+            _knownGroupIds.TryGetValue(groupId, out var country);
+            if (country == "NA") return true;
             return false;
         }
 

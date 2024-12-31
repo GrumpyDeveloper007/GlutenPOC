@@ -2,11 +2,11 @@
 using Gluten.Core.LocationProcessing.Service;
 using Gluten.Data.ClientModel;
 using Gluten.Data.MapsModel;
-using Gluten.Data.TopicModel;
 using Gluten.Data.Access.Service;
 using Gluten.Data.Access.DatabaseModel;
 using Gluten.Core.Helper;
 using Gluten.Core.Interface;
+using Frodo.Helper;
 
 
 namespace Frodo.Service
@@ -14,16 +14,16 @@ namespace Frodo.Service
     /// <summary>
     /// Generates and exports data to the client database
     /// </summary>
-    internal class ClientExportFileGeneratorGM(DatabaseLoaderService _databaseLoaderService,
+    internal class ClientExportGeneratorGMService(DatabaseLoaderService _databaseLoaderService,
         GeoService _geoService,
-        CloudDataStore _dataStore,
+        CloudDataStoreService _dataStore,
         IConsole Console
         )
     {
         /// <summary>
         /// Group data by pin (venue), export to json
         /// </summary>
-        public void GenerateTopicExport(List<DetailedTopic> topics, List<PinTopic> pins, string exportFolder)
+        public void GenerateTopicExport(List<PinTopic> pins, string exportFolder)
         {
             var gmPins = _databaseLoaderService.LoadGMPins();
 
@@ -42,10 +42,7 @@ namespace Frodo.Service
 
             foreach (var pin in gmPins)
             {
-                if (pin.MapsLink == null)
-                {
-                    pin.MapsLink = pin.MapsUrl;
-                }
+                pin.MapsLink ??= pin.MapsUrl;
                 if (!string.IsNullOrWhiteSpace(pin.Comment)
                     && pin.GeoLatitude != null
                     && pin.GeoLongitude != null
@@ -60,10 +57,7 @@ namespace Frodo.Service
             int sharedPinCount = 0;
             foreach (var pin in sharedGMPins)
             {
-                if (pin.MapsLink == null)
-                {
-                    pin.MapsLink = pin.MapsUrl;
-                }
+                pin.MapsLink ??= pin.MapsUrl;
 
                 if (!string.IsNullOrWhiteSpace(pin.Comment)
                     && pin.GeoLatitude != null
@@ -76,10 +70,6 @@ namespace Frodo.Service
                 }
             }
 
-            //_databaseLoaderService.SaveGMPins(gmPins);
-            //_databaseLoaderService.SaveGMSharedPins(sharedGMPins);
-
-
             _databaseLoaderService.SaveGMMapPinExport(exportPins);
 
             Console.WriteLine($"Exported {sharedPinCount} shared pins");
@@ -91,21 +81,9 @@ namespace Frodo.Service
             JsonHelper.SaveDbNoPadding(fileName, topics);
         }
 
-        private GMapsPinDb? FindDbPin(List<GMapsPinDb> dbPins, GMapsPin gMapsPin)
-        {
-            foreach (var pin in dbPins)
-            {
-                if (pin.GeoLatitude == gMapsPin.GeoLatitude && pin.GeoLongitude == gMapsPin.GeoLongitude)
-                {
-                    return pin;
-                }
-            }
-            return null;
-        }
-
         private void WriteToDatabase(List<GMapsPin> gmPins)
         {
-            var mapper = new DbMapper();
+            var mapper = new DbMapperService();
 
             // delete locally removed
             var itemsGm = _dataStore.GetData<GMapsPinDb>("").Result;
@@ -122,7 +100,7 @@ namespace Frodo.Service
             for (int i = 0; i < gmPins.Count; i++)
             {
                 var item = gmPins[i];
-                var existingDbPin = FindDbPin(itemsGm, item);
+                var existingDbPin = GMPinHelper.FindDbPin(itemsGm, item);
                 item.Description = $"Pin generated from Google maps - {item.Comment}";
 
                 if (existingDbPin == null

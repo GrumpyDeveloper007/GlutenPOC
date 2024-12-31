@@ -30,7 +30,7 @@ namespace Gluten.Core.DataProcessing.Service
         private const string PlacenameSkipListFileName = "D:\\Coding\\Gluten\\Database\\PlaceNameSkipList.json";
 
         private readonly List<PinDescriptionCache> _pinDescriptionsCache;
-        private readonly MapPinCache _mapPinCache;
+        private readonly MapPinCacheService _mapPinCache;
 
         /// <summary>
         /// Constructor
@@ -49,11 +49,11 @@ namespace Gluten.Core.DataProcessing.Service
             }
             if (pins != null)
             {
-                _mapPinCache = new MapPinCache(pins, pinsHtml, new DummyConsole());
+                _mapPinCache = new MapPinCacheService(pins, pinsHtml, new DummyConsole());
             }
             else
             {
-                _mapPinCache = new MapPinCache([], [], new DummyConsole());
+                _mapPinCache = new MapPinCacheService([], [], new DummyConsole());
             }
             if (File.Exists(PinDescriptionCacheFileName))
             {
@@ -192,7 +192,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// <summary>
         /// Gets the PinHelper
         /// </summary>
-        public MapPinCache GetPinCache()
+        public MapPinCacheService GetPinCache()
         {
             return _mapPinCache;
         }

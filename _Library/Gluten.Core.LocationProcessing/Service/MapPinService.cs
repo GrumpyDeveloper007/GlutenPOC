@@ -11,8 +11,8 @@ namespace Gluten.Core.LocationProcessing.Service
     /// Google map pin handling service, generates pins from place names, gathers meta data
     /// </summary>
     public class MapPinService(
-        SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor,
-        MapPinCache _mapPinCache,
+        SeleniumService _seleniumMapsUrlProcessor,
+        MapPinCacheService _mapPinCache,
         GeoService _geoService,
         MapsMetaExtractorService _mapsMetaExtractorService,
         IConsole Console)

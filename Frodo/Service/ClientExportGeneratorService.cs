@@ -15,18 +15,18 @@ namespace Frodo.Service
     /// <summary>
     /// Generates and exports data to the client database
     /// </summary>
-    internal class ClientExportFileGenerator(DatabaseLoaderService _databaseLoaderService,
+    internal class ClientExportGeneratorService(DatabaseLoaderService _databaseLoaderService,
         MappingService _mappingService,
-        MapPinCache _mapPinCache,
+        MapPinCacheService _mapPinCache,
         FBGroupService _fBGroupService,
         GeoService _geoService,
-        CloudDataStore _dataStore,
+        CloudDataStoreService _dataStore,
         AiInterfaceService _analyzeDocumentService,
         IConsole Console
         )
     {
         private const string ExportFolder = @"D:\Coding\Gluten\Export\";
-        private readonly ClientExportFileGeneratorGM _exportFileGeneratorGM = new(_databaseLoaderService, _geoService, _dataStore, Console);
+        private readonly ClientExportGeneratorGMService _exportFileGeneratorGM = new(_databaseLoaderService, _geoService, _dataStore, Console);
 
         /// <summary>
         /// Group data by pin (venue), export to json
@@ -37,9 +37,9 @@ namespace Frodo.Service
             pins ??= [];
 
 
-            DataHelper.CleanTopics(pins);
+            TopicListHelper.CleanTopics(pins);
             pins = ExtractPinExport(pins, topics, _mappingService);
-            DataHelper.RemoveEmptyPins(pins);
+            TopicListHelper.RemoveEmptyPins(pins);
 
             var ii = 0;
             var unknownRestaurantType = 0;
@@ -107,13 +107,13 @@ namespace Frodo.Service
 
                 ii++;
             }
-            DataHelper.RemoveTopicTitles(pins);
+            TopicListHelper.RemoveTopicTitles(pins);
 
             WriteToDatabase(pins);
 
             _databaseLoaderService.SavePinTopics(pins);
             CreateExportFolderData(pins, topics);
-            _exportFileGeneratorGM.GenerateTopicExport(topics, pins, ExportFolder);
+            _exportFileGeneratorGM.GenerateTopicExport(pins, ExportFolder);
             Console.WriteLine($"Unknown restaurant types : {unknownRestaurantType}");
         }
 
@@ -133,10 +133,7 @@ namespace Frodo.Service
                         if (aiVenue.Pin != null && aiVenue.IsExportable && !aiVenue.IsChain)
                         {
                             var cachePin = _mapPinCache.TryGetPinLatLong(aiVenue.Pin.GeoLatitude, aiVenue.Pin.GeoLongitude, aiVenue.PlaceName);
-                            if (cachePin == null)
-                            {
-                                cachePin = _mapPinCache.TryGetPinLatLong(aiVenue.Pin.GeoLatitude, aiVenue.Pin.GeoLongitude, aiVenue.Pin.Label);
-                            }
+                            cachePin ??= _mapPinCache.TryGetPinLatLong(aiVenue.Pin.GeoLatitude, aiVenue.Pin.GeoLongitude, aiVenue.Pin.Label ?? "");
                             if (cachePin == null)
                             {
                                 if (aiVenue.ChainGenerated)
@@ -174,8 +171,8 @@ namespace Frodo.Service
                                 && !string.IsNullOrWhiteSpace(aiVenue.Pin.GeoLongitude)
                                 )
                             {
-                                var existingPin = DataHelper.IsPinInList(aiVenue.Pin, pins);
-                                DataHelper.AddIfNotExists(pins, existingPin, newT, aiVenue.Pin, cachePin);
+                                var existingPin = TopicListHelper.IsPinInList(aiVenue.Pin, pins);
+                                TopicListHelper.AddIfNotExists(pins, existingPin, newT, aiVenue.Pin, cachePin);
                             }
                         }
                     }
@@ -207,8 +204,8 @@ namespace Frodo.Service
                                 //&& FBGroupService.IsPinWithinExpectedRange(topic.GroupId, double.Parse(url.Pin.GeoLatitude), double.Parse(url.Pin.GeoLongitude))
                                 )
                             {
-                                var existingPin = DataHelper.IsPinInList(url.Pin, pins);
-                                DataHelper.AddIfNotExists(pins, existingPin, newT, url.Pin, cachePin);
+                                var existingPin = TopicListHelper.IsPinInList(url.Pin, pins);
+                                TopicListHelper.AddIfNotExists(pins, existingPin, newT, url.Pin, cachePin);
                             }
                         }
                     }
@@ -236,25 +233,22 @@ namespace Frodo.Service
 
         private void WriteToDatabase(List<PinTopic> pins)
         {
-            var mapper = new DbMapper();
+            var mapper = new DbMapperService();
 
             // delete locally removed
             var items = _dataStore.GetData<PinTopicDb>("").Result;
             var itemsToDelete = 0;
             var itemsToAdd = 0;
             var itemsToUpdate = 0;
-            Dictionary<string, int> deleteByCountry = new();
-            Dictionary<string, int> updateByCountry = new();
+            Dictionary<string, int> deleteByCountry = [];
+            Dictionary<string, int> updateByCountry = [];
             for (int i = 0; i < items.Count; i++)
             {
                 var item = items[i];
                 if (!pins.Exists(o => o.GeoLatitude == item.GeoLatitude && o.GeoLongitude == item.GeoLongitude))
                 {
                     Console.WriteLine($"Marked for deletion : {item.Label}, {item.Country}");
-                    if (!deleteByCountry.ContainsKey(item.Country))
-                    {
-                        deleteByCountry.Add(item.Country, 0);
-                    }
+                    deleteByCountry.TryAdd(item.Country, 0);
                     deleteByCountry[item.Country] += 1;
                     itemsToDelete++;
                 }
@@ -275,10 +269,7 @@ namespace Frodo.Service
                         || item.Topics.Count != existingDbPin.Topics.Count)
                     {
                         itemsToUpdate++;
-                        if (!updateByCountry.ContainsKey(existingDbPin.Country))
-                        {
-                            updateByCountry.Add(existingDbPin.Country, 0);
-                        }
+                        updateByCountry.TryAdd(existingDbPin.Country, 0);
                         updateByCountry[existingDbPin.Country] += 1;
 
                     }

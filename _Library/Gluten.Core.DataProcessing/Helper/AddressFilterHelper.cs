@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 
 namespace Gluten.Core.DataProcessing.Helper
 {
+    /// <summary>
+    /// Provides some extra filtering for the junk AI can select
+    /// </summary>
     public static class AddressFilterHelper
     {
         private static readonly List<string> _addressFilters = [

@@ -3,8 +3,6 @@ using Gluten.Core.Service;
 using Gluten.Data.ClientModel;
 using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
-using NetTopologySuite.Index.HPRtree;
-using OpenQA.Selenium.BiDi.Modules.BrowsingContext;
 using System.Web;
 
 namespace Frodo.Helper
@@ -12,7 +10,7 @@ namespace Frodo.Helper
     /// <summary>
     /// General helpers for working with data structures
     /// </summary>
-    internal static class DataHelper
+    internal static class TopicListHelper
     {
         public static IConsole Console { get; set; } = new DummyConsole();
 
@@ -61,7 +59,7 @@ namespace Frodo.Helper
         /// <summary>
         /// is specified venue in the list (duplicated)?
         /// </summary>
-        public static bool IsInList(List<AiVenue>? venues, AiVenue venue, int newVenueIndex, bool ignoreChains)
+        public static bool IsInList(List<AiVenue>? venues, AiVenue venue, int newVenueIndex)
         {
             if (venues == null) return false;
             for (int i = 0; i < venues.Count; i++)
@@ -90,19 +88,6 @@ namespace Frodo.Helper
             return false;
         }
 
-        private static bool IsPinMatch(TopicPin? original, TopicPin? newPin)
-        {
-            if (original != null && newPin != null
-            && original.Label == newPin.Label
-                && original.GeoLongitude == newPin.GeoLongitude
-                && original.GeoLatitude == newPin.GeoLatitude
-                )
-            {
-                return true;
-            }
-            return false;
-        }
-
         /// <summary>
         /// Adds a topic to a pin, 
         /// or updates data if new (only really needed because of evolvoing data structures, TODO: can be cleaned up later)
@@ -123,7 +108,7 @@ namespace Frodo.Helper
                 {
                     GeoLatitude = double.Parse(pinToAdd.GeoLatitude),
                     GeoLongitude = double.Parse(pinToAdd.GeoLongitude),
-                    Label = HttpUtility.UrlDecode(pinToAdd.Label),
+                    Label = HttpUtility.UrlDecode(pinToAdd.Label ?? ""),
                     Topics = [topicToAdd],
                 };
                 if (cachePin != null && !string.IsNullOrWhiteSpace(cachePin.MapsUrl))
@@ -224,5 +209,19 @@ namespace Frodo.Helper
                 }
             }
         }
+
+        private static bool IsPinMatch(TopicPin? original, TopicPin? newPin)
+        {
+            if (original != null && newPin != null
+            && original.Label == newPin.Label
+                && original.GeoLongitude == newPin.GeoLongitude
+                && original.GeoLatitude == newPin.GeoLatitude
+                )
+            {
+                return true;
+            }
+            return false;
+        }
+
     }
 }
