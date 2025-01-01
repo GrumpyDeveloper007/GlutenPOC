@@ -127,6 +127,7 @@ namespace Frodo.Service
 
                 if (topic.AiVenues != null)
                 {
+                    bool resetChains = false;
                     for (int i = topic.AiVenues.Count - 1; i >= 0; i--)
                     {
                         AiVenue? aiVenue = topic.AiVenues[i];
@@ -139,13 +140,14 @@ namespace Frodo.Service
                                 if (aiVenue.ChainGenerated)
                                 {
                                     Console.WriteLine($"Unable to get cache pin, broken chain generated : {aiVenue.PlaceName} ");
+                                    resetChains = true;
                                     //topic.AiVenues.RemoveAt(i);
                                     continue;
                                 }
                                 else
                                 {
                                     Console.WriteLine($"Unable to get cache pin, broken static pin {aiVenue.PlaceName} ");
-                                    aiVenue.Pin = null;
+                                    //aiVenue.Pin = null;
                                     aiVenue.PinSearchDone = false;
                                     continue;
                                 }
@@ -175,6 +177,11 @@ namespace Frodo.Service
                                 TopicListHelper.AddIfNotExists(pins, existingPin, newT, aiVenue.Pin, cachePin);
                             }
                         }
+                    }
+
+                    if (resetChains)
+                    {
+                        TopicActionHelper.RemoveChainGeneratedAiPins(topic);
                     }
                 }
 

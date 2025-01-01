@@ -1,5 +1,4 @@
-﻿using AutoMapper.Configuration.Conventions;
-using Frodo.Helper;
+﻿using Frodo.Helper;
 using Gluten.Core.DataProcessing.Helper;
 using Gluten.Core.DataProcessing.Service;
 using Gluten.Core.Helper;
@@ -9,11 +8,11 @@ using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
-using static Gluten.Core.LocationProcessing.Service.CityService;
 
 namespace Frodo.Service;
 
@@ -325,7 +324,19 @@ internal class AiVenueLocationService
         // Add any chain urls detected earlier (searches that have multiple results)
         foreach (var url in chainUrls)
         {
-            var pin = PinHelper.GenerateMapPin(url, "", groupCountry);
+            TopicPinCache? pin = null;
+            var tempPin = PinHelper.GenerateMapPin(url, "", "");
+            if (tempPin != null)
+            {
+                pin = _mapPinCache.TryGetPinLatLong(tempPin.GeoLatitude, tempPin.GeoLongitude, "");
+            }
+            if (pin == null)
+            {
+                _mapPinService.GoToUrl(url);
+                pin = _mapPinService.TryToGenerateMapPin(url, "", "", "");
+            }
+
+            //var pin = PinHelper.GenerateMapPin(url, "", groupCountry);
             if (pin != null)
             {
                 var newPin = _mapPinCache.AddPinCache(pin, pin.Label, pin.Label);
@@ -367,7 +378,8 @@ internal class AiVenueLocationService
 
             if (!string.IsNullOrWhiteSpace(country))
             {
-                if (!groupCountry.Contains(country, StringComparison.InvariantCultureIgnoreCase))
+                if (!groupCountry.Contains(country, StringComparison.InvariantCultureIgnoreCase)
+                    && !(groupCountry == "Peru" && country == "Peru(Peruvian point of view)"))
                 {
                     _ = double.TryParse(pin.GeoLongitude, out double longitude);
                     _ = double.TryParse(pin.GeoLatitude, out double latitude);
@@ -479,6 +491,7 @@ internal class AiVenueLocationService
             }
             else
             {
+                // Look for exact match
                 foreach (var item in chainUrls)
                 {
                     _mapPinService.GoToUrl(item);

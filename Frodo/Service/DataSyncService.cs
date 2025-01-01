@@ -34,7 +34,7 @@ namespace Frodo.Service
         private readonly TopicLoaderService _topicLoaderService = new(_topicsLoaderService, _fBGroupService, Console);
         private readonly TopicEmbeddedLinkService _topicEmbeddedLinkService = new(_databaseLoaderService, _mapPinService, _fBGroupService, _mappingService, _topicsLoaderService);
         private readonly AiVenueCreationService _aiVenueCreationService = new(_topicsLoaderService, _localAi, Console);
-        private readonly TopicMetaCreationService _topicMetaCreationService = new(_topicsLoaderService, _localAi, _geoService, _cityService, _fBGroupService Console);
+        private readonly TopicMetaCreationService _topicMetaCreationService = new(_topicsLoaderService, _localAi, _geoService, _cityService, _fBGroupService, Console);
         private List<GMapsPin> _gmSharedPins = [];
 
         public List<DetailedTopic> Topics = [];
@@ -50,33 +50,9 @@ namespace Frodo.Service
             {
                 Topics = topics;
             }
-            _mapPinCache.Clean();
 
-            var venues = _databaseLoaderService.LoadPlaceSkipList();
-            string temp = "";
-            venues.Sort((x, y) => y.PlaceName.CompareTo(x.PlaceName));
-            foreach (var venue in venues)
-            {
-                if (venue == null) continue;
-                temp += $"\"{venue.PlaceName}\",\n";
-            }
-
-            var placeNames = _aiVenueCleanUpService.GetPlaceNames(Topics);
-            var places = "";
-            Console.WriteLine($"----------------------");
-            foreach (var item in placeNames)
-            {
-                if (SmartPlaceNameFilterHelper.IsSkippable(item))
-                {
-                    Console.WriteLineRed($"Skipping :{item}");
-                }
-
-                places += $"{item}\r\n";
-            }
-
-            string filePath = "D:\\Coding\\Gluten\\Outputs\\";
-            File.WriteAllText(filePath + "placeNames.txt", places);
-
+            //_mapPinCache.Clean();
+            ListPlaceNames();
             CheckSharedPinLocations();
 
             _aiVenueCleanUpService.ResetIsExportable(Topics);
@@ -86,17 +62,16 @@ namespace Frodo.Service
             //_pinCacheSyncService.CheckPriceExtraction();
             //_pinCacheSyncService.CheckFilteredRestaurantTypes();
 
-
-            //await _localAi.ExtractDescriptionTitle("this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message,this is a test message", "test");
-
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nReading captured FB data");
-            _topicLoaderService.ReadFileLineByLine(_responsefileName, Topics);
+            //_topicLoaderService.ReadFileLineByLine(_responsefileName, Topics);
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nProcessing information from source");
             _topicEmbeddedLinkService.UpdateMessageAndResponseUrls(Topics);
 
+            Console.WriteLine("--------------------------------------");
+            Console.WriteLine($"\r\nGenerating country names from topic title");
             await _topicMetaCreationService.CategoriseTopic(Topics);
             await _topicMetaCreationService.CalculateLanguageTopic(Topics);
             await _topicMetaCreationService.TranslateTopic(Topics);
@@ -104,12 +79,9 @@ namespace Frodo.Service
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nStarting AI processing - detecting venue name/address");
             await _aiVenueCreationService.ScanTopicsUseAiToDetectVenueInfo(Topics);
+            await _topicMetaCreationService.ScanTopicsDetectCountryAndCity(Topics);
             //await ScanTopicsRegenerateNullPins();
             //FixCity(Topics);
-
-            Console.WriteLine("--------------------------------------");
-            Console.WriteLine($"\r\nGenerating country names from topic title");
-            await _topicMetaCreationService.ScanTopicsDetectCountryAndCity(Topics);
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nFiltering AI pins");
@@ -135,10 +107,6 @@ namespace Frodo.Service
             //_aiVenueLocationService.CheckNonExportable(Topics);
 
             Console.WriteLine("--------------------------------------");
-            _aiVenueCleanUpService.CountPins(Topics);
-
-
-            Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nUpdating pin information for Ai Venues");
             _aiVenueLocationService.ProcessNewPins(Topics);
             _aiVenueLocationService.CheckPinsAreInCache(Topics);
@@ -152,6 +120,9 @@ namespace Frodo.Service
             await _topicMetaCreationService.GenerateShortTitles(Topics);
 
             Console.WriteLine("--------------------------------------");
+            _aiVenueCleanUpService.CountPins(Topics);
+
+            Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nGenerating data for client application");
             await _clientExportFileGenerator.GenerateTopicExport(Topics);
             _topicsLoaderService.SaveTopics(Topics);
@@ -161,12 +132,31 @@ namespace Frodo.Service
             Console.WriteLine($"\r\nComplete, exit...");
         }
 
+        private void ListPlaceNames()
+        {
+            var placeNames = _aiVenueCleanUpService.GetPlaceNames(Topics);
+            var places = "";
+            Console.WriteLine($"----------------------");
+            foreach (var item in placeNames)
+            {
+                if (SmartPlaceNameFilterHelper.IsSkippable(item))
+                {
+                    Console.WriteLineRed($"Skipping :{item}");
+                }
+
+                places += $"{item}\r\n";
+            }
+
+            string filePath = "D:\\Coding\\Gluten\\Outputs\\";
+            File.WriteAllText(filePath + "placeNames.txt", places);
+        }
+
         private void CheckSharedPinLocations()
         {
             int searchesDone = 0;
             for (int i = 0; i < _gmSharedPins.Count; i++)
             {
-                if (i < 1400) continue;
+                if (i < 1452) continue;
                 var item = _gmSharedPins[i];
                 item.Comment ??= item.Description;
                 if (item.Label == null) continue;

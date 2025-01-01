@@ -10,28 +10,20 @@ using System.Threading.Tasks;
 
 namespace Smeagol.Services
 {
-    internal class DataService
+    /// <summary>
+    /// Extracts key information from FB data
+    /// </summary>
+    internal class DataService(ProcessedGroupPostService _processedGroupPostService)
     {
-        private List<string> _LoadedIds = [];
         internal static readonly string[] crlf = ["/r/n"];
-        private const string GroupPostProcessedFileName = "D:\\Coding\\Gluten\\Database\\GroupPostProcessed.json";
-        internal static readonly string[] separator = { "\r\n" };
+        internal static readonly string[] separator = ["\r\n"];
 
-        public void SaveGroupPost()
-        {
-            JsonHelper.SaveDb<List<string>>(GroupPostProcessedFileName, _LoadedIds);
-        }
-
-        public static List<string> LoadGroupPost()
-        {
-            var data = JsonHelper.TryLoadJsonList<string>(GroupPostProcessedFileName);
-            if (data == null) return [];
-            return data;
-        }
-
+        /// <summary>
+        /// Read any previously processed data to make sure its in the DB
+        /// </summary>
         public void ReadFileLineByLine(string filePath)
         {
-            _LoadedIds = LoadGroupPost();
+            _processedGroupPostService.LoadGroupPost();
 
             if (!File.Exists(filePath)) return;
             // Open the file and read each line
@@ -66,11 +58,7 @@ namespace Smeagol.Services
                             {
                                 var m = JsonConvert.DeserializeObject<SimplifiedGroupRoot>(message);
                                 var nodeId = FbModelHelper.GetNodeId(m);
-                                if (nodeId != null && !_LoadedIds.Contains(nodeId))
-                                {
-                                    _LoadedIds.Add(nodeId);
-                                    duplicatedLine = false;
-                                }
+                                duplicatedLine = _processedGroupPostService.TryAddId(nodeId);
                             }
                             catch (Exception ex)
                             {
@@ -81,32 +69,14 @@ namespace Smeagol.Services
                         }
                         if (duplicatedLine)
                         {
-                            Console.WriteLine($"Duplicate key in data store {i}");
+                            //Console.WriteLine($"Duplicate key in data store {i}");
                         }
                     }
                 }
                 i++;
             }
 
-            Console.WriteLine($"Nodes loaded {_LoadedIds.Count}");
-        }
-
-        private bool LoadSearchRootMessage(string message)
-        {
-            var duplicatedLine = true;
-            var sr = JsonConvert.DeserializeObject<SearchRoot>(message);
-            if (sr?.data?.serpResponse == null) return duplicatedLine;
-            var nodeIds = FbModelHelper.GetNodeIds(sr);
-            if (nodeIds == null) return duplicatedLine;
-            foreach (var nodeId in nodeIds)
-            {
-                if (nodeId != null && !_LoadedIds.Contains(nodeId))
-                {
-                    _LoadedIds.Add(nodeId);
-                    duplicatedLine = false;
-                }
-            }
-            return duplicatedLine;
+            Console.WriteLine($"Nodes loaded {_processedGroupPostService.NodeCount()}");
         }
 
         /// <summary>
@@ -144,12 +114,7 @@ namespace Smeagol.Services
                         {
                             //Console.WriteLine($"known Node Id,   {m.label}, {nodeId}");
                         }
-                        if (nodeId != null && !_LoadedIds.Contains(nodeId))
-                        {
-                            _LoadedIds.Add(nodeId);
-                            duplicatedLine = false;
-                        }
-
+                        duplicatedLine = _processedGroupPostService.TryAddId(nodeId);
                     }
                     catch (Exception ex)
                     {
@@ -157,6 +122,20 @@ namespace Smeagol.Services
                         Console.WriteLine(ex.Message);
                     }
                 }
+            }
+            return duplicatedLine;
+        }
+
+        private bool LoadSearchRootMessage(string message)
+        {
+            var duplicatedLine = true;
+            var sr = JsonConvert.DeserializeObject<SearchRoot>(message);
+            if (sr?.data?.serpResponse == null) return duplicatedLine;
+            var nodeIds = FbModelHelper.GetNodeIds(sr);
+            if (nodeIds == null) return duplicatedLine;
+            foreach (var nodeId in nodeIds)
+            {
+                duplicatedLine = _processedGroupPostService.TryAddId(nodeId);
             }
             return duplicatedLine;
         }

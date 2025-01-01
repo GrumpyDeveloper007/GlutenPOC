@@ -29,7 +29,8 @@ namespace Frodo.Service
             for (int i = 0; i < Topics.Count; i++)
             {
                 DetailedTopic? topic = Topics[i];
-                if (topic.IsAiVenuesSearchDone) continue;
+                if (i < 91916 && topic.IsAiVenuesSearchDone) continue;
+                //if (topic.IsAiVenuesSearchDone) continue;
                 if (TopicItemHelper.IsRecipe(topic)) continue;
                 if (TopicItemHelper.IsTopicAQuestion(topic)) continue;
 
@@ -44,7 +45,7 @@ namespace Frodo.Service
                 timer.Stop();
                 Console.WriteLine($"Processing topic (new) {i} of {Topics.Count} length :{topic.Title.Length} Time: {timer.Elapsed.TotalSeconds}");
                 topic.IsAiVenuesSearchDone = true;
-                if (SyncVenues(topic.AiVenues, venue))
+                if (SyncVenues(topic, venue))
                 {
                     foundUpdates = true;
                 }
@@ -100,7 +101,7 @@ namespace Frodo.Service
                 }
                 else
                 {
-                    if (SyncVenues(topic.AiVenues, venue))
+                    if (SyncVenues(topic, venue))
                     {
                         updateCount++;
                     }
@@ -109,13 +110,13 @@ namespace Frodo.Service
             _topicsLoaderService.SaveTopics(Topics);
         }
 
-        private bool SyncVenues(List<AiVenue>? oldVenues, List<AiVenue>? newVenues)
+        private bool SyncVenues(DetailedTopic topic, List<AiVenue>? newVenues)
         {
             bool foundUpdates = false;
-            if (oldVenues == null && newVenues == null) return false;
-            if (oldVenues == null && newVenues != null)
+            if (topic.AiVenues == null && newVenues == null) return false;
+            if (topic.AiVenues == null && newVenues != null)
             {
-                oldVenues = newVenues;
+                topic.AiVenues = newVenues;
                 for (int i = 0; i < newVenues.Count; i++)
                 {
                     Console.WriteLineBlue($"Adding new venue :{newVenues[i].PlaceName}");
@@ -126,8 +127,8 @@ namespace Frodo.Service
             if (newVenues == null) return false;
             for (int i = 0; i < newVenues.Count; i++)
             {
-                oldVenues ??= [];
-                var oldVenue = oldVenues.FirstOrDefault(o => o.PlaceName == newVenues[i].PlaceName);
+                topic.AiVenues ??= [];
+                var oldVenue = topic.AiVenues.FirstOrDefault(o => o.PlaceName == newVenues[i].PlaceName);
                 if (oldVenue != null)
                 {
                     if (string.IsNullOrWhiteSpace(oldVenue.City)) oldVenue.City = newVenues[i].City;
@@ -135,7 +136,7 @@ namespace Frodo.Service
                 }
                 else
                 {
-                    oldVenues.Add(newVenues[i]);
+                    topic.AiVenues.Add(newVenues[i]);
                     Console.WriteLineBlue($"Adding new venue :{newVenues[i].PlaceName}");
                     foundUpdates = true;
                 }

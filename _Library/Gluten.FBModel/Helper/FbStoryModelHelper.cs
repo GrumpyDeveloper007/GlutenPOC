@@ -1,11 +1,13 @@
-﻿using Gluten.FBModel;
+﻿// Ignore Spelling: Fb
+
+using Gluten.FBModel;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Frodo.Helper
+namespace Gluten.FBModel.Helper
 {
     /// <summary>
     /// Some helper functions to work with the FB story model
@@ -27,44 +29,44 @@ namespace Frodo.Helper
                     newStory = new Story();
                     newStories.Add(newStory);
                 }
-                if (newStory.feedback == null) newStory.feedback = story.feedback;
-                if (newStory.comet_sections == null) newStory.comet_sections = story.comet_sections;
+                newStory.feedback ??= story.feedback;
+                newStory.comet_sections ??= story.comet_sections;
                 //if (newStory.encrypted_tracking == null) newStory.encrypted_tracking = story.encrypted_tracking;
-                if (newStory.attachments == null) newStory.attachments = story.attachments;
-                if (newStory.sponsored_data == null) newStory.sponsored_data = story.sponsored_data;
-                if (newStory.text_format_metadata == null) newStory.text_format_metadata = story.text_format_metadata;
-                if (newStory.post_id == null) newStory.post_id = story.post_id;
-                if (newStory.actors == null) newStory.actors = story.actors;
-                if (newStory.message == null) newStory.message = story.message;
+                newStory.attachments ??= story.attachments;
+                newStory.sponsored_data ??= story.sponsored_data;
+                newStory.text_format_metadata ??= story.text_format_metadata;
+                newStory.post_id ??= story.post_id;
+                newStory.actors ??= story.actors;
+                newStory.message ??= story.message;
                 //if (newStory.ghl_mocked_encrypted_link == null) newStory.ghl_mocked_encrypted_link = story.ghl_mocked_encrypted_link;
-                if (newStory.ghl_label_mocked_cta_button == null) newStory.ghl_label_mocked_cta_button = story.ghl_label_mocked_cta_button;
-                if (newStory.wwwURL == null) newStory.wwwURL = story.wwwURL;
-                if (newStory.target_group == null) newStory.target_group = story.target_group;
-                if (newStory.attached_story == null) newStory.attached_story = story.attached_story;
-                if (newStory.id == null) newStory.id = story.id;
-                if (newStory.url == null) newStory.url = story.url;
-                if (newStory.__typename == null) newStory.__typename = story.__typename;
-                if (newStory.shareable_from_perspective_of_feed_ufi == null) newStory.shareable_from_perspective_of_feed_ufi = story.shareable_from_perspective_of_feed_ufi;
-                if (newStory.bumpers == null) newStory.bumpers = story.bumpers;
+                newStory.ghl_label_mocked_cta_button ??= story.ghl_label_mocked_cta_button;
+                newStory.wwwURL ??= story.wwwURL;
+                newStory.target_group ??= story.target_group;
+                newStory.attached_story ??= story.attached_story;
+                newStory.id ??= story.id;
+                newStory.url ??= story.url;
+                newStory.__typename ??= story.__typename;
+                newStory.shareable_from_perspective_of_feed_ufi ??= story.shareable_from_perspective_of_feed_ufi;
+                newStory.bumpers ??= story.bumpers;
                 //if (newStory.tracking == null) newStory.tracking = story.tracking;
                 if (newStory.is_text_only_story == false) newStory.is_text_only_story = story.is_text_only_story;
-                if (newStory.message_truncation_line_limit == null) newStory.message_truncation_line_limit = story.message_truncation_line_limit;
-                if (newStory.referenced_sticker == null) newStory.referenced_sticker = story.referenced_sticker;
-                if (newStory.debug_info == null) newStory.debug_info = story.debug_info;
-                if (newStory.serialized_frtp_identifiers == null) newStory.serialized_frtp_identifiers = story.serialized_frtp_identifiers;
+                newStory.message_truncation_line_limit ??= story.message_truncation_line_limit;
+                newStory.referenced_sticker ??= story.referenced_sticker;
+                newStory.debug_info ??= story.debug_info;
+                newStory.serialized_frtp_identifiers ??= story.serialized_frtp_identifiers;
                 if (newStory.can_viewer_see_menu == false) newStory.can_viewer_see_menu = story.can_viewer_see_menu;
-                if (newStory.easy_hide_button_story == null) newStory.easy_hide_button_story = story.easy_hide_button_story;
+                newStory.easy_hide_button_story ??= story.easy_hide_button_story;
                 if (newStory.creation_time == 0) newStory.creation_time = story.creation_time;
-                if (newStory.ghl_label == null) newStory.ghl_label = story.ghl_label;
-                if (newStory.privacy_scope == null) newStory.privacy_scope = story.privacy_scope;
-                if (newStory.collaborators == null) newStory.collaborators = story.collaborators;
-                if (newStory.title == null) newStory.title = story.title;
-                if (newStory.feedback_context == null) newStory.feedback_context = story.feedback_context;
-                if (newStory.story_ufi_container == null) newStory.story_ufi_container = story.story_ufi_container;
-                if (newStory.inform_treatment_for_messaging == null) newStory.inform_treatment_for_messaging = story.inform_treatment_for_messaging;
-                if (newStory.__module_operation_useCometUFIAdaptivePostActionBar_story == null) newStory.__module_operation_useCometUFIAdaptivePostActionBar_story = story.__module_operation_useCometUFIAdaptivePostActionBar_story;
-                if (newStory.__module_component_useCometUFIAdaptivePostActionBar_story == null) newStory.__module_component_useCometUFIAdaptivePostActionBar_story = story.__module_component_useCometUFIAdaptivePostActionBar_story;
-                if (newStory.vote_attachments == null) newStory.vote_attachments = story.vote_attachments;
+                newStory.ghl_label ??= story.ghl_label;
+                newStory.privacy_scope ??= story.privacy_scope;
+                newStory.collaborators ??= story.collaborators;
+                newStory.title ??= story.title;
+                newStory.feedback_context ??= story.feedback_context;
+                newStory.story_ufi_container ??= story.story_ufi_container;
+                newStory.inform_treatment_for_messaging ??= story.inform_treatment_for_messaging;
+                newStory.__module_operation_useCometUFIAdaptivePostActionBar_story ??= story.__module_operation_useCometUFIAdaptivePostActionBar_story;
+                newStory.__module_component_useCometUFIAdaptivePostActionBar_story ??= story.__module_component_useCometUFIAdaptivePostActionBar_story;
+                newStory.vote_attachments ??= story.vote_attachments;
 
                 // Merge child level items - TODO: For completeness should merge the entire tree, but this will do for now
                 if (newStory?.feedback_context != null && newStory?.feedback_context?.interesting_top_level_comments == null) newStory.feedback_context.interesting_top_level_comments = story.feedback_context.interesting_top_level_comments;
@@ -95,7 +97,7 @@ namespace Frodo.Helper
 
             if (node?.group_feed?.edges != null)
             {
-                foreach (var item in node?.group_feed.edges)
+                foreach (var item in node.group_feed.edges)
                     stories.AddRange(FlattenNodes(item.node));
             }
             return stories;
@@ -149,8 +151,10 @@ namespace Frodo.Helper
         /// </summary>
         public static List<Story> FlattenNodes(Story node)
         {
-            var stories = new List<Story>();
-            stories.Add(node);
+            var stories = new List<Story>
+            {
+                node
+            };
             // story.comet_sections.attached_story
             // story.comet_sections.metadata[].story
             // story.attached_story

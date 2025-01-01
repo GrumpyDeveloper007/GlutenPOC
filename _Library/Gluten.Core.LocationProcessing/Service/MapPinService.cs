@@ -72,6 +72,7 @@ namespace Gluten.Core.LocationProcessing.Service
         /// </summary>
         public string CheckUrlForMapLinks(string url)
         {
+            int timeoutRetries = 0;
             if (MapPinHelper.IsMapsUrl(url))
             {
                 if (!url.Contains("/@"))
@@ -89,6 +90,8 @@ namespace Gluten.Core.LocationProcessing.Service
                         var pageSource = _seleniumMapsUrlProcessor.PageSource();
                         if (pageSource.Contains("This site can’t be reached"))
                         {
+                            timeoutRetries++;
+                            if (timeoutRetries > 5) timeout = 0;
                             GoAndWaitForUrlChange(url);
                         }
                     }

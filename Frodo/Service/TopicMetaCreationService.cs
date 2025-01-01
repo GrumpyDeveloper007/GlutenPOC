@@ -279,13 +279,13 @@ namespace Frodo.Service
                 if (language2 == language3) language = language2;
                 if (language1.Length > 10 || language2.Length > 10 || language3.Length > 10)
                 {
-                    Console.WriteLine($"Categorise topics {i} of {Topics.Count} : {language}");
+                    Console.WriteLine($"topic language {i} of {Topics.Count} : {language}");
                 }
                 if (language != "English")
                 {
-                    Console.WriteLine($"Categorise topics {i} of {Topics.Count} : {language}");
+                    Console.WriteLine($"topic language {i} of {Topics.Count} : {language}");
                 }
-                Console.WriteLine($"Categorise topics {i} of {Topics.Count} : {language1},{language2},{language3}");
+                Console.WriteLine($"topic language {i} of {Topics.Count} : {language1},{language2},{language3}");
                 topic.TitleLanguage = language;
                 itemsUpdated++;
             }

@@ -339,7 +339,6 @@ internal class AiVenueCleanUpService(
     }
 
 
-
     public void RemoveChainGeneratedAiPins(List<DetailedTopic> topics)
     {
         Console.WriteLine("--------------------------------------");
@@ -347,20 +346,7 @@ internal class AiVenueCleanUpService(
         for (int i = 0; i < topics.Count; i++)
         {
             DetailedTopic? topic = topics[i];
-
-            if (topic.AiVenues == null) continue;
-            for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
-            {
-                var venue = topic.AiVenues[t];
-                if (venue.Pin == null) continue;
-
-                if (topic.AiVenues[t].ChainGenerated)
-                {
-                    Console.WriteLineRed($"Removed {actionCount} chain generated pins");
-                    topic.AiVenues.RemoveAt(t);
-                    actionCount++;
-                }
-            }
+            actionCount += TopicActionHelper.RemoveChainGeneratedAiPins(topic);
         }
         if (actionCount > 0)
         {

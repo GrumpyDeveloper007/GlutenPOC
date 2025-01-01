@@ -81,15 +81,15 @@ namespace Gluten.Core.DataProcessing.Service
             {"1535703166696570","United States" },//Coeliac and Gluten Free York			public group
             
             //searchable gluten groups -
-            {"974429813510442","Cambodia" },        //Cambodia travel
-            {"147347329055","Cambodia" },           //Cambodia Expats Club
-            {"517665179677444","Cambodia" },        //Cambodia travelers
-            {"3061458170649280","Cambodia" },       //Siem Reap Expat Connection
-            {"161220651105962","Cambodia" },        //Expats & Locals in Kampot & Kep
+            {"974429813510442","NA" },        //Cambodia travel
+            {"147347329055","NA" },           //Cambodia Expats Club
+            {"517665179677444","NA" },        //Cambodia travelers
+            {"3061458170649280","NA" },       //Siem Reap Expat Connection
+            {"161220651105962","NA" },        //Expats & Locals in Kampot & Kep
             // new
             {"167644913804569","France" },          //Gluten Free Anglophones in France
             {"938709760910143","" },                //Sun, Sea and Gluten Free 💗
-            {"205340443215686","" },                //Free From Gluten
+            {"205340443215686","" },                //Free From Gluten - mostly recipe
             {"1147493181954443","United Kingdom" }, //The North East Gluten Free Foodie
             
             {"918867574821402","Romania" },         //Celiac la Restaurant - fara gluten public
@@ -140,6 +140,11 @@ namespace Gluten.Core.DataProcessing.Service
             {"489449818300463","United Kingdom"}  ,//Gluten Free Lincolnshire
             {"2297343817067372","United Kingdom"}  ,//Gluten And Free From On The Isle Of Wight
             {"463573660488313",""}  ,//Club des restaurateurs
+            {"735866988111078","Australia"}  ,//Coeliac Brisbane Restaurant Recommendations
+            {"1929091437123051","New Zealand" },//Coeliac Friendly Restaurants - Auckland
+            {"349834677236890","" },//World Gluten Free Map
+            {"878225748886375","Ireland" },//Gluten Free in Ireland
+            
             
             //{"","" },
         };
@@ -173,6 +178,8 @@ namespace Gluten.Core.DataProcessing.Service
             {"161013676073326","Port Macquarie"}  ,//Gluten free in Port Macquarie
             {"1542806239378917","Los Angeles"}  ,//Celiac-Safe Eats - Los Angeles
             {"1589343111356722","Los Angeles"}  ,//GFLA: Gluten Free Los Angeles
+            {"735866988111078","Brisbane"}  ,//Coeliac Brisbane Restaurant Recommendations
+            {"1929091437123051","Auckland" },//Coeliac Friendly Restaurants - Auckland
         };
 
         public Dictionary<string, string> GetKnownGroups()
