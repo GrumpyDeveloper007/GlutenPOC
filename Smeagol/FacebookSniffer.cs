@@ -66,7 +66,7 @@ internal class FacebookSniffer
         foreach (var item in groups)
         {
             if (item.Value == "NA") continue;
-            //if (item.Key != "250643821964381") continue; // For debugging purposes
+            if (item.Key != "250643821964381") continue; // For debugging purposes
             if (multiGroupMode)
             {
                 _driver.Navigate().Refresh();

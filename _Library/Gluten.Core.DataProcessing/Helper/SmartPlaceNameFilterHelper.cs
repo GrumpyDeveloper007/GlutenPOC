@@ -1,4 +1,6 @@
-﻿using System;
+﻿// Ignore Spelling: Skippable
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,7 +14,7 @@ namespace Gluten.Core.DataProcessing.Helper
     public static class SmartPlaceNameFilterHelper
     {
         /// <summary>
-        /// Can this place name be skippped
+        /// Can this place name be skipped
         /// </summary>
         public static bool IsSkippable(string placeName)
         {

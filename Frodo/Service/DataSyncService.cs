@@ -64,7 +64,7 @@ namespace Frodo.Service
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nReading captured FB data");
-            //_topicLoaderService.ReadFileLineByLine(_responsefileName, Topics);
+            _topicLoaderService.ReadFileLineByLine(_responsefileName, Topics);
 
             Console.WriteLine("--------------------------------------");
             Console.WriteLine($"\r\nProcessing information from source");
@@ -177,7 +177,6 @@ namespace Frodo.Service
 
                         if (cachePin == null)
                         {
-                            var pinsFound = _mapPinService.GetMapUrls().Count;
                             List<string> chainUrls = [];
                             _aiVenueProcessorService.IsPlaceNameAChain(chainUrls, item.Label);
                             if (chainUrls.Count == 1)

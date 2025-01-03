@@ -19,42 +19,19 @@ namespace Frodo.Service;
 /// <summary>
 /// Handles the linking of AiVenue to map pins
 /// </summary>
-internal class AiVenueLocationService
+internal class AiVenueLocationService(
+    DatabaseLoaderService _databaseLoaderService,
+    MappingService _mappingService,
+    GeoService _geoService,
+    FBGroupService _fBGroupService,
+    MapPinCacheService _mapPinCache,
+    TopicsDataLoaderService _topicsDataLoaderService,
+    AiVenueProcessorService _aiVenueProcessorService,
+    MapPinService _mapPinService,
+    IConsole console)
 {
-    private readonly DatabaseLoaderService _databaseLoaderService;
-    private readonly MappingService _mappingService;
-    private readonly GeoService _geoService;
-    private readonly FBGroupService _fBGroupService;
-    private readonly MapPinCacheService _mapPinCache;
-    private readonly TopicsDataLoaderService _topicsDataLoaderService;
-    private readonly AiVenueProcessorService _aiVenueProcessorService;
-    private readonly IConsole Console;
-    private readonly List<AiVenue> _placeNameSkipList;
-    private readonly MapPinService _mapPinService;
-
-    public AiVenueLocationService(
-        DatabaseLoaderService databaseLoaderService,
-        MappingService mappingService,
-        GeoService geoService,
-        FBGroupService fBGroupService,
-        MapPinCacheService mapPinCache,
-        TopicsDataLoaderService topicsDataLoaderService,
-        AiVenueProcessorService aiVenueProcessorService,
-        MapPinService mapPinService,
-        IConsole console)
-    {
-        _databaseLoaderService = databaseLoaderService;
-        _mappingService = mappingService;
-        _geoService = geoService;
-        _fBGroupService = fBGroupService;
-        _mapPinCache = mapPinCache;
-        _topicsDataLoaderService = topicsDataLoaderService;
-        _aiVenueProcessorService = aiVenueProcessorService;
-        Console = console;
-        _placeNameSkipList = databaseLoaderService.LoadPlaceSkipList();
-        _mapPinService = mapPinService;
-
-    }
+    private readonly IConsole Console = console;
+    private readonly List<AiVenue> _placeNameSkipList = _databaseLoaderService.LoadPlaceSkipList();
 
     /// <summary>
     /// Scan generated Ai Venues and try to generate any missing pins
@@ -66,6 +43,7 @@ internal class AiVenueLocationService
         for (int i = 0; i < topics.Count; i++)
         {
             //Manual - 4729
+            //117916
             DetailedTopic? topic = topics[i];
             if (topic.AiVenues == null || topic.AiVenues.Count == 0) continue;
             if (TopicItemHelper.IsRecipe(topic)) continue;
@@ -325,7 +303,7 @@ internal class AiVenueLocationService
         foreach (var url in chainUrls)
         {
             TopicPinCache? pin = null;
-            var tempPin = PinHelper.GenerateMapPin(url, "", "");
+            var tempPin = PinHelper.GenerateMapPin(url, "", groupCountry);
             if (tempPin != null)
             {
                 pin = _mapPinCache.TryGetPinLatLong(tempPin.GeoLatitude, tempPin.GeoLongitude, "");
@@ -333,7 +311,7 @@ internal class AiVenueLocationService
             if (pin == null)
             {
                 _mapPinService.GoToUrl(url);
-                pin = _mapPinService.TryToGenerateMapPin(url, "", "", "");
+                pin = _mapPinService.TryToGenerateMapPin(url, "", groupCountry, "");
             }
 
             //var pin = PinHelper.GenerateMapPin(url, "", groupCountry);

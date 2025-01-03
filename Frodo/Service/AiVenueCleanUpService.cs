@@ -49,10 +49,6 @@ internal class AiVenueCleanUpService(
 
                 if (!_aiVenueLocationService.IsPinInGroupCountry(pin, topic))
                 {
-                    var groupCountry = _fBGroupService.GetCountryName(topic.GroupId);
-                    if (string.IsNullOrWhiteSpace(groupCountry)) groupCountry = topic.TitleCountry ?? "";
-
-                    var country = _geoService.GetCountryPin(cachePin);
                     if (venue.ChainGenerated)
                     {
                         invalidGeoChainGenerated++;
@@ -317,7 +313,6 @@ internal class AiVenueCleanUpService(
 
     public List<string> GetPlaceNames(List<DetailedTopic> topics)
     {
-        var citys = new CityService();
         Console.WriteLine("--------------------------------------");
         List<string> placeNames = [];
         for (int i = 0; i < topics.Count; i++)
@@ -327,9 +322,10 @@ internal class AiVenueCleanUpService(
             if (topic.AiVenues == null) continue;
             for (int t = topic.AiVenues.Count - 1; t >= 0; t--)
             {
-                if (topic.AiVenues[t].Pin?.Label != null && !placeNames.Contains(topic.AiVenues[t].Pin.Label))
+                var pinLabel = topic.AiVenues[t].Pin?.Label;
+                if (pinLabel != null && !placeNames.Contains(pinLabel))
                 {
-                    placeNames.Add(topic.AiVenues[t].Pin.Label);
+                    placeNames.Add(pinLabel);
                 }
             }
         }
@@ -396,28 +392,20 @@ internal class AiVenueCleanUpService(
         int questionCount = 0;
         int unknownCount = 0;
         int emptyCount = 0;
-        //string QuestionLinesWithoutQ = "";
-        //string DescribeWithQ = "";
-        //string UnknownWithQ = "";
-        //string UnknownWithoutQ = "";
 
         for (int i = 0; i < Topics.Count; i++)
         {
             DetailedTopic? topic = Topics[i];
             if (topic.TitleCategory == "DESCRIBE")
             {
-                //if (topic.Title.Contains("?")) DescribeWithQ += topic.Title + "\r\n";
                 describeCount++;
             }
             else if (topic.TitleCategory == "QUESTION")
             {
-                //if (!topic.Title.Contains("?")) QuestionLinesWithoutQ += topic.Title + "\r\n";
                 questionCount++;
             }
             else if (topic.TitleCategory == "UNKNOWN")
             {
-                //if (topic.Title.Contains("?")) UnknownWithQ += topic.Title + "\r\n";
-                //if (!topic.Title.Contains("?")) UnknownWithoutQ += topic.Title + "\r\n";
                 unknownCount++;
             }
 
@@ -445,11 +433,6 @@ internal class AiVenueCleanUpService(
                 if (ai.Pin != null && ai.IsExportable) validPins++;
             }
         }
-        //string filePath = "D:\\Coding\\Gluten\\Database\\";
-        //File.WriteAllText(filePath + "QuestionLinesWithoutQ.txt", QuestionLinesWithoutQ);
-        //File.WriteAllText(filePath + "DescribeWithQ.txt", DescribeWithQ);
-        //File.WriteAllText(filePath + "UnknownWithQ.txt", UnknownWithQ);
-        //File.WriteAllText(filePath + "UnknownWithoutQ.txt", UnknownWithoutQ);
 
         Console.WriteLine($"Total pin count (valid/not chain) : {count}");
         Console.WriteLine($"Total not Exportable : {notExportable}");

@@ -13,6 +13,13 @@ namespace Gluten.Core.DataProcessing.Helper
     public static class PlaceNameFilterHelper
     {
         private static readonly List<string> _exactNameFilters = [
+            "Cafe attached to the newsagent",
+            "an unnamed place (likely a cafe or restaurant)",
+            "GF Chinese",
+            "Chinese takeaway",
+            "Chinese Restaurant",
+            "GF Chinese Takeaway",
+            "Gluten free Chinese",
             "Jet2",
             "Office",
             "Airport",
@@ -210,12 +217,19 @@ namespace Gluten.Core.DataProcessing.Helper
             "Yueng Sing market",
             "Emirates",
             "Shops with TopValue brand",
-            "Hotel Breakfast Buffet"
+            "Hotel Breakfast Buffet",
+            "Sydney Rd Brunswick",
+            "Greater Geeelong and Western suburbs home deliverers",
+            "Neighborhood grocery store"
             ];
 
 
 
         private static readonly List<string> _nameFilters = [
+            "Pubs and Restaurants",
+            "No Coeliac Options",
+            "Not mentioned",
+            "restaurants around",
             "Restaurant by ",
             "GF in ",
             "Thai restaurants",
@@ -1183,6 +1197,15 @@ namespace Gluten.Core.DataProcessing.Helper
                     return true;
                 }
             }
+
+            foreach (var nameFilter in _exactNameFilters)
+            {
+                if (placeName == nameFilter)
+                {
+                    return true;
+                }
+            }
+
             return false;
         }
 

@@ -127,7 +127,7 @@ namespace Gluten.Core.DataProcessing.Service
             {"1998996983717391","Portugal"}  ,//Gluten Free Eating Algarve
 
             {"214061389246852","Costa Rica"}  ,//sin gluten Costa Rica
-            {"883455988375508","Mexico"}   ,//Celiacos de Mexico
+            {"883455988375508","Mexico"}   ,//Celiacos de Mexico - *** Big group 
             {"488425731191722","Malaysia"}  ,//Off The Wheaten Path In Kuala Lumpur (Gluten Free Tips, Recipes & Findings)
             {"813777736885016",""}  ,//Gluten Free For Beginners
             {"198332044243620","Argentina"}  ,//celíacos de Córdoba capital.
@@ -144,6 +144,7 @@ namespace Gluten.Core.DataProcessing.Service
             {"1929091437123051","New Zealand" },//Coeliac Friendly Restaurants - Auckland
             {"349834677236890","" },//World Gluten Free Map
             {"878225748886375","Ireland" },//Gluten Free in Ireland
+            {"166050610272171","Peru" },//Gluten Free Peru
             
             
             //{"","" },
@@ -180,6 +181,8 @@ namespace Gluten.Core.DataProcessing.Service
             {"1589343111356722","Los Angeles"}  ,//GFLA: Gluten Free Los Angeles
             {"735866988111078","Brisbane"}  ,//Coeliac Brisbane Restaurant Recommendations
             {"1929091437123051","Auckland" },//Coeliac Friendly Restaurants - Auckland
+            
+            //{"","" }
         };
 
         public Dictionary<string, string> GetKnownGroups()

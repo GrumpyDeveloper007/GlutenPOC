@@ -32,7 +32,7 @@ namespace Frodo.Service
             int searchesDone = 0;
             for (int i = 0; i < Topics.Count; i++)
             {
-                if (i < 111563) continue;
+                if (i < 137804) continue;
                 Console.WriteLine($"Processing {i} of {Topics.Count} updating embedded urls");
                 if (searchesDone > 50)
                 {

@@ -29,7 +29,7 @@ namespace Frodo.Service
             for (int i = 0; i < Topics.Count; i++)
             {
                 DetailedTopic? topic = Topics[i];
-                if (i < 91916 && topic.IsAiVenuesSearchDone) continue;
+                if (i < 119568 && topic.IsAiVenuesSearchDone) continue;
                 //if (topic.IsAiVenuesSearchDone) continue;
                 if (TopicItemHelper.IsRecipe(topic)) continue;
                 if (TopicItemHelper.IsTopicAQuestion(topic)) continue;

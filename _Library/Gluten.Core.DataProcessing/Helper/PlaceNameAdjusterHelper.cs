@@ -14,7 +14,7 @@ namespace Gluten.Core.DataProcessing.Helper
         /// <summary>
         /// Tries to work out what the user meant when they entered a place name
         /// </summary>
-        public static string FixUserErrorsInPlaceNames(string placeName, string country, string city)
+        public static string FixUserErrorsInPlaceNames(string placeName, string country, string? city)
         {
             placeName = RemoveSuffix(placeName, "Supermarket");
             placeName = RemoveSuffix(placeName, "Restaurants");
@@ -349,7 +349,7 @@ namespace Gluten.Core.DataProcessing.Helper
             placeName = FixTypos(placeName);
 
             //if (!string.IsNullOrWhiteSpace(city)) placeName = placeName.Replace(city, "").Trim();
-            if (placeName.StartsWith('-')) placeName = placeName.Substring(1);
+            if (placeName.StartsWith('-')) placeName = placeName[1..];
             placeName = placeName.Trim();
             return placeName;
         }
@@ -436,7 +436,7 @@ namespace Gluten.Core.DataProcessing.Helper
             placeName = placeName.Trim();
             if (placeName.EndsWith(suffix, StringComparison.InvariantCultureIgnoreCase))
             {
-                placeName = placeName.Substring(0, placeName.Length - suffix.Length);
+                placeName = placeName[..^suffix.Length];
             }
             placeName = placeName.Trim();
             return placeName;
@@ -447,7 +447,7 @@ namespace Gluten.Core.DataProcessing.Helper
             placeName = placeName.Trim();
             if (placeName.StartsWith(prefix, StringComparison.InvariantCultureIgnoreCase))
             {
-                placeName = placeName.Substring(prefix.Length);
+                placeName = placeName[prefix.Length..];
             }
             placeName = placeName.Trim();
             return placeName;

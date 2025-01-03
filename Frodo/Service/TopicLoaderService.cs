@@ -163,8 +163,8 @@ namespace Frodo.Service
                     )
                 {
                     // Append linked story text
-                    Console.WriteLineRed($"{story.wwwURL}");
-                    Console.WriteLineBlue($"Adding linked story text :From {linkedStory.actors[0].name} - {linkedStory.message.text}");
+                    Console.WriteLineBlue($"{story.wwwURL}");
+                    //Console.WriteLineBlue($"Adding linked story text :From {linkedStory.actors[0].name} - {linkedStory.message.text}");
                     messageText += $" , From {linkedStory.actors[0].name} - {linkedStory.message.text}";
                 }
             }

@@ -305,6 +305,8 @@ namespace Frodo.Service
                 DetailedTopic? topic = Topics[i];
 
                 if (!string.IsNullOrWhiteSpace(topic.TitleCategory)) continue;
+                if (string.IsNullOrWhiteSpace(topic.Title)) continue;
+
                 if (itemsUpdated > 100)
                 {
                     Console.WriteLineBlue("Saving Topics");

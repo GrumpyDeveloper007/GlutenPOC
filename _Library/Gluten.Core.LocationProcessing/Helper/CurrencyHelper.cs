@@ -13,7 +13,7 @@ namespace Gluten.Core.LocationProcessing.Helper
     /// </summary>
     public static class CurrencyHelper
     {
-        static IEnumerable<string?> currencySymbols;
+        static readonly IEnumerable<string?> currencySymbols;
 
         static CurrencyHelper()
         {

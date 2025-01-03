@@ -178,6 +178,7 @@ namespace Frodo.Service
                         if (placeNames.Count == 0)
                         {
                             Console.WriteLine($"0 results {item.Value.Label}");
+                            item.Value.MetaProcessed = true;
                         }
 
                         item.Value.MapsUrl = url;
@@ -191,6 +192,7 @@ namespace Frodo.Service
                         if (string.IsNullOrWhiteSpace(metaHtml))
                         {
                             Console.WriteLine($"Unable to get meta for {item.Value.Label}");
+                            item.Value.MetaProcessed = true;
                             //cache.Remove(item.Key);
                         }
                     }

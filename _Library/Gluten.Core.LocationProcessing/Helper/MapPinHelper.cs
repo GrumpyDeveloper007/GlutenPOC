@@ -36,9 +36,11 @@ namespace Gluten.Core.LocationProcessing.Helper
             // https://www.google.com/maps/@13.7631696,100.4621654,11z/data=!4m3!11m2!2sEVNWEmzxRyeNeBXjphJA5A!3e3?entry=ttu&g_ep=EgoyMDI0MTIxMS4wIKXMDSoASAFQAw%3D%3D
             // https://www.google.com/maps/@40.4093081,-119.0829872,6z/data=!4m3!11m2!2sunRgbBwhRPWyGtLq6t7WDg!3e3?entry=ttu&g_ep=EgoyMDI0MTIxMS4wIKXMDSoASAFQAw%3D%3D
             //https://www.google.co.uk/maps/@50.0610032,19.875576,13z/data=!4m3!11m2!2sBrNUOTgzRhWqkenRWkXSjA!3e3?entry=ttu&g_ep=EgoyMDI0MTIxMS4wIKXMDSoASAFQAw%3D%3D
+            //https://www.google.com/maps/contrib/
 
             if (!url.Contains("https://www.google.com/maps/d/viewer")
                 && !url.Contains("https://www.google.com/maps/d/edit?")
+                && !url.Contains("https://www.google.com/maps/contrib/")
                 && (url.Contains("www.google.com/maps/")
                 || url.Contains("maps.app.goo.gl")
                 || url.Contains("maps.google.com")

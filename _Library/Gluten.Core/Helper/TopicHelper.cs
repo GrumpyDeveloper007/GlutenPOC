@@ -54,15 +54,11 @@ namespace Gluten.Core.Helper
                     break;
                 }
             }
-            if (currentTopic == null)
+            currentTopic ??= new DetailedTopic()
             {
-                currentTopic = new DetailedTopic()
-                {
-                    NodeID = nodeId,
-                    Title = messageText,
-                };
-                //topics.Add(currentTopic);
-            }
+                NodeID = nodeId,
+                Title = messageText,
+            };
             return currentTopic;
         }
 
