@@ -8,14 +8,14 @@ namespace Gluten.Data.Access.Service
     /// <summary>
     /// Auto mapper helper service
     /// </summary>
-    public class DbMapper
+    public class DbMapperService
     {
         private readonly IMapper _mapper;
 
         /// <summary>
         /// Constructor
         /// </summary>
-        public DbMapper()
+        public DbMapperService()
         {
             var config = new MapperConfiguration(cfg =>
             {

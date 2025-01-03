@@ -15,7 +15,6 @@ namespace Gluten.FBModel
     {
         public string label { get; set; }
     }
-    // Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
     public class ActionLink
     {
         public string __typename { get; set; }
@@ -238,6 +237,8 @@ namespace Gluten.FBModel
         public ActionLink action_link { get; set; }
         public object badge { get; set; }
         public object follow_button { get; set; }
+        public Story story { get; set; }
+
     }
 
     public class CometUfiReactionIconRenderer
@@ -1725,7 +1726,7 @@ namespace Gluten.FBModel
         public string post_id { get; set; }
         public object cix_screen { get; set; }
         public FutureOfFeedInfo future_of_feed_info { get; set; }
-        public object attached_story { get; set; }
+        public Story attached_story { get; set; }
         public object bumpers { get; set; }
         // TODO:
         public CometSections comet_sections { get; set; }

@@ -6,8 +6,6 @@ using Gluten.Data.MapsModel;
 using Gluten.Data.PinCache;
 using Gluten.Data.PinDescription;
 using Gluten.Data.TopicModel;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,40 +20,44 @@ namespace Gluten.Core.DataProcessing.Service
     public class DatabaseLoaderService
     {
         private readonly string PinCacheDBFileName = "D:\\Coding\\Gluten\\Database\\pinCache.json";
+        private readonly string PinCacheHtmlDBFileName = "D:\\Coding\\Gluten\\Database\\pinCacheHtml.json";
         private readonly string ExportDBFileName = "D:\\Coding\\Gluten\\Database\\TopicsExport.json";
         private readonly string GMPinExportDBFileName = "D:\\Coding\\Gluten\\Database\\GMPinExport.json";
         private readonly string RestaurantsFileName = "D:\\Coding\\Gluten\\Database\\Restaurant.txt";
         private readonly string PinDescriptionCacheFileName = "D:\\Coding\\Gluten\\Database\\PinDescriptionCache.json";
         private readonly string GMPinFileName = "D:\\Coding\\Gluten\\Database\\GMPin.json";
+        private readonly string GMSharedPinFileName = "D:\\Coding\\Gluten\\Database\\GMSharedPin.json";
         private const string PlacenameSkipListFileName = "D:\\Coding\\Gluten\\Database\\PlaceNameSkipList.json";
 
         private readonly List<PinDescriptionCache> _pinDescriptionsCache;
-        MapPinCache _mapPinCache;
+        private readonly MapPinCacheService _mapPinCache;
 
         /// <summary>
         /// Constructor
         /// </summary>
         public DatabaseLoaderService()
         {
-            string json;
             Dictionary<string, TopicPinCache>? pins = null;
+            Dictionary<string, PinCacheMetaHtml> pinsHtml = [];
             if (File.Exists(PinCacheDBFileName))
             {
-                json = File.ReadAllText(PinCacheDBFileName);
-                pins = JsonConvert.DeserializeObject<Dictionary<string, TopicPinCache>>(json);
+                pins = JsonHelper.TryLoadJsonDictionary<TopicPinCache>(PinCacheDBFileName);
+            }
+            if (File.Exists(PinCacheHtmlDBFileName))
+            {
+                pinsHtml = JsonHelper.TryLoadJsonDictionary<PinCacheMetaHtml>(PinCacheHtmlDBFileName) ?? [];
             }
             if (pins != null)
             {
-                _mapPinCache = new MapPinCache(pins, new DummyConsole());
+                _mapPinCache = new MapPinCacheService(pins, pinsHtml, new DummyConsole());
             }
             else
             {
-                _mapPinCache = new MapPinCache([], new DummyConsole());
+                _mapPinCache = new MapPinCacheService([], [], new DummyConsole());
             }
             if (File.Exists(PinDescriptionCacheFileName))
             {
-                json = File.ReadAllText(PinDescriptionCacheFileName);
-                var pdc = JsonConvert.DeserializeObject<List<PinDescriptionCache>>(json);
+                var pdc = JsonHelper.TryLoadJsonList<PinDescriptionCache>(PinDescriptionCacheFileName);
                 if (pdc != null)
                 {
                     _pinDescriptionsCache = pdc;
@@ -68,24 +70,13 @@ namespace Gluten.Core.DataProcessing.Service
         /// <summary>
         /// Get Pin Description cache
         /// </summary>
-        public PinDescriptionCache? GetPinDescriptionCache(List<string> nodes)
+        public PinDescriptionCache? GetPinDescriptionCache(double geoLongitude, double geoLatitude)
         {
             foreach (var item in _pinDescriptionsCache)
             {
-                if (item.Nodes.Count == nodes.Count)
+                if (item.GeoLatitude == geoLatitude && item.GeoLongitude == geoLongitude)
                 {
-                    var found = true;
-                    for (int i = 0; i < nodes.Count; i++)
-                    {
-                        if (item.Nodes[i] != nodes[i])
-                        {
-                            found = false;
-                        }
-                    }
-                    if (found == true)
-                    {
-                        return item;
-                    }
+                    return item;
                 }
             }
             return null;
@@ -94,29 +85,22 @@ namespace Gluten.Core.DataProcessing.Service
         /// <summary>
         /// Add item to the pin description cache
         /// </summary>
-        public void AddPinDescriptionCache(PinDescriptionCache pinDescriptionsCache)
+        public void AddPinDescriptionCache(string description, double geoLongitude, double geoLatitude)
         {
-            foreach (var item in _pinDescriptionsCache)
+            var item = GetPinDescriptionCache(geoLongitude, geoLatitude);
+            if (item == null)
             {
-                if (item.Nodes.Count == pinDescriptionsCache.Nodes.Count)
+                _pinDescriptionsCache.Add(new PinDescriptionCache
                 {
-                    var found = true;
-                    for (int i = 0; i < pinDescriptionsCache.Nodes.Count; i++)
-                    {
-                        if (item.Nodes[i] != pinDescriptionsCache.Nodes[i])
-                        {
-                            found = false;
-                        }
-                    }
-                    if (found == true)
-                    {
-                        item.Description = pinDescriptionsCache.Description;
-                        return;
-                    }
-                }
+                    GeoLongitude = geoLongitude,
+                    GeoLatitude = geoLatitude,
+                    Description = description
+                });
             }
-
-            _pinDescriptionsCache.Add(pinDescriptionsCache);
+            else
+            {
+                item.Description = description;
+            }
         }
 
         /// <summary>
@@ -124,7 +108,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public void SavePinDescriptionCache()
         {
-            SaveDb(PinDescriptionCacheFileName, _pinDescriptionsCache);
+            JsonHelper.SaveDb(PinDescriptionCacheFileName, _pinDescriptionsCache);
         }
 
         /// <summary>
@@ -139,6 +123,15 @@ namespace Gluten.Core.DataProcessing.Service
                 fileText += $"'{item}',\r\n";
             }
             File.WriteAllText(RestaurantsFileName, fileText);
+            fileText = "";
+
+            // export for future filter list
+            foreach (var item in restaurants)
+            {
+                if (item.Contains("Restaurant", StringComparison.InvariantCultureIgnoreCase)) continue;
+                if (item.Contains("Pub", StringComparison.InvariantCultureIgnoreCase)) continue;
+                fileText += $"'{item}',\r\n";
+            }
             File.WriteAllText(RestaurantsFileName + ".txt", fileText.Replace("'", "\""));
         }
 
@@ -147,7 +140,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public void SavePlaceSkipList(List<AiVenue> data)
         {
-            SaveDb(PlacenameSkipListFileName, data);
+            JsonHelper.SaveDb(PlacenameSkipListFileName, data);
         }
 
         /// <summary>
@@ -155,8 +148,8 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public List<AiVenue> LoadPlaceSkipList()
         {
-            var data = TryLoadJson<AiVenue>(PlacenameSkipListFileName);
-            if (data == null) return new List<AiVenue>();
+            var data = JsonHelper.TryLoadJsonList<AiVenue>(PlacenameSkipListFileName);
+            if (data == null) return [];
             return data;
         }
 
@@ -165,7 +158,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public void SaveGMPins(List<GMapsPin> data)
         {
-            SaveDb<List<GMapsPin>>(GMPinFileName, data);
+            JsonHelper.SaveDb<List<GMapsPin>>(GMPinFileName, data);
         }
 
         /// <summary>
@@ -173,14 +166,33 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public List<GMapsPin> LoadGMPins()
         {
-            var data = TryLoadJson<GMapsPin>(GMPinFileName);
-            if (data == null) return new List<GMapsPin>();
+            var data = JsonHelper.TryLoadJsonList<GMapsPin>(GMPinFileName);
+            if (data == null) return [];
             return data;
         }
+
+        /// <summary>
+        /// Save pins generated from shared lists
+        /// </summary>
+        public void SaveGMSharedPins(List<GMapsPin> data)
+        {
+            JsonHelper.SaveDb<List<GMapsPin>>(GMSharedPinFileName, data);
+        }
+
+        /// <summary>
+        /// Load pins generated from shared lists
+        /// </summary>
+        public List<GMapsPin> LoadGMSharedPins()
+        {
+            var data = JsonHelper.TryLoadJsonList<GMapsPin>(GMSharedPinFileName);
+            if (data == null) return [];
+            return data;
+        }
+
         /// <summary>
         /// Gets the PinHelper
         /// </summary>
-        public MapPinCache GetPinCache()
+        public MapPinCacheService GetPinCache()
         {
             return _mapPinCache;
         }
@@ -191,7 +203,19 @@ namespace Gluten.Core.DataProcessing.Service
         public void SavePinDB()
         {
             var pinCache = _mapPinCache.GetCache();
-            SaveDb(PinCacheDBFileName, pinCache);
+            JsonHelper.SaveDb(PinCacheDBFileName, pinCache);
+            if (_mapPinCache.SavePinCacheHtml)
+            {
+                _mapPinCache.SavePinCacheHtml = false;
+                SavePinHtmlDB();
+            }
+        }
+
+        public void SavePinHtmlDB()
+        {
+            var data = _mapPinCache.GetCacheHtml();
+            JsonHelper.SaveDb(PinCacheHtmlDBFileName, data);
+
         }
 
         /// <summary>
@@ -199,7 +223,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public List<PinTopic>? LoadPinTopics()
         {
-            return TryLoadJson<PinTopic>(ExportDBFileName);
+            return JsonHelper.TryLoadJsonList<PinTopic>(ExportDBFileName);
         }
 
         /// <summary>
@@ -207,7 +231,7 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public void SavePinTopics(List<PinTopic> pins)
         {
-            SaveDb(ExportDBFileName, pins);
+            JsonHelper.SaveDb(ExportDBFileName, pins);
         }
 
         /// <summary>
@@ -215,8 +239,8 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public List<GMapsPin> LoadGMMapPinExport()
         {
-            var pins = TryLoadJson<GMapsPin>(GMPinExportDBFileName);
-            pins ??= new List<GMapsPin>();
+            var pins = JsonHelper.TryLoadJsonList<GMapsPin>(GMPinExportDBFileName);
+            pins ??= [];
             return pins;
         }
 
@@ -225,27 +249,8 @@ namespace Gluten.Core.DataProcessing.Service
         /// </summary>
         public void SaveGMMapPinExport(List<GMapsPin> pins)
         {
-            SaveDb(GMPinExportDBFileName, pins);
+            JsonHelper.SaveDb(GMPinExportDBFileName, pins);
         }
 
-        private static List<classType>? TryLoadJson<classType>(string fileName)
-        {
-            List<classType>? topics = null;
-            if (File.Exists(fileName))
-            {
-                string json;
-                json = File.ReadAllText(fileName);
-                var tempTopics = JsonConvert.DeserializeObject<List<classType>>(json);
-                if (tempTopics != null) { topics = tempTopics; }
-            }
-            return topics;
-        }
-
-        private static void SaveDb<typeToSave>(string fileName, typeToSave topics)
-        {
-            var json = JsonConvert.SerializeObject(topics, Formatting.Indented,
-                [new StringEnumConverter()]);
-            File.WriteAllText(fileName, json);
-        }
     }
 }

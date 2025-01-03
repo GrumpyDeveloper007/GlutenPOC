@@ -1,12 +1,10 @@
-﻿using Gluten.Core.DataProcessing.Service;
+﻿using Gluten.Core.DataProcessing.Helper;
+using Gluten.Core.DataProcessing.Service;
 using Gluten.Core.Helper;
 using Gluten.Core.Interface;
 using Gluten.Core.LocationProcessing.Service;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using NetTopologySuite.Index.HPRtree;
+using System.Diagnostics;
 using System.Web;
 
 namespace Frodo.Service
@@ -17,12 +15,110 @@ namespace Frodo.Service
     internal class PinCacheSyncService(MapPinService _mapPinService,
         DatabaseLoaderService _databaseLoaderService,
         GeoService _geoService,
-        MapPinCache _mapPinCache,
+        MapPinCacheService _mapPinCache,
         RestaurantTypeService _restaurantTypeService,
         IConsole Console
         )
     {
-        private readonly MapsMetaExtractorService _mapsMetaExtractorService = new(_restaurantTypeService, Console);
+        private readonly MapsMetaExtractorService _mapsMetaExtractorService = new(Console);
+
+
+        public void ClearSearchStrings()
+        {
+            var cache = _mapPinCache.GetCache();
+            foreach (var item in cache)
+            {
+                if (item.Value == null) continue;
+                item.Value.SearchStrings = [];
+            }
+
+            _databaseLoaderService.SavePinDB();
+        }
+
+        public void MakeSureIndexIsInSearchString()
+        {
+            var cache = _mapPinCache.GetCache();
+            foreach (var item in cache)
+            {
+                if (item.Value == null) continue;
+                if (item.Value.SearchStrings.Contains(item.Key)) continue;
+                item.Value.SearchStrings.Add(item.Key);
+            }
+
+            _databaseLoaderService.SavePinDB();
+        }
+
+
+        public void CheckRestaurantTypes()
+        {
+            var cache = _mapPinCache.GetCache();
+            _restaurantTypeService.ClearRestaurantType();
+            foreach (var item in cache)
+            {
+                if (item.Value == null) continue;
+                if (item.Value?.MetaData?.RestaurantType != null && !string.IsNullOrWhiteSpace(item.Value.MetaData.RestaurantType))
+                {
+                    _restaurantTypeService.AddRestaurantType(item.Value.MetaData.RestaurantType);
+                }
+            }
+
+            var restaurants = _restaurantTypeService.GetRestaurantTypes();
+            _databaseLoaderService.SaveRestaurantList(restaurants);
+            _databaseLoaderService.SavePinDB();
+        }
+
+
+        public void CheckFilteredRestaurantTypes()
+        {
+            var cache = _mapPinCache.GetCache();
+            foreach (var item in cache)
+            {
+                if (item.Value == null) continue;
+
+                if (PlaceNameFilterHelper.IsInPlaceNameSkipList(item.Key))
+                {
+                    Console.WriteLine(item.Key);
+                }
+
+                foreach (var search in item.Value.SearchStrings)
+                {
+                    if (PlaceNameFilterHelper.IsInPlaceNameSkipList(search))
+                    {
+                        Console.WriteLine(search);
+                    }
+                }
+            }
+
+            _databaseLoaderService.SavePinDB();
+        }
+
+
+        public void CheckPriceExtraction()
+        {
+            List<string> prices = [];
+            var cache = _mapPinCache.GetCache();
+            _restaurantTypeService.ClearRestaurantType();
+            foreach (var item in cache)
+            {
+                if (item.Value == null) continue;
+                if (item.Value?.MetaData?.RestaurantType != null &&
+                    !string.IsNullOrWhiteSpace(item.Value.MetaData.RestaurantType))
+                {
+                    if (!string.IsNullOrWhiteSpace(item.Value.MetaData.Price) && !prices.Contains(item.Value.MetaData.Price))
+                    {
+                        prices.Add(item.Value.MetaData.Price);
+                    }
+                }
+            }
+
+            prices.Sort();
+            foreach (var item in prices)
+            {
+                Console.WriteLine(item);
+            }
+            Console.WriteLine($"Total price string types : {prices.Count}");
+        }
+
 
 
         /// <summary>
@@ -32,97 +128,92 @@ namespace Frodo.Service
         {
             int i = 0;
             var cache = _mapPinCache.GetCache();
+            var updateCount = 0;
             _restaurantTypeService.ClearRestaurantType();
             foreach (var item in cache)
             {
+                i++;
+                if (item.Value.MetaData != null) continue;
+
                 if (string.IsNullOrWhiteSpace(item.Value.Country))
                 {
                     item.Value.Country = _geoService.GetCountryPin(item.Value);
                 }
+
+                if (updateCount > 5)
+                {
+                    _databaseLoaderService.SavePinDB();
+                    updateCount = 0;
+                }
+
                 Console.WriteLine($"Processing pin meta {i} of {cache.Count}");
+                var metaHtml = _mapPinCache.GetMetaHtml(item.Value.GeoLatitude, item.Value.GeoLongitude);
+                if (string.IsNullOrWhiteSpace(metaHtml)
+                    && item.Value.MapsUrl != null
+                    && !item.Value.MetaProcessed)
+                {
+                    // load meta if missing
+                    var url2 = _mapPinService.GoAndWaitForUrlChange(item.Value.MapsUrl);
+                    url2 = _mapPinService.GetCurrentUrl();
+                    url2 = HttpUtility.UrlDecode(url2);
+                    updateCount++;
+
+                    var newPin = PinHelper.GenerateMapPin(url2, item.Value.Label, "");
+                    if (newPin != null)
+                        item.Value.Label = newPin.Label;
+
+                    metaHtml = _mapPinService.GetMeta(item.Value.Label);
+                    _mapPinCache.AddUpdateMetaHtml(metaHtml, item.Value.GeoLatitude, item.Value.GeoLongitude);
+
+                    if (string.IsNullOrWhiteSpace(metaHtml))
+                    {
+                        var url = _mapPinService.GetMapUrl(item.Value.Label ?? "");
+                        var placeNames = _mapPinService.GetMapPlaceNames();
+                        if (placeNames.Count > 0)
+                        {
+                            Console.WriteLine($"Multiple results {item.Value.Label}");
+                            item.Value.MetaProcessed = true;
+                            continue;
+                        }
+                        if (placeNames.Count == 0)
+                        {
+                            Console.WriteLine($"0 results {item.Value.Label}");
+                            item.Value.MetaProcessed = true;
+                        }
+
+                        item.Value.MapsUrl = url;
+                        var pin = PinHelper.GenerateMapPin(url, "", "");
+                        metaHtml = _mapPinService.GetMeta(item.Value.Label);
+
+                        if (pin != null && string.IsNullOrWhiteSpace(metaHtml))
+                        {
+                            metaHtml = _mapPinService.GetMeta(pin.Label);
+                        }
+                        if (string.IsNullOrWhiteSpace(metaHtml))
+                        {
+                            Console.WriteLine($"Unable to get meta for {item.Value.Label}");
+                            item.Value.MetaProcessed = true;
+                            //cache.Remove(item.Key);
+                        }
+                    }
+                }
 
                 if (!item.Value.MetaProcessed)
                 {
-                    if (string.IsNullOrWhiteSpace(item.Value.MetaHtml) && item.Value.MapsUrl != null)
-                    {
-                        // load meta if missing
-                        var url2 = _mapPinService.GoAndWaitForUrlChange(item.Value.MapsUrl);
-                        url2 = _mapPinService.GetCurrentUrl();
-                        url2 = HttpUtility.UrlDecode(url2);
-
-                        var newPin = PinHelper.GenerateMapPin(url2, item.Value.Label, "");
-                        if (newPin != null)
-                            item.Value.Label = newPin.Label;
-
-                        item.Value.MetaHtml = _mapPinService.GetMeta(item.Value.Label);
-                        if (string.IsNullOrWhiteSpace(item.Value.MetaHtml))
-                        {
-                            var placeNames = _mapPinService.GetMapPlaceNames();
-                            if (placeNames.Count > 0)
-                            {
-                                cache.Remove(item.Key);
-                                Console.WriteLine($"Cache pin returns multiple results {item.Value.Label}");
-                                continue;
-                            }
-                            if (placeNames.Count == 0)
-                            {
-                                cache.Remove(item.Key);
-                                Console.WriteLine($"0 results {item.Value.Label}");
-                            }
-
-                        }
-
-                        if (string.IsNullOrWhiteSpace(item.Value.MetaHtml))
-                        {
-                            var url = _mapPinService.GetMapUrl(item.Value.Label ?? "");
-                            var placeNames = _mapPinService.GetMapPlaceNames();
-                            if (placeNames.Count > 0)
-                            {
-                                cache.Remove(item.Key);
-                                Console.WriteLine($"Multiple results {item.Value.Label}");
-                            }
-                            if (placeNames.Count == 0)
-                            {
-                                //cache.Remove(item.Key);
-                                Console.WriteLine($"0 results {item.Value.Label}");
-                            }
-
-                            item.Value.MapsUrl = url;
-                            var pin = PinHelper.GenerateMapPin(url, "", "");
-                            item.Value.MetaHtml = _mapPinService.GetMeta(item.Value.Label);
-                            if (pin != null && string.IsNullOrWhiteSpace(item.Value.MetaHtml))
-                            {
-                                item.Value.MetaHtml = _mapPinService.GetMeta(pin.Label);
-                            }
-                            if (string.IsNullOrWhiteSpace(item.Value.MetaHtml))
-                            {
-                                Console.WriteLine($"Unable to get meta for {item.Value.Label}");
-                            }
-                        }
-
-                    }
-
-                    if (item.Value.MetaData == null || string.IsNullOrWhiteSpace(item.Value.MetaData.RestaurantType))
-                    {
-                        item.Value.MetaData = _mapsMetaExtractorService.ExtractMeta(item.Value.MetaHtml);
-                    }
-
-                    if (item.Value.MetaData != null)
-                    {
-                        _restaurantTypeService.AddRestaurantType(item.Value.MetaData.RestaurantType);
-                    }
-                    else
-                    {
-                        Console.WriteLine($"Unable to get meta for {item.Value.Label}");
-                    }
-                    item.Value.MetaProcessed = true;
+                    item.Value.MetaData = _mapsMetaExtractorService.ExtractMeta(metaHtml);
                 }
-                i++;
+
+                if (item.Value.MetaData == null)
+                {
+                    Console.WriteLine($"Unable to get meta for {item.Value.Label}");
+                    //cache.Remove(item.Key);
+                }
+
+                item.Value.MetaProcessed = true;
             }
 
-            var restaurants = _restaurantTypeService.GetRestaurantTypes();
-            _databaseLoaderService.SaveRestaurantList(restaurants);
             _databaseLoaderService.SavePinDB();
+            _databaseLoaderService.SavePinHtmlDB();
         }
 
     }

@@ -4,6 +4,10 @@ using Gluten.Core.Interface;
 using Gluten.Core.LocationProcessing.Service;
 using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
+using System;
+using System.Diagnostics.Metrics;
+using System.Text.RegularExpressions;
+using System.Web;
 
 namespace Gluten.Core.DataProcessing.Service
 {
@@ -22,19 +26,18 @@ namespace Gluten.Core.DataProcessing.Service
         /// Filters returned results by placename, so if a search is very general, 
         /// for example 'Store', we don't just return lots of random locations
         /// </summary>
-        public bool IsPlaceNameAChain(AiVenue venue, List<string> chainUrls)
+        public bool IsPlaceNameAChain(List<string> chainUrls, string placeName)
         {
-            if (!AiDataFilterHelper.IsInPlaceNameSkipList(venue.PlaceName)
-            && venue.Pin == null
-                && !string.IsNullOrWhiteSpace(venue.PlaceName))
+            if (!PlaceNameFilterHelper.StartsWithPlaceNameSkipList(placeName)
+                && !string.IsNullOrWhiteSpace(placeName))
             {
-                //_mapPinService.GetMapUrl(venue.PlaceName + $", {fBGroupService.GetCountryName(groupId)}");
+                //_mapPinService.GetMapUrl(placeName + $", {fBGroupService.GetCountryName(groupId)}");
                 var placeNames = _mapPinService.GetMapPlaceNames();
                 var mapUrls = _mapPinService.GetMapUrls();
 
                 // Try to filter general searches
                 var matchingPlaces = new List<string>();
-                var searchString = RemoveSuffixes(StringHelper.RemoveDiacritics(venue.PlaceName).ToUpper());
+                var searchString = RemoveSuffixes(StringHelper.RemoveDiacritics(placeName).ToUpper());
                 for (int t = 0; t < placeNames.Count; t++)
                 {
                     string? i = placeNames[t];
@@ -51,87 +54,106 @@ namespace Gluten.Core.DataProcessing.Service
             return false;
         }
 
+        public string FilterPlaceName(string placeName, string country, string city)
+        {
+            // TODO: Add parsing of name for spelling errors?
+            // TODO: Remove restaurant types from place name?
+            placeName = RemoveTextInBrackets(placeName);
+            placeName = PlaceNameAdjusterHelper.FixUserErrorsInPlaceNames(placeName, country, city);
+            return placeName;
+        }
 
 
         /// <summary>
         /// Tries to generate a pin based on the venue place name 
         /// </summary>
-        public void GetMapPinForPlaceName(AiVenue venue, string country, string? city, List<string> chainUrls)
+        public bool GetMapPinForPlaceName(AiVenue venue, string country, string? city, List<string> chainUrls, bool enableChainMatch)
         {
             string? searchString;
-            TopicPin? newPin;
-            if (venue == null) return;
+            string placeName = venue.PlaceName ?? "";
+            var aiCity = city;
+
+            if (!string.IsNullOrWhiteSpace(venue.City))
+            {
+                aiCity = venue.City;
+            }
+
             // Don't process if it is in the skip list
-            if (AiDataFilterHelper.IsInPlaceNameSkipList(venue.PlaceName)
-                || string.IsNullOrWhiteSpace(venue.PlaceName)) return;
+            if (PlaceNameFilterHelper.StartsWithPlaceNameSkipList(placeName)
+                || string.IsNullOrWhiteSpace(placeName)) return false;
 
-            // search with city/country
-            if (!string.IsNullOrWhiteSpace(city))
-            {
-                searchString = $"{venue.PlaceName}, {city}, {country}";
-                newPin = SearchForPin(searchString, venue.PlaceName);
-                if (newPin != null)
-                {
-                    venue.Pin = newPin;
-                    return;
-                }
+            // TODO: Add parsing of name for spelling errors?
+            // TODO: Remove restaurant types from place name?
+            placeName = RemoveTextInBrackets(placeName);
+            placeName = PlaceNameAdjusterHelper.FixUserErrorsInPlaceNames(placeName, country, city);
 
-                // If we are unable to get a specific pin, generate chain urls, to add later
-                if (IsPlaceNameAChain(venue, chainUrls))
-                {
-                    Console.WriteLine($"Removing chain pin");
-                    venue.PlaceName = null;
-                    venue.Address = null;
-                    return;
-                }
-
-            }
-
-
-            searchString = venue.PlaceName + $", {country}";
-            newPin = SearchForPin(searchString, venue.PlaceName);
-            if (newPin != null)
-            {
-                venue.Pin = newPin;
-                return;
-            }
-
-            // If we are unable to get a specific pin, generate chain urls, to add later
-            if (IsPlaceNameAChain(venue, chainUrls))
-            {
-                Console.WriteLine($"Removing chain pin");
-                venue.PlaceName = null;
-                venue.Address = null;
-                return;
-            }
+            if (venue == null) return false;
 
             // pin not found - try with address string
-            var address = AiDataFilterHelper.FilterAddress(venue.Address);
+            var address = AddressFilterHelper.FilterAddress(venue.Address);
             venue.Address = address;
+
             if (!string.IsNullOrWhiteSpace(address))
             {
-                searchString = venue.PlaceName + " " + address + $", {country}";
-                newPin = SearchForPin(searchString, venue.PlaceName);
-                if (newPin != null)
-                {
-                    venue.Pin = newPin;
-                }
-                else
-                {
-                    Console.WriteLine($"Still unable to process :{venue.PlaceName}");
-                }
+                searchString = $"{placeName}, {address}, {country}";
+                if (SearchForPlace(venue, searchString, placeName, chainUrls, $" {address}, {country}", enableChainMatch)) return true;
+            }
+            // search with city/country
+            else if (!string.IsNullOrWhiteSpace(aiCity))
+            {
+                searchString = $"{placeName}, {aiCity}, {country}";
+                if (SearchForPlace(venue, searchString, placeName, chainUrls, $" {aiCity}, {country}", enableChainMatch)) return true;
             }
             else
             {
-                Console.WriteLine($"Still unable to process, no address :{venue.PlaceName}, address : {venue.Address}");
+                searchString = $"{placeName}, {country}";
+                if (SearchForPlace(venue, searchString, placeName, chainUrls, $", {country}", enableChainMatch)) return true;
             }
+
+            if (venue.Pin == null)
+            {
+                Console.WriteLine($"Still unable to process, no address :{placeName}, address : {venue.Address}");
+            }
+            return false;
         }
 
-        private TopicPin? SearchForPin(string searchString, string placeName)
+        private bool SearchForPlace(AiVenue venue, string searchString, string placeName, List<string> chainUrls, string suffix, bool enableChainMatch)
         {
-            Console.WriteLine($"Searching for {searchString}");
+            var newPin = SearchForPin(searchString, placeName, venue.PlaceName);
+            if (newPin != null)
+            {
+                //Console.WriteLine($"Found pin :{searchString}");
+                venue.Pin = newPin;
+                venue.IsChain = false;
+                return true;
+            }
+            venue.PinsFound = _mapPinService.GetMapUrls().Count;
+
+            if (!enableChainMatch) return false;
+
+            // If we are unable to get a specific pin, generate chain urls, to add later
+            if (IsPlaceNameAChain(chainUrls, placeName))
+            {
+                return true;
+            }
+
+            var url = _mapPinService.GetCurrentUrl();
+            var mapPin = HttpUtility.UrlDecode(PinHelper.GetPlaceNameFromSearchUrl(url));
+            mapPin = mapPin.Replace(suffix, "");
+            if (IsPlaceNameAChain(chainUrls, mapPin))
+            {
+                return true;
+            }
+            return false;
+        }
+
+        private TopicPin? SearchForPin(string searchString, string placeName, string originalPlaceName)
+        {
+            searchString = searchString.Replace("_", " ");
+            //Console.WriteLine($"Searching for {searchString}");
             _mapPinService.GetMapUrl(searchString);
-            var pin = _mapPinService.GetPinFromCurrentUrl(placeName);
+            var pin = _mapPinService.GetPinFromCurrentUrl(placeName, originalPlaceName);
+
             if (pin != null)
             {
                 return _mappingService.Map<TopicPin, TopicPinCache>(pin);
@@ -141,7 +163,17 @@ namespace Gluten.Core.DataProcessing.Service
 
         private static string RemoveSuffixes(string placeName)
         {
-            return placeName.Replace("Restaurant", "", StringComparison.InvariantCultureIgnoreCase);
+            if (placeName.EndsWith("Restaurant"))
+                return placeName.Replace("Restaurant", "", StringComparison.InvariantCultureIgnoreCase);
+            return placeName;
+        }
+
+        private string RemoveTextInBrackets(string text)
+        {
+            string result = Regex.Replace(text, @"\s*\(.*?\)\s*", " ");
+
+            // Trim any extra spaces
+            return result.Trim();
         }
 
     }

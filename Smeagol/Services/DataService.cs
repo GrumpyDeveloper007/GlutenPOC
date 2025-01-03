@@ -10,28 +10,20 @@ using System.Threading.Tasks;
 
 namespace Smeagol.Services
 {
-    internal class DataService
+    /// <summary>
+    /// Extracts key information from FB data
+    /// </summary>
+    internal class DataService(ProcessedGroupPostService _processedGroupPostService)
     {
-        private List<string> _LoadedIds = [];
         internal static readonly string[] crlf = ["/r/n"];
-        private const string GroupPostProcessedFileName = "D:\\Coding\\Gluten\\Database\\GroupPostProcessed.json";
-        internal static readonly string[] separator = { "\r\n" };
+        internal static readonly string[] separator = ["\r\n"];
 
-        public void SaveGroupPost()
-        {
-            JsonHelper.SaveDb<List<string>>(GroupPostProcessedFileName, _LoadedIds);
-        }
-
-        public static List<string> LoadGroupPost()
-        {
-            var data = JsonHelper.TryLoadJson<string>(GroupPostProcessedFileName);
-            if (data == null) return [];
-            return data;
-        }
-
+        /// <summary>
+        /// Read any previously processed data to make sure its in the DB
+        /// </summary>
         public void ReadFileLineByLine(string filePath)
         {
-            _LoadedIds = LoadGroupPost();
+            _processedGroupPostService.LoadGroupPost();
 
             if (!File.Exists(filePath)) return;
             // Open the file and read each line
@@ -64,13 +56,9 @@ namespace Smeagol.Services
                             if (string.IsNullOrWhiteSpace(message)) continue;
                             try
                             {
-                                GroupRoot? m = JsonConvert.DeserializeObject<GroupRoot>(message);
+                                var m = JsonConvert.DeserializeObject<SimplifiedGroupRoot>(message);
                                 var nodeId = FbModelHelper.GetNodeId(m);
-                                if (nodeId != null && !_LoadedIds.Contains(nodeId))
-                                {
-                                    _LoadedIds.Add(nodeId);
-                                    duplicatedLine = false;
-                                }
+                                duplicatedLine = _processedGroupPostService.TryAddId(nodeId);
                             }
                             catch (Exception ex)
                             {
@@ -81,14 +69,61 @@ namespace Smeagol.Services
                         }
                         if (duplicatedLine)
                         {
-                            Console.WriteLine($"Duplicate key in data store {i}");
+                            //Console.WriteLine($"Duplicate key in data store {i}");
                         }
                     }
                 }
                 i++;
             }
 
-            Console.WriteLine($"Nodes loaded {_LoadedIds.Count}");
+            Console.WriteLine($"Nodes loaded {_processedGroupPostService.NodeCount()}");
+        }
+
+        /// <summary>
+        /// Returns true if DB already contains this nodeId
+        /// </summary>
+        public bool LoadLine(string line)
+        {
+            var duplicatedLine = true;
+
+            var messages = line.Split(separator, StringSplitOptions.None);
+            foreach (var message in messages)
+            {
+                if (message.StartsWith("{\"data\":"))
+                {
+                    if (!LoadSearchRootMessage(message))
+                    {
+                        duplicatedLine = false;
+                    }
+                }
+
+                SimpleGroupRoot gr;
+                gr = JsonConvert.DeserializeObject<SimpleGroupRoot>(message) ?? new();
+                if (gr != null && gr.label != null && gr.label.Contains("GroupsCometFeedRegularStories"))
+                {
+                    //"GroupsCometFeedRegularStories_paginationGroup$defer$GroupsCometFeedRegularStories_group_group_feed$page_info
+                    try
+                    {
+                        var m = JsonConvert.DeserializeObject<SimplifiedGroupRoot>(message);
+                        var nodeId = FbModelHelper.GetNodeId(m);
+                        if (nodeId == null)
+                        {
+                            //Console.WriteLine($"Unknown Node Id, {m.label}");
+                        }
+                        else
+                        {
+                            //Console.WriteLine($"known Node Id,   {m.label}, {nodeId}");
+                        }
+                        duplicatedLine = _processedGroupPostService.TryAddId(nodeId);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(message);
+                        Console.WriteLine(ex.Message);
+                    }
+                }
+            }
+            return duplicatedLine;
         }
 
         private bool LoadSearchRootMessage(string message)
@@ -100,61 +135,7 @@ namespace Smeagol.Services
             if (nodeIds == null) return duplicatedLine;
             foreach (var nodeId in nodeIds)
             {
-                if (nodeId != null && !_LoadedIds.Contains(nodeId))
-                {
-                    _LoadedIds.Add(nodeId);
-                    duplicatedLine = false;
-                }
-            }
-            return duplicatedLine;
-        }
-
-        /// <summary>
-        /// Returns true if DB already contains this nodeId
-        /// </summary>
-        public bool LoadLine(string line)
-        {
-            var duplicatedLine = true;
-
-            if (line.StartsWith("{\"data\":"))
-            {
-                if (!LoadSearchRootMessage(line))
-                {
-                    duplicatedLine = false;
-                }
-                return duplicatedLine;
-            }
-
-            var messages = line.Split(separator, StringSplitOptions.None);
-            foreach (var message in messages)
-            {
-                SimpleGroupRoot gr;
-                gr = JsonConvert.DeserializeObject<SimpleGroupRoot>(message) ?? new();
-                if (gr != null && gr.label != null && gr.label.Contains("GroupsCometFeedRegularStories"))
-                {
-
-                    try
-                    {
-                        GroupRoot? m;
-                        m = JsonConvert.DeserializeObject<GroupRoot>(message);
-                        var nodeId = FbModelHelper.GetNodeId(m);
-                        if (nodeId == null)
-                        {
-                            //Console.WriteLine($"Unknown Node Id, {message}");
-                        }
-                        if (nodeId != null && !_LoadedIds.Contains(nodeId))
-                        {
-                            _LoadedIds.Add(nodeId);
-                            duplicatedLine = false;
-                        }
-
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(message);
-                        Console.WriteLine(ex.Message);
-                    }
-                }
+                duplicatedLine = _processedGroupPostService.TryAddId(nodeId);
             }
             return duplicatedLine;
         }

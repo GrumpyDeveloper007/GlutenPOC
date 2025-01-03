@@ -11,8 +11,8 @@ namespace Gluten.Core.LocationProcessing.Service
     /// Google map pin handling service, generates pins from place names, gathers meta data
     /// </summary>
     public class MapPinService(
-        SeleniumMapsUrlProcessor _seleniumMapsUrlProcessor,
-        MapPinCache _mapPinCache,
+        SeleniumService _seleniumMapsUrlProcessor,
+        MapPinCacheService _mapPinCache,
         GeoService _geoService,
         MapsMetaExtractorService _mapsMetaExtractorService,
         IConsole Console)
@@ -72,6 +72,7 @@ namespace Gluten.Core.LocationProcessing.Service
         /// </summary>
         public string CheckUrlForMapLinks(string url)
         {
+            int timeoutRetries = 0;
             if (MapPinHelper.IsMapsUrl(url))
             {
                 if (!url.Contains("/@"))
@@ -86,6 +87,13 @@ namespace Gluten.Core.LocationProcessing.Service
                         Thread.Sleep(200);
                         newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
                         newUrl = HttpUtility.UrlDecode(newUrl);
+                        var pageSource = _seleniumMapsUrlProcessor.PageSource();
+                        if (pageSource.Contains("This site can’t be reached"))
+                        {
+                            timeoutRetries++;
+                            if (timeoutRetries > 5) timeout = 0;
+                            GoAndWaitForUrlChange(url);
+                        }
                     }
                     if (timeout == 0 && !newUrl.Contains("/@"))
                     {
@@ -193,38 +201,35 @@ namespace Gluten.Core.LocationProcessing.Service
         /// <summary>
         /// Tries to get a pin from the currently displayed page
         /// </summary>
-        public TopicPinCache? GetPinFromCurrentUrl(string restaurantName)
+        public TopicPinCache? GetPinFromCurrentUrl(string restaurantName, string originalPlaceName)
         {
             var newUrl = _seleniumMapsUrlProcessor.GetCurrentUrl();
-            return TryToGenerateMapPin(newUrl, restaurantName, "");
+            return TryToGenerateMapPin(newUrl, restaurantName, "", originalPlaceName);
         }
 
         /// <summary>
         /// Tries to convert the specified url in to a map pin
         /// </summary>
-        public TopicPinCache? TryToGenerateMapPin(string url, string searchString, string country)
+        public TopicPinCache? TryToGenerateMapPin(string url, string searchString, string country, string originalPlaceName)
         {
-            var pin = _mapPinCache.TryToGenerateMapPin(url, searchString, country);
+            var pin = _mapPinCache.TryToGenerateMapPin(url, searchString, country, originalPlaceName);
 
             if (pin != null)
             {
                 pin.Country = _geoService.GetCountryPin(pin);
-            }
-
-            if (pin != null && string.IsNullOrWhiteSpace(pin.MetaHtml))
-            {
-                if (string.IsNullOrWhiteSpace(pin.MetaHtml))
+                var metaHtml = _mapPinCache.GetMetaHtml(pin.GeoLatitude, pin.GeoLongitude);
+                if (string.IsNullOrWhiteSpace(metaHtml))
                 {
-                    pin.MetaHtml = GetMeta(pin.Label);
+                    metaHtml = GetMeta(pin.Label);
                 }
-                if (string.IsNullOrWhiteSpace(pin.MetaHtml))
+                if (!string.IsNullOrWhiteSpace(metaHtml))
                 {
-                    pin.MetaData = _mapsMetaExtractorService.ExtractMeta(pin.MetaHtml);
+                    _mapPinCache.AddUpdateMetaHtml(metaHtml, pin.GeoLatitude, pin.GeoLongitude);
+                    pin.MetaData = _mapsMetaExtractorService.ExtractMeta(metaHtml);
                 }
             }
 
             return pin;
-
         }
     }
 }

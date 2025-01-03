@@ -14,6 +14,7 @@ namespace Gluten.Data.MapsModel
         public string? GeoLatitude { get; set; }
         public string? GeoLongitude { get; set; }
         public string? MapsUrl { get; set; }
+        public string? MapsLink { get; set; }
         public string? RestaurantType { get; set; }
         public string? Price { get; set; }
         public string? Stars { get; set; }

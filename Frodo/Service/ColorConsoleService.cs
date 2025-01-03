@@ -12,7 +12,7 @@ namespace Frodo.Service
     /// <summary>
     /// Simple support for colour console logging
     /// </summary>
-    internal class ColorConsole : IConsole
+    internal class ColorConsoleService : IConsole
     {
         public void Clear()
         {
@@ -37,15 +37,17 @@ namespace Frodo.Service
         public void WriteLineBlue(string line)
         {
             Console.BackgroundColor = Color.Blue;
-            Console.WriteLine(line, Color.White);
+            Console.Write(line, Color.White);
             Console.BackgroundColor = Color.Black;
+            Console.WriteLine("");
         }
 
         public void WriteLineRed(string line)
         {
             Console.BackgroundColor = Color.Red;
-            Console.WriteLine(line, Color.White);
+            Console.Write(line, Color.White);
             Console.BackgroundColor = Color.Black;
+            Console.WriteLine("");
         }
     }
 }

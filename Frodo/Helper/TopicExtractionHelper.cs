@@ -8,6 +8,9 @@ namespace Frodo.Helper
     /// </summary>
     internal class TopicExtractionHelper
     {
+        /// <summary>
+        /// Extract hashtags from a text
+        /// </summary>
         public static List<string> ExtractHashTags(string text)
         {
             // Define a regular expression to match hashtags
@@ -25,6 +28,9 @@ namespace Frodo.Helper
             return hashtags;
         }
 
+        /// <summary>
+        /// Extract URLs from a text
+        /// </summary>
         public static List<TopicLink> ExtractUrls(string text)
         {
             // Define a regular expression to match URLs
@@ -45,7 +51,7 @@ namespace Frodo.Helper
             {
                 var url = match.Value;
                 if (url.EndsWith('.'))
-                    url = url.Substring(0, url.Length - 1);
+                    url = url[..^1];
                 var topicUrl = new TopicLink() { Url = url };
 
                 var found = false;

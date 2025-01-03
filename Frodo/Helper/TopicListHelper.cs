@@ -3,13 +3,14 @@ using Gluten.Core.Service;
 using Gluten.Data.ClientModel;
 using Gluten.Data.PinCache;
 using Gluten.Data.TopicModel;
+using System.Web;
 
 namespace Frodo.Helper
 {
     /// <summary>
     /// General helpers for working with data structures
     /// </summary>
-    internal static class DataHelper
+    internal static class TopicListHelper
     {
         public static IConsole Console { get; set; } = new DummyConsole();
 
@@ -58,17 +59,30 @@ namespace Frodo.Helper
         /// <summary>
         /// is specified venue in the list (duplicated)?
         /// </summary>
-        public static bool IsInList(List<AiVenue> venues, AiVenue venue, int newVenueIndex)
+        public static bool IsInList(List<AiVenue>? venues, AiVenue venue, int newVenueIndex)
         {
+            if (venues == null) return false;
             for (int i = 0; i < venues.Count; i++)
             {
                 AiVenue? item = venues[i];
                 if (i != newVenueIndex
-                    && item.Pin != null && venue.Pin != null
-                    && item.Pin.GeoLongitude == venue.Pin.GeoLongitude
-                    && item.Pin.GeoLatitude == venue.Pin.GeoLatitude)
+                    && item.IsChain == venue.IsChain
+                    && item.ChainGenerated == venue.ChainGenerated
+                    )
                 {
-                    return true;
+                    // search done and pin found, details match
+                    if (IsPinMatch(item.Pin, venue.Pin))
+                    {
+                        return true;
+                    }
+
+                    // search done and no pin found
+                    if (item.PinSearchDone //&& venue.PinSearchDone
+                        && item.Pin == null && venue.Pin == null
+                        && item.PlaceName == venue.PlaceName)
+                    {
+                        return true;
+                    }
                 }
             }
             return false;
@@ -79,7 +93,7 @@ namespace Frodo.Helper
         /// or updates data if new (only really needed because of evolvoing data structures, TODO: can be cleaned up later)
         /// </summary>
         public static void AddIfNotExists(List<PinTopic> pins, PinTopic? matchingPinTopic,
-            PinLinkInfo topicToAdd, TopicPin? pinToAdd, TopicPinCache? cachePin)
+                PinLinkInfo topicToAdd, TopicPin? pinToAdd, TopicPinCache? cachePin)
         {
             if (pinToAdd == null) return;
             if (pinToAdd == null) return;
@@ -94,12 +108,17 @@ namespace Frodo.Helper
                 {
                     GeoLatitude = double.Parse(pinToAdd.GeoLatitude),
                     GeoLongitude = double.Parse(pinToAdd.GeoLongitude),
-                    Label = pinToAdd.Label,
+                    Label = HttpUtility.UrlDecode(pinToAdd.Label ?? ""),
                     Topics = [topicToAdd],
                 };
                 if (cachePin != null && !string.IsNullOrWhiteSpace(cachePin.MapsUrl))
                 {
                     newPin.MapsLink = cachePin.MapsUrl;
+                    if (string.IsNullOrWhiteSpace(newPin.MapsLink))
+                    {
+                        Console.WriteLineRed($"Blank maps link :{newPin.Label}");
+                    }
+
                     if (cachePin.MetaData != null)
                     {
                         newPin.RestaurantType = cachePin.MetaData.RestaurantType;
@@ -117,6 +136,11 @@ namespace Frodo.Helper
                 {
                     matchingPinTopic.MapsLink = cachePin.MapsUrl;
                 }
+                if (string.IsNullOrWhiteSpace(matchingPinTopic.MapsLink))
+                {
+                    Console.WriteLineRed($"Blank maps link :{matchingPinTopic.Label}");
+                }
+
                 if (cachePin.MetaData != null)
                 {
                     matchingPinTopic.Stars = cachePin.MetaData.Stars;
@@ -128,6 +152,7 @@ namespace Frodo.Helper
                     System.Console.WriteLine("No meta data found");
                 }
             }
+
 
             // Add topic to the pin - dont add duplicates
             foreach (var existingTopic in matchingPinTopic.Topics)
@@ -184,5 +209,19 @@ namespace Frodo.Helper
                 }
             }
         }
+
+        private static bool IsPinMatch(TopicPin? original, TopicPin? newPin)
+        {
+            if (original != null && newPin != null
+            && original.Label == newPin.Label
+                && original.GeoLongitude == newPin.GeoLongitude
+                && original.GeoLatitude == newPin.GeoLatitude
+                )
+            {
+                return true;
+            }
+            return false;
+        }
+
     }
 }

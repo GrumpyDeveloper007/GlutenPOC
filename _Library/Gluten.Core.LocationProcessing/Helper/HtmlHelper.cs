@@ -125,6 +125,18 @@ namespace Gluten.Core.LocationProcessing.Helper
             TraverseNode(root, 0, rootNode);
         }
 
+        /// <summary>
+        /// Loads the html string into an HtmlDocument
+        /// </summary>
+        public static HtmlDocument LoadHtml(string html)
+        {
+            // Load the HTML into an HtmlDocument
+            HtmlDocument document = new();
+            document.LoadHtml(html);
+            return document;
+        }
+
+
         private static void TraverseNode(HtmlNode node, int depth, LabelNode parent)
         {
             var currentParent = parent;

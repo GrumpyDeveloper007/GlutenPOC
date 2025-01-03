@@ -22,6 +22,13 @@ namespace Gluten.Core.Helper
             return false;
         }
 
+        public static string GetPlaceNameFromSearchUrl(string url)
+        {
+            var placeStart = url.IndexOf("/search/") + "/search/".Length;
+            var placeEnd = url.IndexOf('/', placeStart);
+            return url[placeStart..placeEnd];
+        }
+
         /// <summary>
         /// Converts a url to a Pin cache data item
         /// </summary>
@@ -41,22 +48,25 @@ namespace Gluten.Core.Helper
 
             //"https://www.google.com/maps/preview/place/Japan,+%E3%80%92630-8123+Nara,+Sanjoomiyacho,+3%E2%88%9223+onwa/@34.6785478,135.8161308,3281a,13.1y/data\\\\u003d!4m2!3m1!1s0x60013a30562e78d3:0xd712400d34ea1a7b\\"
             //                                          "Japan,+%E3%80%92630-8123+Nara,+Sanjoomiyac"
-            var label = url.Substring(placeStart, placeEnd - placeStart);
+            var label = url[placeStart..placeEnd];
 
             var newPin = new TopicPinCache()
             {
                 Label = label,
-                Address = label,
                 GeoLatitude = lat,
                 GeoLongitude = lon,
                 MapsUrl = mapsUrl,
-                PlaceName = searchString,
-                MetaHtml = "",
+                PlaceName = searchString ?? "",
                 Country = country,
             };
-            if (searchString != null)
+            if (!string.IsNullOrWhiteSpace(searchString))
             {
                 newPin.SearchStrings.Add(searchString);
+            }
+            else
+            {
+
+                newPin.PlaceName = System.Uri.UnescapeDataString(newPin.Label.Replace("+", " "));
             }
             return newPin;
         }
@@ -67,10 +77,10 @@ namespace Gluten.Core.Helper
         /// </summary>
         public static bool TryGetLocationFromDataParameter(string url, ref string geoLatitude, ref string geoLongitude)
         {
-            var data = url.Substring(url.IndexOf("data=") + 5);
+            var data = url[(url.IndexOf("data=") + 5)..];
             if (data.IndexOf('?') > 0)
             {
-                data = data.Substring(0, data.IndexOf('?'));
+                data = data[..data.IndexOf('?')];
             }
             var tokens = data.Split('!');
             var found = false;
@@ -80,11 +90,11 @@ namespace Gluten.Core.Helper
                 {
                     if (item.StartsWith("3d"))
                     {
-                        geoLatitude = item.Substring(2);
+                        geoLatitude = item[2..];
                     }
                     if (item.StartsWith("4d"))
                     {
-                        geoLongitude = item.Substring(2);
+                        geoLongitude = item[2..];
                         found = true;
                     }
                 }

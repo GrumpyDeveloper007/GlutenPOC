@@ -7,10 +7,10 @@ namespace Gluten.Data.Access.Service
     /// <summary>
     /// Provides generic access to the cloud DB
     /// </summary>
-    public class CloudDataStore : IDisposable
+    public class CloudDataStoreService : IDisposable
     {
         private const string DatabaseId = "gluencosmos";
-        private readonly DbMapper _mappingService = new();
+        private readonly DbMapperService _mappingService = new();
         private readonly CosmosClient _cosmosClient;
         private readonly Database _database;
         private readonly Dictionary<string, Container> _containers = [];
@@ -18,7 +18,7 @@ namespace Gluten.Data.Access.Service
         /// <summary>
         /// Constructor
         /// </summary>
-        public CloudDataStore(string EndpointUri, string PrimaryKey)
+        public CloudDataStoreService(string EndpointUri, string PrimaryKey)
         {
             _cosmosClient = new(EndpointUri, PrimaryKey, new CosmosClientOptions() { ApplicationName = "TheShire" });
             _database = _cosmosClient.CreateDatabaseIfNotExistsAsync(DatabaseId).Result;

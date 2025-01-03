@@ -15,17 +15,20 @@ namespace Frodo.Helper
         /// <summary>
         /// Searches for duplicated AiVenues in a list
         /// </summary>
-        public static void RemoveDuplicatedVenues(List<AiVenue>? venues)
+        public static int RemoveDuplicatedVenues(List<AiVenue>? venues)
         {
-            if (venues == null) return;
+            int removeCount = 0;
+            if (venues == null) return 0;
 
             for (int t = venues.Count - 1; t >= 0; t--)
             {
-                if (DataHelper.IsInList(venues, venues[t], t))
+                if (TopicListHelper.IsInList(venues, venues[t], t))
                 {
+                    removeCount++;
                     venues.RemoveAt(t);
                 }
             }
+            return removeCount;
         }
     }
 }
